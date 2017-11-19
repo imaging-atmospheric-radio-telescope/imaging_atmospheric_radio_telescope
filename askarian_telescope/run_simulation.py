@@ -18,8 +18,8 @@ import subprocess
 import tempfile
 import shutil
 import json
-import run_corsika_coreas as rcc
-import telescope
+from askarian_telescope import run_corsika_coreas as rcc
+from askarian_telescope import telescope
 
 def make_event(job):
     try:
@@ -32,7 +32,6 @@ def make_event(job):
         rcc.simulate_event(
             corsika_coreas_executable_path=job['corsika_coreas_executable_path'],
             out_event_dir=part_out_event_dir,
-            out_run_dir=job['out_run_dir'],
             event_id=job['event_id'],
             primary_particle_id=job['primary_particle_id'],
             energy=job['energy'],
