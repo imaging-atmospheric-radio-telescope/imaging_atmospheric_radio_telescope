@@ -6,8 +6,8 @@ import subprocess
 import shutil
 import json
 
-import telescope
-import coreas_bridge
+from . import telescope
+from . import coreas_bridge
 
 """
 In CORSIKA COREAS, there must only be one shower per CORSIKA run.
