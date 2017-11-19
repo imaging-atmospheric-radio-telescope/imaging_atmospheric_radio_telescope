@@ -140,7 +140,7 @@ class ImageSensor():
         self.pixel_directions = np.zeros(
             shape=(self.number_pixels, 2)
         )
-        self.pixel_directions = np.arctan(
+        self.pixel_directions = - np.arctan(
             self.pixel_positions[:,0:2]/self.focal_length_of_imaging_system
         )
 
