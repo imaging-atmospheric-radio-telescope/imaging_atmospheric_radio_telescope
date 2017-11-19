@@ -1,0 +1,24 @@
+{
+    "imaging_reflector": {
+        "antenna_areal_density": 0.75,
+        "focal_length": 75,
+        "aperture_radius": 25,
+        "random_seed": 0
+    },
+    "image_sensor": {
+        "pixel_inner_fov": 0.0019198621771937625,
+        "focal_length_of_imaging_system": 75,
+        "fov": 0.07679448708775051,
+        "image_sensor_distance": 75
+    },
+    "run": {
+        "primary_particle_id": 14,
+        "number_events": 4,
+        "energy": [5, 50],
+        "zenith_distance": [0, 0.02618],
+        "azimuth": [0, 6.2832],
+        "observation_level_altitude": 2200,
+        "core_position_on_observation_level_max_scatter_radius": 100,
+        "time_slice_duration": 2e-10
+    }
+}
