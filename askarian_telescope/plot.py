@@ -153,8 +153,8 @@ def simulation_truth_info_string(simulation_truth):
     if st['primary_particle_id'] == 14: s+= 'Proton'
     s+= ', '
     s+= 'E: '+str(np.round(st['energy']))+'GeV, '
-    s+= 'Az: '+str(np.round(st['azimuth'], 1))+'deg, '
-    s+= 'Zd: '+str(np.round(st['zenith_distance'], 1))+'deg, '
+    s+= 'Az: '+str(np.round(np.rad2deg(st['azimuth']), 1))+'deg, '
+    s+= 'Zd: '+str(np.round(np.rad2deg(st['zenith_distance']), 1))+'deg, '
     s+= 'Core North: '+str(
             np.round(st['core_position_on_observation_level_north'], 1)
         )+'m, '
