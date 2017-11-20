@@ -13,6 +13,8 @@ import scoop
 import os
 import glob
 from os.path import join
+import matplotlib
+matplotlib.use('Agg')
 from askarian_telescope import plot
 import askarian_telescope as at
 
@@ -21,7 +23,7 @@ def make_event_video(event_dir):
     try:
         event = at.telescope.Event(event_dir)
         image_slice_dir = join(event_dir, 'video_slices')
-        #plot.save_image_slices(event, image_slice_dir)
+        plot.save_image_slices(event, image_slice_dir)
         plot.make_video_from_image_slices(
             image_slice_dir=image_slice_dir,
             out_path=join(event_dir, 'event_{:06d}'.format(event.id)),
