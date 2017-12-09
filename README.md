@@ -1,5 +1,5 @@
-# Askarian Air-Shower Telescope
- A possible future for gamma-ray astronomy
+# Imaging Atmospheric Askaryan Telescope
+A possible future for ground based gamma-ray astronomy
 
 
 ## Install
