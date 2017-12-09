@@ -2,6 +2,12 @@
 ![img](readme/example_event.gif)
 A possible future for ground based gamma-ray astronomy
 
+## Abstract
+We are on the edge of opening the gamma-ray window to astronomy. The gamma-ray sky turned out to be much more diverse than what was anticipated. Today, space born gamma-ray detectors as [Fermi-LAT](https://www-glast.stanford.edu/) perform surveys of the static and inert gamma-ray sky with years of exposure time. Ground based pointing telescopes investigate specific cosmic gamma-ray sources using Cherenkov light photons emitted in gamma-ray induced air-showers in earth atmosphere. Ground based telescopes, so called Imaging Atmospheric Cherenkov Telescopes (IACTs), have ~10e5m^2 gamma-ray collection area while satellites only have ~1m^2. Satellites reach gamma-ray energies as low as 1GeV while IACTs only reach down to ~100GeV. IACTs can only record Cherenkov light during the night in fairly clear weather conditions. This limits the duty time for gamma-ray astronomy down to about 15%.
+
+Here I propose to combine the radio detection of cosmic-ray air-showers with the imaging method of IACTs. I propose to explore an Imaging Atmospheric Askaryan Telescope (IAAT). Using the Askaryan radio emission of air-showers, together with geomagnetic radio synchrotron emission, the Askaryan telescope records image sequences of cosmic particles creating air-showers in earth atmosphere in the 1GHz to 2.5GHz radio band. The Askaryan telescope does not look for cosmic radio emission, but for short radio emission bursts from within earth atmosphere originated from air-showers induced by cosmic particles. Simulations of the Askaryan telescope are still in its infancy. Neither the cosmic and terrestrial radio background nor the actual performance of todays radio receivers was taken into account yet. Also it is not clear yet if it will be possible to tell apart cosmic gamma-rays from the much more abandon cosmic-rays. So be warned here before you get too excited. At the moment we are looking for showstoppers.
+Nevertheless, the possible reward of an Askaryan telescope with similar performance of a Cherenkov telescope, but with 100% duty cycle, will blow the doors off of todays gamma-ray astronomy.
+
 
 ## Install
 First install KIT-CORSIKA-CoREAS to simulate radio emission of air-showers.
