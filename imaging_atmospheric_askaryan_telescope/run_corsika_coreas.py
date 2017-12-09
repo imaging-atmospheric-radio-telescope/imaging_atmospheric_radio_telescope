@@ -1,3 +1,4 @@
+# Copyright 2017 Sebastian A. Mueller
 import numpy as np
 from collections import OrderedDict
 import tempfile

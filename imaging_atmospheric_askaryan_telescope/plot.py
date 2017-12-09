@@ -1,3 +1,4 @@
+# Copyright 2017 Sebastian A. Mueller
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon

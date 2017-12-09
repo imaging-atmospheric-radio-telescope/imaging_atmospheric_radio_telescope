@@ -1,4 +1,5 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
+# Copyright 2017 Sebastian A. Mueller
 """
 Make a video of the electric field components of all events in a run. The videos
 are stored in the event directories.

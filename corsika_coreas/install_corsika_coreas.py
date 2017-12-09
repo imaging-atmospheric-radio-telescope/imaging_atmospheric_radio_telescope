@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright 2017 Sebastian A. Mueller
 """
 Install CORSIKA cosmic-ray and gamma-ray air-shower simulation for the Radio
 Askarian Telescope.

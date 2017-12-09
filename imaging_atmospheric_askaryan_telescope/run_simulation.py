@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright 2017 Sebastian A. Mueller
 """
 Usage: run_simulation --out_dir=DIR [--steering_card=PATH] [--corsika_coreas=PATH]
 
