@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 """
 Install CORSIKA cosmic-ray and gamma-ray air-shower simulation for the Radio
 Askarian Telescope.
@@ -10,12 +10,12 @@ Options:
     --username=USERNAME                 Username for the KIT CORSIKA ftp-server
     --password=PASSWORD                 Password fot the KIT CORSIKA ftp-server
 
-During the installation, the stdout and stderr of the 'coconut_configure' 
-and 'coconut_make' procedures are written into text files in the install 
-path.  
+During the installation, the stdout and stderr of the 'coconut_configure'
+and 'coconut_make' procedures are written into text files in the install
+path.
 Visit the CORSIKA homepage: https://www.ikp.kit.edu/corsika/
-You can test your username and password in the download section of the 
-KIT CORSIKA webpages. If you do not have yet the CORSIKA username and 
+You can test your username and password in the download section of the
+KIT CORSIKA webpages. If you do not have yet the CORSIKA username and
 password, then drop the CORSIKA developers an e-mail and kindly ask for it.
 
 """
@@ -45,11 +45,11 @@ def main():
         os.makedirs(install_path, exist_ok=True)
         os.chdir(install_path)
 
-        # download CORSIKA from KIT 
+        # download CORSIKA from KIT
         corsika_tar = 'corsika-75600.tar.gz'
         if not os.path.exists(corsika_tar):
-            ftp = ftplib.FTP('ikp-ftp.ikp.kit.edu') 
-            ftp.login(arguments['--username'], arguments['--password']) 
+            ftp = ftplib.FTP('ikp-ftp.ikp.kit.edu')
+            ftp.login(arguments['--username'], arguments['--password'])
             ftp.cwd('old/v750/')
             ftp.retrbinary('RETR '+corsika_tar, open(corsika_tar, 'wb').write)
             ftp.quit()
@@ -66,9 +66,9 @@ def main():
         # Provide the Askarian Telescope coconut config.h
         shutil.copyfile(corsika_config_path, 'include/config.h')
 
-        # coconut configure 
+        # coconut configure
         call_and_save_std(
-            target=['./coconut'], 
+            target=['./coconut'],
             o_path='../coconut_configure.o',
             e_path='../coconut_configure.e',
             stdin=open('/dev/null', 'r')
@@ -76,13 +76,13 @@ def main():
 
         # coconut build
         call_and_save_std(
-            target=['./coconut', '-i'], 
+            target=['./coconut', '-i'],
             o_path='../coconut_make.o',
             e_path='../coconut_make.e'
         )
 
         # Copy std ATMPROFS to the CORSIKA run directory
-        for atmprof in glob.glob('bernlohr/atmprof*'):                                                                                                                                      
+        for atmprof in glob.glob('bernlohr/atmprof*'):
             shutil.copy(atmprof, 'run')
 
         if os.path.isfile('run/corsika75600Linux_QGSII_urqmd_coreas'):
