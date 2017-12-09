@@ -1,4 +1,5 @@
 # Imaging Atmospheric Askaryan Telescope
+![img](readme/example_event.gif)
 A possible future for ground based gamma-ray astronomy
 
 
@@ -142,4 +143,4 @@ plot.add2ax(
 )
 plt.show()
 ```
-![img](example_event.png)
+![img](readme/example_event.png)
