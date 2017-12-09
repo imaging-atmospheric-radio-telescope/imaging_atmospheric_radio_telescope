@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 """
 Usage: run_simulation --out_dir=DIR [--steering_card=PATH] [--corsika_coreas=PATH]
 
@@ -46,7 +46,7 @@ def make_event(job):
         )
 
         shutil.move(part_out_event_dir, out_event_dir)
-    except Exception as e: 
+    except Exception as e:
         print('(Event ', job['event_id'], '):\n', e)
 
     return 1
@@ -61,14 +61,14 @@ def main():
         assert os.path.exists(corsika_coreas_executable_path)
         with open(steering_card_path, 'rt') as fin:
             steering_card = json.loads(fin.read())
-        
+
         image_sensor = telescope.image_sensor_from_dict(
             steering_card['image_sensor']
         )
         imaging_reflector = telescope.imaging_reflector_from_dict(
             steering_card['imaging_reflector']
         )
-        
+
         sc = steering_card
         event_parameters = rcc.event_parameter_distribution(
             number_events=sc['run']['number_events'],
@@ -81,7 +81,7 @@ def main():
             time_slice_duration=sc['run']['time_slice_duration'],
         )
 
-        jobs = []   
+        jobs = []
         for idx in range(sc['run']['number_events']):
             job = {}
             for key in event_parameters:
