@@ -6,15 +6,15 @@ A possible future for ground based gamma-ray astronomy
 First we install KIT-CORSIKA-CoREAS to simulate the rasio emission of air-showers
 
 ```bash
-$ cd askarian_telescope/
-/askarian_telescope$ cd corsika_coreas
-/askarian_telescope/corsika_coreas$ ls
+$ cd imaging_atmospheric_askaryan_telescope/
+/imaging_atmospheric_askaryan_telescope$ cd corsika_coreas
+/imaging_atmospheric_askaryan_telescope/corsika_coreas$ ls
 config.h  install_corsika_coreas.py
 ```
 The ```config.h``` is the CORSIKA coconut input which defines exactly which CORSIKA flavor we want to build.
 
 ```bash
-/askarian_telescope/corsika_coreas$ ./install_corsika_coreas.py
+/imaging_atmospheric_askaryan_telescope/corsika_coreas$ ./install_corsika_coreas.py
     --install_path=../corsika_coreas_build 
     --username=XXXXXXX 
     --password=YYYYYYY
@@ -23,8 +23,8 @@ The ```config.h``` is the CORSIKA coconut input which defines exactly which CORS
 Here XXXXXXX is the user name and YYYYYYY is the password of the non open source FTP server of KIT where the non open source CORSIKA simulation is hosted. Go and kindly ask the KIT guys for the credentials.
 
 ```bash
-/askarian_telescope/corsika_coreas$ cd ../corsika_coreas_build
-/askarian_telescope/corsika_coreas_build$ ls
+/imaging_atmospheric_askaryan_telescope/corsika_coreas$ cd ../corsika_coreas_build
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build$ ls
     coconut_configure.e  
     coconut_configure.o  
     coconut_make.e  
@@ -36,8 +36,8 @@ Here XXXXXXX is the user name and YYYYYYY is the password of the non open source
 In the ```install_path``` we find the tar-ball download, the install path of CORSIKA ```corsika-75600/``` and the stdout and stderror logs of ```coconut``` and ```make``` for the CORSIKA build process. 
 
 ```bash
-/askarian_telescope/corsika_coreas_build$ cd corsika-75600/run/
-/askarian_telescope/corsika_coreas_build/corsika-75600/run$ ls
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build$ cd corsika-75600/run/
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build/corsika-75600/run$ ls
     ...
     corsika75600Linux_QGSII_urqmd_coreas
     ...
@@ -47,8 +47,8 @@ Among others, there should now be the CORSIKA_COREAS executable.
 Now install the telescope simulation.
 
 ```bash
-/askarian_telescope/corsika_coreas_build/corsika-75600/run$ cd ../../../
-/askarian_telescope$ pip install -e .
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build/corsika-75600/run$ cd ../../../
+/imaging_atmospheric_askaryan_telescope$ pip install -e .
     ...
     Successfully installed askarian-telescope
 ```
@@ -57,7 +57,7 @@ Now install the telescope simulation.
 
 First, set up a telescope geometry.
 ```python
-In [1]: import askarian_telescope as at
+In [1]: import imaging_atmospheric_askaryan_telescope as at
 
 In [2]: ims  = at.telescope.ImageSensor(
             pixel_inner_fov=np.deg2rad(0.11), 
@@ -95,8 +95,8 @@ In [4]: at.run_corsika_coreas.simulate_event(
 See CORSIKA manual for the ```primary_particle_id```. Proton is 14 and gamma is 1.
 Lets take a look at the output in ```'./my_event_42'```.
 ```bash
-/askarian_telescope$ cd my_event_42/
-/askarian_telescope/my_event_42$ ls
+/imaging_atmospheric_askaryan_telescope$ cd my_event_42/
+/imaging_atmospheric_askaryan_telescope/my_event_42$ ls
     config.json  
     corsika_coreas/
     raw_image_sensor_response/
@@ -108,7 +108,7 @@ Read in the telescope response.
 
 First, keep track of your simulation truth:
 ```python
-import askarian_telescope as at
+import imaging_atmospheric_askaryan_telescope as at
 
 event = at.telescope.Event('my_event_42/')
 event.simulation_truth 
@@ -126,7 +126,7 @@ Plot a specific time slice of the recorded image sequence.
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from askarian_telescope import plot
+from imaging_atmospheric_askaryan_telescope import plot
 
 time_slice = 130
 

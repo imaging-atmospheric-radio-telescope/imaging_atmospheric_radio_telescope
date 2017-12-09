@@ -1,18 +1,20 @@
+# Copyright 2017 Sebastian A. Mueller
 from distutils.core import setup
 
 setup(
-    name='askarian_telescope',
-    version='0.0.0',
-    description='Simulate and investigate an Imaging Air-shower Askarian Telescope',
-    url='https://github.com/fact-project/',
+    name='imaging_atmospheric_askaryan_telescope',
+    version='0.0.1',
+    description='Simulate and investigate the ' +
+    'Imaging Atmospheric Askarian Telescope for gamma-ray astronomy.',
+    url='https://github.com/relleums/imaging_atmospheric_askaryan_telescope',
     author='Sebastian Achim Mueller',
     author_email='sebmuell@phys.ethz.ch',
     license='GPLv3',
     packages=[
-        'askarian_telescope',
+        'imaging_atmospheric_askaryan_telescope',
     ],
     package_data={
-        'askarian_telescope': []
+        'imaging_atmospheric_askaryan_telescope': []
     },
     install_requires=[
         'docopt',
