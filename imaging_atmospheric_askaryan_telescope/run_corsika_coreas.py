@@ -309,11 +309,12 @@ def simulate_event(
         imaging_reflector=imaging_reflector,
     )
 
-    raw_imaging_reflector_huygens_antenna_responses = coreas_bridge.
-    read_electric_field_on_imaging_reflector(
-        path=os.path.join(
-            out_event_dir,
-            'raw_imaging_reflector_huygens_antenna_responses'
+    raw_imaging_reflector_huygens_antenna_responses = (
+        coreas_bridge.read_electric_field_on_imaging_reflector(
+            path=os.path.join(
+                out_event_dir,
+                'raw_imaging_reflector_huygens_antenna_responses'
+            )
         )
     )
 
@@ -328,8 +329,8 @@ def simulate_event(
         'west_component',
         'vertical_component'
     ]:
-        image_sensor_responses[component] = telescope.
-        simulate_image_sensor_response(
+        image_sensor_responses[component] = (
+            telescope.simulate_image_sensor_response(
                 huygens_matrix=huygens_matrix,
                 raw_imaging_reflector_huygens_antenna_responses=(
                     raw_imaging_reflector_huygens_antenna_responses
@@ -337,6 +338,7 @@ def simulate_event(
                 number_time_slices=300,
                 component=component
             )
+        )
 
     out_image_sensor_response_dir = os.path.join(
         out_event_dir,
