@@ -10,7 +10,9 @@ ETH Zurich
 - Christian operates three radio telescopes for ETH and is alwas looking for future challenges for these instruments. Adrian and Sebastian explain how a hybrid detection with a classic radio telescope and an IACT might be performed on the existing radio telescopes of ETH.
 
 5m dish Bleien: http://soleil.i4ds.ch/solarradio/data/status/RSG/status5m.php
+
 5m dish Zürich: http://soleil.i4ds.ch/solarradio/data/status/STS/statusSTS_nf.php
+
 7m dish Bleien: http://soleil.i4ds.ch/solarradio/data/status/RSG/status7m.php
 
 
@@ -20,9 +22,18 @@ ETH Zurich
 
 - Based on the typical antenna pixel electrical field strength amplitudes which Christian found in the simulation figures presented by Sebastian, he estimated the air-shower signal strength compared to the expected noise of antennas. He provided a tiny python script:
 
+```
+Hi Sebastian
+
+A quick check shows me that it should be doable with simple rf-electronics without LN2-cooling, see script below.
+I expect an SNR of > 9dB (~8x)
+
+Cheers,
+Christian
+```
+
 ```python
 # Copyright Christian Monstein 2017
-
 import numpy as np
 
 E   = 40e-6    # maximum fieldstrenght taken from simulation [V/m]
@@ -56,17 +67,6 @@ Expected antenna temperature 15377 Kelvin
 Expected y-factor 22.9 dB
 Temperature resolution 1789 Kelvin
 Expected SNR 9.3 dB
-```
-
-Christian's comment on this:
-```
-Hi Sebastian
-
-A quick check shows me that it should be doable with simple rf-electronics without LN2-cooling, see script below.
-I expect an SNR of > 9dB (~8x)
-
-Cheers,
-Christian
 ```
 
 - Sebastian concludes that we need more crosschecks of Sebastian's simulation tool. After all, this is the first time Sebastian simulates a radio instrument.
