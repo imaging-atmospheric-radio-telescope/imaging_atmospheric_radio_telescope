@@ -340,5 +340,6 @@ def event_parameter_distribution(
             min_zenith_distance=zenith_distance[0],
             max_zenith_distance=zenith_distance[1],
             size=number_events
-        )
+        ),
+        'core_position_on_observation_level_max_scatter_radius': max_r
     }
