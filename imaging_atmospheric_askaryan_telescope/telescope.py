@@ -10,7 +10,7 @@ def parabola_surface_height(
     distance_to_optical_axis,
     focal_length,
 ):
-    z = 1/(4.0*focal_length) * distance_to_optical_axis**2
+    z = 1 / (4.0 * focal_length) * distance_to_optical_axis**2
     return z
 
 
@@ -24,7 +24,7 @@ class ImagingReflector():
     ):
         self.focal_length = focal_length
         self.aperture_radius = aperture_radius
-        self.aperture_diameter = 2*self.aperture_radius
+        self.aperture_diameter = 2 * self.aperture_radius
         self._random_seed = random_seed
         self.antenna_areal_density = antenna_areal_density
 
@@ -32,9 +32,9 @@ class ImagingReflector():
         self._init_huygens_antennas()
 
     def _init_huygens_antennas(self):
-        square_area = (2*self.aperture_radius)**2
+        square_area = (2 * self.aperture_radius)**2
         number_antennas_in_square = np.int(
-            np.ceil(square_area*self.antenna_areal_density)
+            np.ceil(square_area * self.antenna_areal_density)
         )
 
         np.random.seed(self._random_seed)
@@ -106,33 +106,35 @@ class ImageSensor():
 
         self.pixel_inner_fov = pixel_inner_fov
         self.pixel_inner_radius = (
-            self.focal_length_of_imaging_system*np.tan(self.pixel_inner_fov/2)
+            self.focal_length_of_imaging_system *
+            np.tan(self.pixel_inner_fov / 2)
         )
-        self.pixel_inner_diameter = 2*self.pixel_inner_radius
+        self.pixel_inner_diameter = 2 * self.pixel_inner_radius
 
-        self.pixel_outer_radius = self.pixel_inner_radius * 2/np.sqrt(3)
-        self.pixel_outer_diameter = 2*self.pixel_outer_radius
+        self.pixel_outer_radius = self.pixel_inner_radius * 2 / np.sqrt(3)
+        self.pixel_outer_diameter = 2 * self.pixel_outer_radius
 
         self.fov = fov
-        self.radius = self.focal_length_of_imaging_system*np.tan(self.fov/2)
-        self.diameter = 2*self.radius
+        self.radius = self.focal_length_of_imaging_system * \
+            np.tan(self.fov / 2)
+        self.diameter = 2 * self.radius
         self.area = self.radius**2 * np.pi
 
         self._init_pixel_positions()
-        self.antenna_areal_density = self.number_pixels/self.area
+        self.antenna_areal_density = self.number_pixels / self.area
 
     def _init_pixel_positions(self):
-        self._unit_u = self.pixel_inner_diameter*np.array([1.0, 0.0, 0.0])
-        self._unit_v = self.pixel_inner_diameter*np.array(
-            [0.5, np.sqrt(3)/2, 0.0]
+        self._unit_u = self.pixel_inner_diameter * np.array([1.0, 0.0, 0.0])
+        self._unit_v = self.pixel_inner_diameter * np.array(
+            [0.5, np.sqrt(3) / 2, 0.0]
         )
 
-        pixels_on_diagonal = int(np.ceil(self.fov/self.pixel_inner_fov))
+        pixels_on_diagonal = int(np.ceil(self.fov / self.pixel_inner_fov))
 
         pixel_positions = []
-        for u in np.arange(-pixels_on_diagonal, pixels_on_diagonal+1):
-            for v in np.arange(-pixels_on_diagonal, pixels_on_diagonal+1):
-                pos_xy = u*self._unit_u + v*self._unit_v
+        for u in np.arange(-pixels_on_diagonal, pixels_on_diagonal + 1):
+            for v in np.arange(-pixels_on_diagonal, pixels_on_diagonal + 1):
+                pos_xy = u * self._unit_u + v * self._unit_v
                 if np.linalg.norm(pos_xy) < self.radius:
                     pixel_positions.append(
                         pos_xy + np.array([0, 0, self.image_sensor_distance])
@@ -143,7 +145,7 @@ class ImageSensor():
             shape=(self.number_pixels, 2)
         )
         self.pixel_directions = - np.arctan(
-            self.pixel_positions[:, 0:2]/self.focal_length_of_imaging_system
+            self.pixel_positions[:, 0:2] / self.focal_length_of_imaging_system
         )
 
     def __repr__(self):
@@ -189,11 +191,11 @@ class HuygensImagingGeometry():
             imaging_reflector.huygens_antennas_positions
         ).astype(np.float32)
 
-        self.time_delays = self.distances/self._speed_of_light
+        self.time_delays = self.distances / self._speed_of_light
         self.relative_time_delays = self.time_delays - self.time_delays.min()
         self.relative_amplitudes = (
-            (1/self.distances**2) /
-            (1/self.distances**2).mean()
+            (1 / self.distances**2) /
+            (1 / self.distances**2).mean()
         )
 
     def __repr__(self):
@@ -220,7 +222,7 @@ def add_first_to_second_at(first, second, at):
     if start < 0:
         start = 0
 
-    second[start:end] += first[start-at:end-at]
+    second[start:end] += first[start - at:end - at]
 
 
 def simulate_image_sensor_response(
@@ -251,7 +253,7 @@ def simulate_image_sensor_response(
                 pix, ref
             ]
             dish2pixel_slice_delay = int(
-                np.round(dish2pixel_time_delay/time_slice_duration)
+                np.round(dish2pixel_time_delay / time_slice_duration)
             )
 
             A = huygens_matrix.relative_amplitudes[pix, ref]
@@ -259,7 +261,7 @@ def simulate_image_sensor_response(
             dish_record_slice_delay = antenna_start_slice_offsets[ref]
 
             add_first_to_second_at(
-                first=antenna_response[ref, :]*A,
+                first=antenna_response[ref, :] * A,
                 second=image_sensor_response[pix, :],
                 at=dish2pixel_slice_delay + dish_record_slice_delay,
             )
@@ -278,19 +280,19 @@ class RawImageSensorResponse():
         with open(join(raw_dir, 'north_component.float32'), 'rb') as fin:
             self.north = np.fromstring(fin.read(), dtype=np.float32)
             self.north = self.north.reshape(
-                (number_pixels, self.north.shape[0]//number_pixels)
+                (number_pixels, self.north.shape[0] // number_pixels)
             )
 
         with open(join(raw_dir, 'west_component.float32'), 'rb') as fin:
             self.west = np.fromstring(fin.read(), dtype=np.float32)
             self.west = self.west.reshape(
-                (number_pixels, self.west.shape[0]//number_pixels)
+                (number_pixels, self.west.shape[0] // number_pixels)
             )
 
         with open(join(raw_dir, 'vertical_component.float32'), 'rb') as fin:
             self.vertical = np.fromstring(fin.read(), dtype=np.float32)
             self.vertical = self.vertical.reshape(
-                (number_pixels, self.vertical.shape[0]//number_pixels)
+                (number_pixels, self.vertical.shape[0] // number_pixels)
             )
 
         self.number_time_slices = self.north.shape[1]
@@ -301,7 +303,7 @@ class RawImageSensorResponse():
         out = '{}('.format(self.__class__.__name__)
         out += str(self.number_pixels) + ' pixels, '
         out += str(self.number_time_slices) + ' time slices, '
-        out += str(self.time_slice_duration*1e9) + 'ns each'
+        out += str(self.time_slice_duration * 1e9) + 'ns each'
         out += ')\n'
         return out
 
