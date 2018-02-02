@@ -119,13 +119,13 @@ def simulate_air_shower_and_imaging_reflector_response(
 
         with open(out_corsika_o_path, 'w') as corsika_o, \
                 open(out_corsika_e_path, 'w') as corsika_e:
-                    subprocess.call(
-                        tmp_corsika_coreas_executable_path,
-                        stdin=corsika_steering_card_pipe,
-                        stdout=corsika_o,
-                        stderr=corsika_e,
-                        cwd=tmp_run_dir
-                    )
+            subprocess.call(
+                tmp_corsika_coreas_executable_path,
+                stdin=corsika_steering_card_pipe,
+                stdout=corsika_o,
+                stderr=corsika_e,
+                cwd=tmp_run_dir
+            )
 
         shutil.move(
             tmp_coreas_raw_antenna_output_dir,
@@ -163,6 +163,7 @@ class MyEncoder(json.JSONEncoder):
     """
     By mgilson, Software Engineer at Argo AI, 2017
     """
+
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -285,15 +286,15 @@ def sample_zenith_distance(
     max_zenith_distance=np.deg2rad(5),
     size=100
 ):
-    v_min = (np.cos(min_zenith_distance) + 1)/2
-    v_max = (np.cos(max_zenith_distance) + 1)/2
+    v_min = (np.cos(min_zenith_distance) + 1) / 2
+    v_max = (np.cos(max_zenith_distance) + 1) / 2
     v = np.random.uniform(low=v_min, high=v_max, size=size)
-    return np.arccos(2*v - 1)
+    return np.arccos(2 * v - 1)
 
 
 def sample_2D_points_within_radius(radius, size):
-    rho = np.sqrt(np.random.uniform(0, 1, size))*radius
-    phi = np.random.uniform(0, 2*np.pi, size)
+    rho = np.sqrt(np.random.uniform(0, 1, size)) * radius
+    phi = np.random.uniform(0, 2 * np.pi, size)
     x = rho * np.cos(phi)
     y = rho * np.sin(phi)
     return x, y
@@ -317,7 +318,7 @@ def event_parameter_distribution(
     )
 
     return {
-        'event_id': np.arange(1, number_events+1),
+        'event_id': np.arange(1, number_events + 1),
         'time_slice_duration': np.repeat(time_slice_duration, number_events),
         'primary_particle_id': np.repeat(primary_particle_id, number_events),
         'energy': np.random.uniform(
