@@ -159,7 +159,7 @@ def simulate_air_shower_and_imaging_reflector_response(
         # input('wait to inspect the tmp directory')
 
 
-class MyEncoder(json.JSONEncoder):
+class NumPyJSONEncoder(json.JSONEncoder):
     """
     By mgilson, Software Engineer at Argo AI, 2017
     """
@@ -172,7 +172,7 @@ class MyEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         else:
-            return super(MyEncoder, self).default(obj)
+            return super(NumPyJSONEncoder, self).default(obj)
 
 
 def simulate_event(
@@ -278,7 +278,7 @@ def simulate_event(
     out_image_sensor_config_path = os.path.join(out_event_dir, 'config.json')
 
     with open(out_image_sensor_config_path, 'w') as fout:
-        fout.write(json.dumps(config, indent=4, cls=MyEncoder))
+        fout.write(json.dumps(config, indent=4, cls=NumPyJSONEncoder))
 
 
 def sample_zenith_distance(
