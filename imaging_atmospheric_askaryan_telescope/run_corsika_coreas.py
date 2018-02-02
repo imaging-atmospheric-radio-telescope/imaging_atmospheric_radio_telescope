@@ -221,13 +221,13 @@ def simulate_air_shower_and_imaging_reflector_response(
 
         with open(out_corsika_o_path, 'w') as corsika_o, \
                 open(out_corsika_e_path, 'w') as corsika_e:
-            corsika_coreas_return_code = subprocess.call(
-                tmp_corsika_coreas_executable_path,
-                stdin=corsika_steering_card_pipe,
-                stdout=corsika_o,
-                stderr=corsika_e,
-                cwd=tmp_run_dir
-            )
+                    subprocess.call(
+                        tmp_corsika_coreas_executable_path,
+                        stdin=corsika_steering_card_pipe,
+                        stdout=corsika_o,
+                        stderr=corsika_e,
+                        cwd=tmp_run_dir
+                    )
 
         shutil.move(
             tmp_coreas_raw_antenna_output_dir,
@@ -325,21 +325,16 @@ def simulate_event(
     )
 
     image_sensor_responses = {}
-    for component in [
-        'north_component',
-        'west_component',
-        'vertical_component'
-    ]:
-        image_sensor_responses[component] = (
-            telescope.simulate_image_sensor_response(
-                huygens_matrix=huygens_matrix,
-                raw_imaging_reflector_huygens_antenna_responses=(
-                    raw_imaging_reflector_huygens_antenna_responses
-                ),
-                number_time_slices=300,
-                component=component
-            )
+    for component in ['north_component', 'west_component', 'vertical_component']:
+        sensor_response = telescope.simulate_image_sensor_response(
+            huygens_matrix=huygens_matrix,
+            raw_imaging_reflector_huygens_antenna_responses=(
+                raw_imaging_reflector_huygens_antenna_responses
+            ),
+            number_time_slices=300,
+            component=component
         )
+        image_sensor_responses[component] = (sensor_response)
 
     out_image_sensor_response_dir = os.path.join(
         out_event_dir,
@@ -354,7 +349,7 @@ def simulate_event(
     ]:
         out_component_path = os.path.join(
             out_image_sensor_response_dir,
-            component+'.float32'
+            component + '.float32'
         )
         with open(out_component_path, 'wb') as fout:
             fout.write(np.float32(image_sensor_responses[component]).tobytes())
