@@ -1,12 +1,12 @@
 # Copyright 2017 Sebastian A. Mueller
 import numpy as np
-from steering_card_utils import make_coreas_steering_card, make_corsika_steering_card
 import tempfile
 import os
 import subprocess
 import shutil
 import json
 
+from . import steering_card_utils
 from . import telescope
 from . import coreas_bridge
 
@@ -68,7 +68,7 @@ def simulate_air_shower_and_imaging_reflector_response(
 
         with open(tmp_corsika_steering_card_path, 'wt') as fout:
             fout.write(
-                make_corsika_steering_card(
+                steering_card_utils.make_corsika_steering_card(
                     event_id=event_id,
                     primary_particle_id=primary_particle_id,
                     energy=energy,
@@ -80,7 +80,7 @@ def simulate_air_shower_and_imaging_reflector_response(
 
         with open(tmp_coreas_steering_card_path, 'wt') as fout:
             fout.write(
-                make_coreas_steering_card(
+                steering_card_utils.make_coreas_steering_card(
                     core_position_on_observation_level_north=(
                         core_position_on_observation_level_north
                     ),
