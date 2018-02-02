@@ -23,7 +23,7 @@ def assert_same_time_slice_duration(
         )
         valid = (
             np.abs(time_slice_duration_this_antenna - time_slice_duration) <
-            time_slice_duration/100
+            time_slice_duration / 100
         )
         assert np.all(valid)
     return time_slice_duration
@@ -65,7 +65,7 @@ def read_electric_field_on_imaging_reflector(path):
     '''
     Read time dependent electric field on reflector dish from event simulated at PATH.
     Returns dict containing all three components of the electric field and timing information.
-    Electric Field will be returned in SI units. 
+    Electric Field will be returned in SI units.
     '''
     raw = read_all_raw_time_series(path)
     time_slice_duration = estimate_time_slice_duration(raw)
