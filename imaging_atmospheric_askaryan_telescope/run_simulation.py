@@ -11,16 +11,12 @@ Options:
 import docopt
 import scoop
 import os
-import glob
 from os.path import join
-from os.path import split
-from os.path import exists
-import subprocess
-import tempfile
 import shutil
 import json
 from askarian_telescope import run_corsika_coreas as rcc
 from askarian_telescope import telescope
+
 
 def make_event(job):
     try:
@@ -28,7 +24,7 @@ def make_event(job):
         out_event_dir = join(
             job['out_run_dir'], 'event_{:06d}'.format(job['event_id'])
         )
-        part_out_event_dir = out_event_dir+'.part'
+        part_out_event_dir = out_event_dir + '.part'
 
         rcc.simulate_event(
             corsika_coreas_executable_path=job['corsika_coreas_executable_path'],
@@ -96,10 +92,11 @@ def main():
         os.makedirs(out_run_dir)
         shutil.copy(steering_card_path, join(out_run_dir, 'steering_card.json'))
 
-        job_return_codes = list(scoop.futures.map(make_event, jobs))
+        list(scoop.futures.map(make_event, jobs))
 
     except docopt.DocoptExit as e:
         print(e)
+
 
 if __name__ == '__main__':
     main()
