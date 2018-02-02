@@ -160,10 +160,10 @@ def simulate_air_shower_and_imaging_reflector_response(
 
 
 class NumPyJSONEncoder(json.JSONEncoder):
-    """
+    '''
     By mgilson, Software Engineer at Argo AI, 2017
-    """
-
+    Handles numpy number types correctly
+    '''
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -190,6 +190,11 @@ def simulate_event(
     imaging_reflector,
     image_sensor
 ):
+    '''
+    Does a full simulation of a single event from the shower to the sensor response.
+    Corsika -> Coreas -> Reflector -> Sensor Response.
+    Output will be written into OUT_EVENT_DIR.
+    '''
     simulate_air_shower_and_imaging_reflector_response(
         corsika_coreas_executable_path=corsika_coreas_executable_path,
         out_event_dir=out_event_dir,
