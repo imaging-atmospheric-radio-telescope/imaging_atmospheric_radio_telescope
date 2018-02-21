@@ -60,6 +60,20 @@ Now install the telescope simulation.
     Successfully installed askarian-telescope
 ```
 
+### Trouble during installation
+
+In case the installation of CORSIKA-COREAS did not work out for you, and the CORSIKA-executable does not exist, take a look into the log-files of the compilation:
+
+```bash
+coconut_configure.e
+coconut_configure.o
+coconut_make.e
+coconut_make.o
+```
+
+Make an issue and post these logfiles in the issue. Also post the stdout of ```install_corsika_coreas.py``` and the stdout of ```pip install``` in the issue.
+
+
 ## Simulate telescope responses
 
 First, set up a telescope geometry.
