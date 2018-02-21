@@ -51,11 +51,19 @@ def make_corsika_steering_card(
     return sc
 
 
+DEFAULT_COREAS_TIME_BOUNDARIES = {
+    'automatic_time_boundaries':4e-07,
+    'time_lower_boundary':-1,
+    'time_upper_boundary':1,
+}
+
+
 def make_coreas_steering_card(
     core_position_on_observation_level_north=0.0,
     core_position_on_observation_level_west=0.0,
     observation_level_altitude=2200,
     time_slice_duration=2e-10,
+    time_boundaries=DEFAULT_COREAS_TIME_BOUNDARIES,
 ):
     core_north_cm = core_position_on_observation_level_north * 1e2
     core_west_cm = core_position_on_observation_level_west * 1e2
@@ -73,11 +81,13 @@ def make_coreas_steering_card(
     sc += "# parameters setting up the temporal observer configuration:\n"
     sc += "\n"
     sc += "TimeResolution = {0:.6E} ; in s\n".format(time_slice_duration)
-    sc += "AutomaticTimeBoundaries = 4e-07 ; "
+    tb = time_boundaries
+    sc += "AutomaticTimeBoundaries = {0:.6E}; ".format(
+        tb['automatic_time_boundaries'])
     sc += "0: off, x: automatic boundaries with width x in s\n"
-    sc += "TimeLowerBoundary = -1 ; "
+    sc += "TimeLowerBoundary = {0:.6E} ; ".format(tb['time_lower_boundary'])
     sc += "in s, only if AutomaticTimeBoundaries set to 0\n"
-    sc += "TimeUpperBoundary = 1 ; "
+    sc += "TimeUpperBoundary = {0:.6E} ; ".format(tb['time_upper_boundary'])
     sc += "in s, only if AutomaticTimeBoundaries set to 0\n"
     sc += "ResolutionReductionScale = 0 ; "
     sc += "0: off, x: decrease time resolution linearly every x cm in radius\n"
