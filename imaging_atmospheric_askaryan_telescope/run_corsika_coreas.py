@@ -25,7 +25,128 @@ def make_coreas_antenna_list(imaging_reflector):
     return antenna_list
 
 
+def estimate_start_time_from_antnna_response(
+    raw_time,
+    raw_field_components
+):
+    num_components = raw_field_components.shape[1]
+    max_position_times = np.zeros(num_components)
+    for component in range(num_components):
+        first_slice = np.min(np.nonzero(raw_field_components[:, component]))
+        max_position_times[component] = raw_time[first_slice]
+    return np.median(max_position_times)
+
+
 def simulate_air_shower_and_imaging_reflector_response(
+    corsika_coreas_executable_path,
+    out_event_dir,
+    event_id,
+    primary_particle_id,
+    energy,
+    zenith_distance,
+    azimuth,
+    observation_level_altitude,
+    core_position_on_observation_level_north,
+    core_position_on_observation_level_west,
+    time_slice_duration,
+    imaging_reflector,
+    time_slice_duration_of_probe=2e-9,
+    time_lower_boundary_of_probe=-1000e-6,
+    time_upper_boundary_of_probe=25e-6,
+    time_window_duration=4e-7,
+    fraction_of_time_window_to_be_warm_up_time=0.06
+):
+    '''
+    Simulates the electric-field-strength caused by an air-shower at the
+    support-poisitions of the imaging-reflector. The result and log-files of the
+    air-shower-simulation are stored in out_event_dir.
+
+    The time-window for the electric-field-strength is estimated in advance.
+    First the air-shower is simulated and the response of one single
+    probe-antenna is simulated. Based on the time-series of the probe-antenna,
+    the time-window is estimated. Second, the air-shower is simulated again and
+    but this time with all support-antennas of the imaging-reflector using the
+    time-window estimated in the first step.
+    '''
+    probe = telescope.ImagingReflector()
+    probe.focal_length = 1
+    probe.number_huygens_antennas = 1
+    probe.huygens_antennas_positions = np.zeros(shape=(1,3))
+    probe.aperture_radius = np.sqrt(1/np.pi)
+    probe.aperture_diameter = 2*probe.aperture_radius
+    probe.area = 1
+    probe.antenna_areal_density = 1
+
+    os.makedirs(out_event_dir, exist_ok=True)
+    probe_event_dir = os.path.join(
+        out_event_dir,
+        'time_window_probe_antenna')
+
+    simulate_air_shower_and_imaging_reflector_response_manual(
+        corsika_coreas_executable_path=corsika_coreas_executable_path,
+        out_event_dir=probe_event_dir,
+        event_id=event_id,
+        primary_particle_id=primary_particle_id,
+        energy=energy,
+        zenith_distance=zenith_distance,
+        azimuth=azimuth,
+        observation_level_altitude=observation_level_altitude,
+        core_position_on_observation_level_north=
+            core_position_on_observation_level_north,
+        core_position_on_observation_level_west=
+            core_position_on_observation_level_west,
+        time_slice_duration=time_slice_duration_of_probe,
+        imaging_reflector=probe,
+        coreas_time_boundaries={
+            'automatic_time_boundaries': 0,
+            'time_lower_boundary': time_lower_boundary_of_probe,
+            'time_upper_boundary': time_upper_boundary_of_probe,
+        }
+    )
+
+    probe_response = coreas_bridge.read_all_raw_time_series(
+        os.path.join(probe_event_dir,
+            'raw_imaging_reflector_huygens_antenna_responses'))
+
+    start_time = estimate_start_time_from_antnna_response(
+        raw_time=probe_response[0, :, 0],
+        raw_field_components=probe_response[0, :, 1:4])
+
+    f = fraction_of_time_window_to_be_warm_up_time
+    time_lower_boundary = start_time - f*time_window_duration
+    time_upper_boundary = start_time + (1 - f)*time_window_duration
+
+    with open(os.path.join(out_event_dir, 'time_window.json'), 'wt') as fout:
+        fout.write(json.dumps({
+                "start_time": start_time,
+                "time_lower_boundary": time_lower_boundary,
+                "time_upper_boundary": time_upper_boundary,
+            }))
+
+    simulate_air_shower_and_imaging_reflector_response_manual(
+        corsika_coreas_executable_path=corsika_coreas_executable_path,
+        out_event_dir=out_event_dir,
+        event_id=event_id,
+        primary_particle_id=primary_particle_id,
+        energy=energy,
+        zenith_distance=zenith_distance,
+        azimuth=azimuth,
+        observation_level_altitude=observation_level_altitude,
+        core_position_on_observation_level_north=
+            core_position_on_observation_level_north,
+        core_position_on_observation_level_west=
+            core_position_on_observation_level_west,
+        time_slice_duration=time_slice_duration,
+        imaging_reflector=imaging_reflector,
+        coreas_time_boundaries={
+            'automatic_time_boundaries': 0,
+            'time_lower_boundary': time_lower_boundary,
+            'time_upper_boundary': time_upper_boundary,
+        }
+    )
+
+
+def simulate_air_shower_and_imaging_reflector_response_manual(
     corsika_coreas_executable_path,
     out_event_dir,
     event_id,
@@ -105,7 +226,7 @@ def simulate_air_shower_and_imaging_reflector_response(
             os.close(pwrite)
 
         # output paths
-        os.makedirs(out_event_dir)
+        os.makedirs(out_event_dir, exist_ok=True)
         out_corsika_coreas_dir = os.path.join(out_event_dir, 'corsika_coreas/')
         os.makedirs(out_corsika_coreas_dir)
 
@@ -349,5 +470,4 @@ def event_parameter_distribution(
             max_zenith_distance=zenith_distance[1],
             size=number_events
         ),
-        'core_position_on_observation_level_max_scatter_radius': max_r
     }
