@@ -38,6 +38,7 @@ def simulate_air_shower_and_imaging_reflector_response(
     core_position_on_observation_level_west,
     time_slice_duration,
     imaging_reflector,
+    coreas_time_boundaries=steering_card_utils.DEFAULT_COREAS_TIME_BOUNDARIES
 ):
     with tempfile.TemporaryDirectory(prefix='corsika_coreas_') as tmp_dir:
         tmp_run_dir = os.path.join(tmp_dir, 'run')
@@ -89,6 +90,7 @@ def simulate_air_shower_and_imaging_reflector_response(
                     ),
                     observation_level_altitude=observation_level_altitude,
                     time_slice_duration=time_slice_duration,
+                    time_boundaries=coreas_time_boundaries
                 )
             )
 
