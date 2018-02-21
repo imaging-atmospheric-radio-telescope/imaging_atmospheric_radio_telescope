@@ -12,7 +12,7 @@
         "image_sensor_distance": 75
     },
     "run": {
-        "primary_particle_id": 14,
+        "primary_particle_id": 1,
         "number_events": 4,
         "energy": [5, 50],
         "zenith_distance": [0, 0.02618],
