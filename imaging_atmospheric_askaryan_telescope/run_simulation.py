@@ -16,6 +16,7 @@ import shutil
 import json
 from imaging_atmospheric_askaryan_telescope import run_corsika_coreas as rcc
 from imaging_atmospheric_askaryan_telescope import telescope
+from imaging_atmospheric_askaryan_telescope import run_utils
 
 
 def make_event(job):
@@ -67,7 +68,7 @@ def main():
         )
 
         sc = steering_card
-        event_parameters = rcc.event_parameter_distribution(
+        event_parameters = run_utils.draw_event_parameters(
             number_events=sc['run']['number_events'],
             primary_particle_id=sc['run']['primary_particle_id'],
             energy=sc['run']['energy'],
