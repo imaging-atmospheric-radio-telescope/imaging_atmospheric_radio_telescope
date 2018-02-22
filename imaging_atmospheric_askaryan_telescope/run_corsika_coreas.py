@@ -9,6 +9,7 @@ import json
 from . import steering_card_utils
 from . import telescope
 from . import coreas_bridge
+from . import json_numpy_utils as jsonumpy
 
 
 def estimate_start_time_from_antnna_response(
@@ -269,22 +270,6 @@ def simulate_air_shower_and_imaging_reflector_response_manual(
         # input('wait to inspect the tmp directory')
 
 
-class NumPyJSONEncoder(json.JSONEncoder):
-    '''
-    By mgilson, Software Engineer at Argo AI, 2017
-    Handles numpy number types correctly
-    '''
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(NumPyJSONEncoder, self).default(obj)
-
-
 def simulate_event(
     corsika_coreas_executable_path,
     out_event_dir,
@@ -395,4 +380,4 @@ def simulate_event(
     out_image_sensor_config_path = os.path.join(out_event_dir, 'config.json')
 
     with open(out_image_sensor_config_path, 'w') as fout:
-        fout.write(json.dumps(config, indent=4, cls=NumPyJSONEncoder))
+        fout.write(json.dumps(config, indent=4, cls=jsonumpy.NumPyJSONEncoder))
