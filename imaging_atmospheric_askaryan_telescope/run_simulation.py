@@ -28,7 +28,8 @@ def make_event(job):
         part_out_event_dir = out_event_dir + '.part'
 
         rcc.simulate_event(
-            corsika_coreas_executable_path=job['corsika_coreas_executable_path'],
+            corsika_coreas_executable_path=job[
+                'corsika_coreas_executable_path'],
             out_event_dir=part_out_event_dir,
             event_id=job['event_id'],
             primary_particle_id=job['primary_particle_id'],
@@ -36,8 +37,10 @@ def make_event(job):
             zenith_distance=job['zenith_distance'],
             azimuth=job['azimuth'],
             observation_level_altitude=job['observation_level_altitude'],
-            core_position_on_observation_level_north=job['core_position_on_observation_level_north'],
-            core_position_on_observation_level_west=job['core_position_on_observation_level_west'],
+            core_position_on_observation_level_north=job[
+                'core_position_on_observation_level_north'],
+            core_position_on_observation_level_west=job[
+                'core_position_on_observation_level_west'],
             time_slice_duration=job['time_slice_duration'],
             imaging_reflector=job['imaging_reflector'],
             image_sensor=job['image_sensor'],
@@ -55,8 +58,8 @@ def main():
         arguments = docopt.docopt(__doc__)
         steering_card_path = arguments['--steering_card']
         out_run_dir = arguments['--out_dir']
-        corsika_coreas_executable_path = arguments['--corsika_coreas']
-        assert os.path.exists(corsika_coreas_executable_path)
+        corsika_coreas_path = arguments['--corsika_coreas']
+        assert os.path.exists(corsika_coreas_path)
         with open(steering_card_path, 'rt') as fin:
             steering_card = json.loads(fin.read())
 
@@ -75,7 +78,9 @@ def main():
             azimuth=sc['run']['azimuth'],
             zenith_distance=sc['run']['zenith_distance'],
             observation_level_altitude=sc['run']['observation_level_altitude'],
-            core_position_on_observation_level_max_scatter_radius=sc['run']['core_position_on_observation_level_max_scatter_radius'],
+            core_position_on_observation_level_max_scatter_radius=sc[
+                'run'][
+                    'core_position_on_observation_level_max_scatter_radius'],
             time_slice_duration=sc['run']['time_slice_duration'],
         )
 
@@ -85,13 +90,15 @@ def main():
             for key in event_parameters:
                 job[key] = event_parameters[key][idx]
             job['out_run_dir'] = out_run_dir
-            job['corsika_coreas_executable_path'] = corsika_coreas_executable_path
+            job['corsika_coreas_executable_path'] = corsika_coreas_path
             job['image_sensor'] = image_sensor
             job['imaging_reflector'] = imaging_reflector
             jobs.append(job)
 
         os.makedirs(out_run_dir)
-        shutil.copy(steering_card_path, join(out_run_dir, 'steering_card.json'))
+        shutil.copy(
+            steering_card_path,
+            join(out_run_dir, 'steering_card.json'))
 
         list(scoop.futures.map(make_event, jobs))
 
