@@ -16,8 +16,8 @@ import glob
 from os.path import join
 import matplotlib
 matplotlib.use('Agg')
-from askarian_telescope import plot
-import askarian_telescope as at
+from imaging_atmospheric_askaryan_telescope import plot
+import imaging_atmospheric_askaryan_telescope as at
 
 
 def make_event_video(event_dir):

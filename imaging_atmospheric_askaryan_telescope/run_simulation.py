@@ -6,7 +6,7 @@ Usage: run_simulation --out_dir=DIR [--steering_card=PATH] [--corsika_coreas=PAT
 Options:
     --out_dir=DIR
     --steering_card=PATH        [default: ./example_steering_card.json]
-    --corsika_coreas=PATH       [default: ./build/corsika-75600/run/corsika75600Linux_QGSII_urqmd_coreas]
+    --corsika_coreas=PATH       [default: ../corsika_coreas_build/corsika-75600/run/corsika75600Linux_QGSII_urqmd_coreas]
 """
 import docopt
 import scoop
@@ -14,8 +14,8 @@ import os
 from os.path import join
 import shutil
 import json
-from askarian_telescope import run_corsika_coreas as rcc
-from askarian_telescope import telescope
+from imaging_atmospheric_askaryan_telescope import run_corsika_coreas as rcc
+from imaging_atmospheric_askaryan_telescope import telescope
 
 
 def make_event(job):
