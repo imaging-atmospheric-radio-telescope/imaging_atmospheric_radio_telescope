@@ -343,11 +343,7 @@ def simulate_event(
     )
     os.makedirs(out_image_sensor_response_dir)
 
-    for component in [
-        'north_component',
-        'west_component',
-        'vertical_component'
-    ]:
+    for component in components:
         out_component_path = os.path.join(
             out_image_sensor_response_dir,
             component + '.float32'
