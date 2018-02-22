@@ -112,3 +112,17 @@ def make_coreas_steering_card(
     sc += "input parameters for the simulation:\n"
     sc += "\n"
     return sc
+
+
+def make_coreas_antenna_list(huygens_antennas_positions):
+    template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
+    template_line += "huygens_antenna_{antenna_idx:06d}\n"
+    antenna_list = ''
+    for i in range(huygens_antennas_positions.shape[0]):
+        antenna_list += template_line.format(
+            x=huygens_antennas_positions[i, 0] * 1e2,
+            y=huygens_antennas_positions[i, 1] * 1e2,
+            z=huygens_antennas_positions[i, 2] * 1e2,
+            antenna_idx=i,
+        )
+    return antenna_list
