@@ -28,10 +28,10 @@ def make_event_video(event_dir):
         plot.make_video_from_image_slices(
             image_slice_dir=image_slice_dir,
             out_path=join(event_dir, 'event_{:06d}'.format(event.id)),
-            fps=12, 
+            fps=12,
             threads=1,
         )
-    except Exception as e: 
+    except Exception as e:
         print('(Event ', event_dir, '):\n', e)
     return 1
 
