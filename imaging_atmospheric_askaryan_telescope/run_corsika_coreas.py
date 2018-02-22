@@ -44,8 +44,8 @@ def simulate_air_shower_and_imaging_reflector_response(
 ):
     '''
     Simulates the electric-field-strength caused by an air-shower at the
-    support-poisitions of the imaging-reflector. The result and log-files of the
-    air-shower-simulation are stored in out_event_dir.
+    support-poisitions of the imaging-reflector. The result and log-files of
+    the air-shower-simulation are stored in out_event_dir.
 
     The time-window for the electric-field-strength is estimated in advance.
     First the air-shower is simulated and the response of one single
@@ -301,7 +301,8 @@ def simulate_event(
     image_sensor
 ):
     '''
-    Does a full simulation of a single event from the shower to the sensor response.
+    Does a full simulation of a single event from the shower to the sensor
+    response.
     Corsika -> Coreas -> Reflector -> Sensor Response.
     Output will be written into OUT_EVENT_DIR.
     '''
@@ -339,7 +340,8 @@ def simulate_event(
     )
 
     image_sensor_responses = {}
-    for component in ['north_component', 'west_component', 'vertical_component']:
+    components = ['north_component', 'west_component', 'vertical_component']
+    for component in components:
         sensor_response = telescope.simulate_image_sensor_response(
             huygens_matrix=huygens_matrix,
             raw_imaging_reflector_huygens_antenna_responses=(
