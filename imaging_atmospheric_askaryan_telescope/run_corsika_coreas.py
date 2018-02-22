@@ -11,20 +11,6 @@ from . import telescope
 from . import coreas_bridge
 
 
-def make_coreas_antenna_list(imaging_reflector):
-    template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
-    template_line += "huygens_antenna_{antenna_idx:06d}\n"
-    antenna_list = ''
-    for i in range(imaging_reflector.huygens_antennas_positions.shape[0]):
-        antenna_list += template_line.format(
-            x=imaging_reflector.huygens_antennas_positions[i, 0] * 1e2,
-            y=imaging_reflector.huygens_antennas_positions[i, 1] * 1e2,
-            z=imaging_reflector.huygens_antennas_positions[i, 2] * 1e2,
-            antenna_idx=i,
-        )
-    return antenna_list
-
-
 def estimate_start_time_from_antnna_response(
     raw_time,
     raw_field_components
@@ -217,8 +203,9 @@ def simulate_air_shower_and_imaging_reflector_response_manual(
 
         with open(tmp_coreas_antenna_list_path, 'wt') as fout:
             fout.write(
-                make_coreas_antenna_list(imaging_reflector=imaging_reflector)
-            )
+                steering_card_utils.make_coreas_antenna_list(
+                    huygens_antennas_positions=
+                        imaging_reflector.huygens_antennas_positions))
 
         corsika_steering_card_pipe, pwrite = os.pipe()
         with open(tmp_corsika_steering_card_path, 'rt') as fin:
