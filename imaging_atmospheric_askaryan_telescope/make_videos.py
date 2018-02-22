@@ -14,10 +14,10 @@ import scoop
 import os
 import glob
 from os.path import join
-import matplotlib
-matplotlib.use('Agg')
 from imaging_atmospheric_askaryan_telescope import plot
 import imaging_atmospheric_askaryan_telescope as at
+import matplotlib
+matplotlib.use('Agg')
 
 
 def make_event_video(event_dir):
