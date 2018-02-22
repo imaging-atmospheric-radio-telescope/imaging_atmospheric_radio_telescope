@@ -52,9 +52,9 @@ def make_corsika_steering_card(
 
 
 DEFAULT_COREAS_TIME_BOUNDARIES = {
-    'automatic_time_boundaries':4e-07,
-    'time_lower_boundary':-1,
-    'time_upper_boundary':1,
+    'automatic_time_boundaries': 4e-07,
+    'time_lower_boundary': -1,
+    'time_upper_boundary': 1,
 }
 
 
