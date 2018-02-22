@@ -57,7 +57,7 @@ def simulate_air_shower_and_imaging_reflector_response(
     probe = telescope.ImagingReflector()
     probe.focal_length = 1
     probe.number_huygens_antennas = 1
-    probe.huygens_antennas_positions = np.zeros(shape=(1,3))
+    probe.huygens_antennas_positions = np.zeros(shape=(1, 3))
     probe.aperture_radius = np.sqrt(1/np.pi)
     probe.aperture_diameter = 2*probe.aperture_radius
     probe.area = 1
