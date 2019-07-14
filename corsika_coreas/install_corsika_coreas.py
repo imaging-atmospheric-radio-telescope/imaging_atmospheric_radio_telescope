@@ -23,7 +23,6 @@ password, then drop the CORSIKA developers an e-mail and kindly ask for it.
 import docopt
 import sys
 import os
-import ftplib
 import tarfile
 import shutil
 import pkg_resources
@@ -36,61 +35,67 @@ def call_and_save_std(target, o_path, e_path, stdin=None):
         subprocess.call(target, stdout=stdout, stderr=stderr, stdin=stdin)
 
 
+def install(install_path, username, password):
+    corsika_config_path = os.path.abspath('./config.h')
+    assert os.path.isfile(corsika_config_path)
+
+    os.makedirs(install_path, exist_ok=True)
+    os.chdir(install_path)
+
+    # download CORSIKA from KIT
+    corsika_tar = 'corsika-75600.tar.gz'
+    call_and_save_std(
+        target=[
+            'wget',
+            'ftp://' + username + ':' + password + '@' +
+            'ikp-ftp.ikp.kit.edu/old/v750/' + corsika_tar],
+        o_path='wget-ftp-download.o',
+        e_path='wget-ftp-download.e')
+
+    # untar, unzip the CORSIKA download
+    tar = tarfile.open(corsika_tar)
+    tar.extractall(path='.')
+    tar.close()
+
+    # Go into CORSIKA dir
+    corsika_path = os.path.splitext(os.path.splitext(corsika_tar)[0])[0]
+    os.chdir(corsika_path)
+
+    # Provide the Askarian Telescope coconut config.h
+    shutil.copyfile(corsika_config_path, 'include/config.h')
+
+    # coconut configure
+    call_and_save_std(
+        target=['./coconut'],
+        o_path='../coconut_configure.o',
+        e_path='../coconut_configure.e',
+        stdin=open('/dev/null', 'r')
+    )
+
+    # coconut build
+    call_and_save_std(
+        target=['./coconut', '-i'],
+        o_path='../coconut_make.o',
+        e_path='../coconut_make.e'
+    )
+
+    # Copy std ATMPROFS to the CORSIKA run directory
+    for atmprof in glob.glob('bernlohr/atmprof*'):
+        shutil.copy(atmprof, 'run')
+
+    if os.path.isfile('run/corsika75600Linux_QGSII_urqmd_coreas'):
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
+
 def main():
     try:
         arguments = docopt.docopt(__doc__)
-        install_path = arguments['--install_path']
-        corsika_config_path = os.path.abspath('./config.h')
-        assert os.path.isfile(corsika_config_path)
-
-        os.makedirs(install_path, exist_ok=True)
-        os.chdir(install_path)
-
-        # download CORSIKA from KIT
-        corsika_tar = 'corsika-75600.tar.gz'
-        if not os.path.exists(corsika_tar):
-            ftp = ftplib.FTP('ikp-ftp.ikp.kit.edu')
-            ftp.login(arguments['--username'], arguments['--password'])
-            ftp.cwd('old/v750/')
-            ftp.retrbinary('RETR '+corsika_tar, open(corsika_tar, 'wb').write)
-            ftp.quit()
-
-        # untar, unzip the CORSIKA download
-        tar = tarfile.open(corsika_tar)
-        tar.extractall(path='.')
-        tar.close()
-
-        # Go into CORSIKA dir
-        corsika_path = os.path.splitext(os.path.splitext(corsika_tar)[0])[0]
-        os.chdir(corsika_path)
-
-        # Provide the Askarian Telescope coconut config.h
-        shutil.copyfile(corsika_config_path, 'include/config.h')
-
-        # coconut configure
-        call_and_save_std(
-            target=['./coconut'],
-            o_path='../coconut_configure.o',
-            e_path='../coconut_configure.e',
-            stdin=open('/dev/null', 'r')
-        )
-
-        # coconut build
-        call_and_save_std(
-            target=['./coconut', '-i'],
-            o_path='../coconut_make.o',
-            e_path='../coconut_make.e'
-        )
-
-        # Copy std ATMPROFS to the CORSIKA run directory
-        for atmprof in glob.glob('bernlohr/atmprof*'):
-            shutil.copy(atmprof, 'run')
-
-        if os.path.isfile('run/corsika75600Linux_QGSII_urqmd_coreas'):
-            sys.exit(0)
-        else:
-            sys.exit(1)
-
+        install(
+            install_path=arguments['--install_path'],
+            username=arguments['--username'],
+            password=arguments['--password'])
     except docopt.DocoptExit as e:
         print(e)
 
