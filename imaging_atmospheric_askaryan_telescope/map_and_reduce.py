@@ -60,7 +60,7 @@ def make_jobs(corsika_coreas_path, steering_card, out_dir):
         job = {}
         for key in event_parameters:
             job[key] = event_parameters[key][idx]
-        job['out_run_dir'] = out_run_dir
+        job['out_run_dir'] = out_dir
         job['corsika_coreas_executable_path'] = corsika_coreas_path
         job['image_sensor'] = image_sensor
         job['imaging_reflector'] = imaging_reflector
