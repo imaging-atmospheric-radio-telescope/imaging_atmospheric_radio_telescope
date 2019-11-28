@@ -1,0 +1,20 @@
+--- scenarioparams.original.cpp	2019-11-28 16:16:21.122110295 +0100
++++ scenarioparams.cpp	2019-11-28 16:10:49.518120404 +0100
+@@ -77,7 +77,7 @@
+ 
+   // read in and parse reas parameter file
+   ifstream fin((itsName+".reas").c_str());
+-  Ok = fin;
++  Ok = fin.is_open();
+   fin >> *this;
+   fin.close();
+   if (Ok)
+@@ -101,7 +101,7 @@
+   bool FirstOk;
+   ofstream fout((itsOutName+".reas").c_str());
+   fout << *this;
+-  FirstOk = fout;
++  FirstOk = fout.is_open();
+   fout.close();
+ 
+   if (not FirstOk) { cout << "Error writing parameter file " << itsName << ".reas!" << endl; }

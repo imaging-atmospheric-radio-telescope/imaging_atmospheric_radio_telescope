@@ -1,0 +1,20 @@
+--- groundarea.original.cpp	2019-11-28 16:06:39.678128021 +0100
++++ groundarea.cpp	2019-11-28 16:07:06.066127216 +0100
+@@ -110,7 +110,7 @@
+   if ( (result == 0) || (errno == EEXIST) )
+   {
+     ofstream bout( (parFullPath+".bins").c_str() ); // open file to list the active bins
+-    bool allok = bout;                                // opening ok?
++    bool allok = bout.is_open();                                // opening ok?
+     for (vector<GroundElement*>::const_iterator i = itsActiveGroundElementPointers.begin(); i != itsActiveGroundElementPointers.end(); ++i)
+     {
+       stringstream ss;
+@@ -133,7 +133,7 @@
+   if ( (result == 0) || (errno == EEXIST) )
+   {
+     ofstream bout( (parFullPath+".bins").c_str() ); // open file to list the active bins
+-    bool allok = bout;                                // opening ok?
++    bool allok = bout.is_open();                                // opening ok?
+     for (vector<GroundElement*>::const_iterator i = itsActiveGroundElementPointers.begin(); i != itsActiveGroundElementPointers.end(); ++i)
+     {
+       stringstream ss;

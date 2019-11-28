@@ -4,12 +4,13 @@
 Install CORSIKA cosmic-ray and gamma-ray air-shower simulation for the Radio
 Askarian Telescope.
 
-Usage: install_corsika_coreas -p=INSTALL_PATH --username=USERNAME --password=PASSWORD
+Usage: install_corsika_coreas -p=INSTALL_PATH --username=USERNAME --password=PASSWORD --resource_path=PATH
 
 Options:
     -p --install_path=INSTALL_PATH      The path to install CORSIKA in
     --username=USERNAME                 Username for the KIT CORSIKA ftp-server
     --password=PASSWORD                 Password fot the KIT CORSIKA ftp-server
+    --resource_path=PATH                Path to additional resources.
 
 During the installation, the stdout and stderr of the 'coconut_configure'
 and 'coconut_make' procedures are written into text files in the install
@@ -35,8 +36,9 @@ def call_and_save_std(target, o_path, e_path, stdin=None):
         subprocess.call(target, stdout=stdout, stderr=stderr, stdin=stdin)
 
 
-def install(install_path, username, password):
+def install(install_path, username, password, resource_path):
     corsika_config_path = os.path.abspath('./config.h')
+    resource_path = os.path.abspath(resource_path)
     assert os.path.isfile(corsika_config_path)
 
     os.makedirs(install_path, exist_ok=True)
@@ -72,6 +74,22 @@ def install(install_path, username, password):
         stdin=open('/dev/null', 'r')
     )
 
+    call_and_save_std(
+        target=[
+            'patch',
+            'coast/CorsikaOptions/CoREAS/scenarioparams.cpp',
+            os.path.join(resource_path, 'scenarioparams.cpp.diff')],
+            o_path='../patch_scenarioparams.o',
+            e_path='../patch_scenarioparams.e',)
+
+    call_and_save_std(
+        target=[
+            'patch',
+            'coast/CorsikaOptions/CoREAS/groundarea.cpp',
+            os.path.join(resource_path, 'groundarea.cpp.diff')],
+            o_path='../patch_groundarea.o',
+            e_path='../patch_groundarea.e',)
+
     # coconut build
     call_and_save_std(
         target=['./coconut', '-i'],
@@ -95,7 +113,8 @@ def main():
         install(
             install_path=arguments['--install_path'],
             username=arguments['--username'],
-            password=arguments['--password'])
+            password=arguments['--password'],
+            resource_path=arguments['--resource_path'])
     except docopt.DocoptExit as e:
         print(e)
 
