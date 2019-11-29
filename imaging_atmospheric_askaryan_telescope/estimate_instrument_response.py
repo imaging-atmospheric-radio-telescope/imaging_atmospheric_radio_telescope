@@ -19,7 +19,13 @@ CORSIKA_PATH = os.path.join(
     'run',
     'corsika77100Linux_QGSII_urqmd_coreas')
 
-out_path = os.path.join('/', 'lfs', 'l8', 'hin', 'relleums', 'iaat_instrument_response')
+out_path = os.path.join(
+    '/',
+    'lfs',
+    'l8',
+    'hin',
+    'relleums',
+    'iaat_instrument_response')
 
 imaging_reflector_config = {
     "antenna_areal_density": 0.75,
@@ -53,8 +59,7 @@ for particle in particles:
     card = {
         "imaging_reflector": imaging_reflector_config.copy(),
         "image_sensor": image_sensor_config.copy(),
-        "run": run_config.copy(),
-    }
+        "run": run_config.copy()}
 
     particle_jobs = iaat.map_and_reduce.make_jobs(
         corsika_coreas_path=CORSIKA_PATH,
