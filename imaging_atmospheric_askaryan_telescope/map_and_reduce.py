@@ -1,20 +1,37 @@
 import os
 import shutil
 import imaging_atmospheric_askaryan_telescope as iaat
+import tempfile
+import tarfile
+op = os.path
+
+
+def _sensor_response_to_tape_archive(event_dir, out_path):
+    with tarfile.open(out_path, "w") as tf:
+        config_filename = "config.json"
+        tf.add(op.join(event_dir, config_filename), arcname=config_filename)
+        time_filename = "time_window.json"
+        tf.add(op.join(event_dir, time_filename), arcname=time_filename)
+        for component in ["north", "west", "vertical"]:
+            component_filename = "{:s}_component.float32".format(component)
+            tf.add(
+                op.join(
+                    event_dir,
+                    "raw_image_sensor_response",
+                    component_filename),
+                arcname=component_filename)
 
 
 def run_job(job):
-    try:
-        os.makedirs(job['out_run_dir'], exist_ok=True)
-        out_event_dir = os.path.join(
-            job['out_run_dir'],
-            'event_{:06d}'.format(job['event_id']))
-        part_out_event_dir = out_event_dir + '.part'
+    os.makedirs(job['out_run_dir'], exist_ok=True)
+    event_filename = '{:06d}.tar'.format(job['event_id'])
+    event_path = op.join(job['out_run_dir'], event_filename)
 
+    with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp_dir:
         iaat.run_corsika_coreas.simulate_event(
             corsika_coreas_executable_path=job[
                 'corsika_coreas_executable_path'],
-            out_event_dir=part_out_event_dir,
+            out_event_dir=tmp_dir,
             event_id=job['event_id'],
             primary_particle_id=job['primary_particle_id'],
             energy=job['energy'],
@@ -29,15 +46,16 @@ def run_job(job):
             imaging_reflector=job['imaging_reflector'],
             image_sensor=job['image_sensor'])
 
-        shutil.move(part_out_event_dir, out_event_dir)
-    except Exception as e:
-        print('(Event ', job['event_id'], '):\n', e)
+        _sensor_response_to_tape_archive(
+            event_dir=tmp_dir,
+            out_path=event_path+".part")
 
+    shutil.move(event_path+".part", event_path)
     return 1
 
 
 def make_jobs(corsika_coreas_path, steering_card, out_dir):
-    assert os.path.exists(corsika_coreas_path)
+    assert op.exists(corsika_coreas_path)
     sc = steering_card
 
     image_sensor = iaat.telescope.image_sensor_from_dict(sc['image_sensor'])
