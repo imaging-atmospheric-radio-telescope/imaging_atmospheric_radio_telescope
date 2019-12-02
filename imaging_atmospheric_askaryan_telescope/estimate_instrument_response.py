@@ -28,7 +28,7 @@ out_path = os.path.join(
     'iaat_instrument_response')
 
 imaging_reflector_config = {
-    "antenna_areal_density": 0.75,
+    "antenna_areal_density": 4.0,
     "focal_length": 75,
     "aperture_radius": 25,
     "random_seed": 0}
@@ -53,7 +53,7 @@ for particle in particles:
     particle_id = particles[particle]
     run_config = {
         "primary_particle_id": particle_id,
-        "number_events": 2000,
+        "number_events": 400,
         "energy": [5e2, 5e3],
         "zenith_distance": [0, np.deg2rad(1.5)],
         "azimuth": [0, np.deg2rad(360.)],
