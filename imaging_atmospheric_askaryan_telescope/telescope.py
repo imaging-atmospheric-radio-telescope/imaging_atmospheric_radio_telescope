@@ -187,6 +187,7 @@ HuygensImagingGeometry = collections.namedtuple(
         'relative_time_delays',
         'relative_amplitudes'])
 
+
 def make_HuygensImagingGeometry(
     imaging_reflector,
     image_sensor,
