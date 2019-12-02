@@ -58,8 +58,8 @@ def make_jobs(corsika_coreas_path, steering_card, out_dir):
     assert op.exists(corsika_coreas_path)
     sc = steering_card
 
-    image_sensor = iaat.telescope.image_sensor_from_dict(sc['image_sensor'])
-    imaging_reflector = iaat.telescope.imaging_reflector_from_dict(
+    image_sensor = iaat.telescope.ImageSensor_from_dict(sc['image_sensor'])
+    imaging_reflector = iaat.telescope.ImagingReflector_from_dict(
         sc['imaging_reflector'])
 
     event_parameters = iaat.run_utils.draw_event_parameters(
