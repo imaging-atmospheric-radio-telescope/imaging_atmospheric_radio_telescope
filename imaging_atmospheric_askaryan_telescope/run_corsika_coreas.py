@@ -55,14 +55,16 @@ def simulate_air_shower_and_imaging_reflector_response(
     but this time with all support-antennas of the imaging-reflector using the
     time-window estimated in the first step.
     '''
-    probe = telescope.ImagingReflector()
-    probe.focal_length = 1
-    probe.number_huygens_antennas = 1
-    probe.huygens_antennas_positions = np.zeros(shape=(1, 3))
-    probe.aperture_radius = np.sqrt(1/np.pi)
-    probe.aperture_diameter = 2*probe.aperture_radius
-    probe.area = 1
-    probe.antenna_areal_density = 1
+    probe_radius = np.sqrt(1/np.pi)
+    probe = telescope.ImagingReflector(
+        random_seed=0,
+        focal_length=1.,
+        aperture_radius=probe_radius,
+        aperture_diameter=2.*probe_radius,
+        antenna_areal_density=1.,
+        area=1.,
+        number_huygens_antennas=1,
+        huygens_antennas_positions=np.zeros(shape=(1, 3)))
 
     os.makedirs(out_event_dir, exist_ok=True)
     probe_event_dir = os.path.join(
@@ -284,7 +286,7 @@ def simulate_event(
                 out_event_dir,
                 'raw_imaging_reflector_huygens_antenna_responses')))
 
-    huygens_matrix = telescope.HuygensImagingGeometry(
+    huygens_matrix = telescope.make_HuygensImagingGeometry(
         imaging_reflector=imaging_reflector,
         image_sensor=image_sensor)
 
@@ -324,8 +326,8 @@ def simulate_event(
             'core_position_on_observation_level_west': (
                 core_position_on_observation_level_west),
             'time_slice_duration': time_slice_duration},
-        'image_sensor': telescope.image_sensor_to_dict(image_sensor),
-        'imaging_reflector': telescope.imaging_reflector_to_dict(
+        'image_sensor': telescope.ImageSensor_to_dict(image_sensor),
+        'imaging_reflector': telescope.ImagingReflector_to_dict(
             imaging_reflector)}
 
     out_image_sensor_config_path = os.path.join(out_event_dir, 'config.json')
