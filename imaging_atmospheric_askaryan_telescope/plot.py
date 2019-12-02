@@ -180,3 +180,38 @@ def make_video_from_image_slices(
         '-threads', str(threads),
         os.path.splitext(out_path)[0] + '.mp4']
     subprocess.call(avconv_command)
+
+
+def save_total_energy_deposite(
+    event,
+    path,
+    start_slice,
+    stop_slice,
+    colormap='viridis'
+):
+    FREE_SPACE_IMPEDANCE_Z0 = 120*np.pi
+    ELECTRON_VOLT = 1.6022e-19
+    isr = event.raw_image_sensor_response
+    power_north = isr.north**2/FREE_SPACE_IMPEDANCE_Z0
+    power_west = isr.west**2/FREE_SPACE_IMPEDANCE_Z0
+    energy_north = power_north*isr.time_slice_duration
+    power_west = power_west*isr.time_slice_duration
+    total_power = energy_north + power_west
+    total_power_integral = np.sum(total_power[:, start_slice:stop_slice], axis=1)
+    fig = plt.figure(figsize=(16, 9), dpi=120)
+    fig.suptitle(simulation_truth_info_string(event.simulation_truth))
+    ax = fig.add_axes([0.1 , 0.1, 0.8, 0.8])
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.set_xlabel('c_x / deg')
+    ax.set_ylabel('c_y / deg')
+    add2ax(
+        ax=ax,
+        pixel_amplitudes=total_power_integral/ELECTRON_VOLT,
+        pixel_directions_x=np.rad2deg(
+            event.image_sensor.pixel_directions[:, 0]),
+        pixel_directions_y=np.rad2deg(
+            event.image_sensor.pixel_directions[:, 1]),
+        colormap=colormap,)
+    fig.savefig(path)
+
