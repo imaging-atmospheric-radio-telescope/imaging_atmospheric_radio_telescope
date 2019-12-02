@@ -2,6 +2,8 @@
 import numpy as np
 import collections
 import scipy.spatial.distance
+from scipy.signal import butter
+from scipy.signal import lfilter
 import os
 from os.path import join
 import json
@@ -395,3 +397,86 @@ def make_next_Event_from_tape_archive(tar_file):
         imaging_reflector=imaging_reflector,
         image_sensor=image_sensor,
         raw_image_sensor_response=raw_image_sensor_response)
+
+
+def _butter_bandpass(lowcut, highcut, fs, order=5):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = scipy.signal.butter(order, [low, high], btype='band')
+    return b, a
+
+
+def _butter_bandpass_filter(data, lowcut, highcut, fs, order=5, axis=0):
+    b, a = _butter_bandpass(lowcut, highcut, fs, order=order)
+    y = scipy.signal.lfilter(b, a, data, axis=axis)
+    return y
+
+
+def simulate_antenna_response(
+    raw_image_sensor_response,
+    antenna_efficiency=0.5,
+    antenna_temperature=80,
+    lower_frequency_cut=1.3e9,
+    upper_frequency_cut=2.3e9,
+    order=5,
+):
+    # band pass filter
+    # ----------------
+    risr = raw_image_sensor_response
+    fs = 1.0/raw_image_sensor_response.time_slice_duration
+    north = _butter_bandpass_filter(
+        data=risr.north.T,
+        lowcut=lower_frequency_cut,
+        highcut=upper_frequency_cut,
+        fs=fs,
+        order=order).T
+    west = _butter_bandpass_filter(
+        data=risr.west.T,
+        lowcut=lower_frequency_cut,
+        highcut=upper_frequency_cut,
+        fs=fs,
+        order=order).T
+    vertical = _butter_bandpass_filter(
+        data=risr.vertical.T,
+        lowcut=lower_frequency_cut,
+        highcut=upper_frequency_cut,
+        fs=fs,
+        order=order).T
+
+    # antenna efficieny
+    # -----------------
+    north = antenna_efficiency*north
+    west = antenna_efficiency*west
+    vertical = antenna_efficiency*vertical
+
+    # antenna noise
+    # -------------
+    BOLTZMANN_CONSTANT = 1.38e-23
+    VACUUM_IMPEDANCE = 120.0*np.pi
+    antenna_bandwidth = upper_frequency_cut - lower_frequency_cut
+
+    antenna_noise_power = antenna_temperature*(
+        BOLTZMANN_CONSTANT*antenna_bandwidth)
+    noise_e_field = np.sqrt(antenna_noise_power*VACUUM_IMPEDANCE)
+
+    north += np.random.normal(
+        loc=0.0,
+        scale=noise_e_field,
+        size=(north.shape[0], north.shape[1]))
+    west += np.random.normal(
+        loc=0.0,
+        scale=noise_e_field,
+        size=(west.shape[0], west.shape[1]))
+    vertical += np.random.normal(
+        loc=0.0,
+        scale=noise_e_field,
+        size=(vertical.shape[0], vertical.shape[1]))
+
+    return RawImageSensorResponse(
+        north=north.astype(np.float32),
+        west=west.astype(np.float32),
+        vertical=vertical.astype(np.float32),
+        number_pixels=risr.number_pixels,
+        number_time_slices=north.shape[1],
+        time_slice_duration=risr.time_slice_duration)
