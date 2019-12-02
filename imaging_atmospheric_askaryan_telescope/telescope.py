@@ -1,9 +1,11 @@
 # Copyright 2017 Sebastian A. Mueller
 import numpy as np
+import collections
 import scipy.spatial.distance
 import os
 from os.path import join
 import json
+import tarfile
 
 
 def parabola_surface_height(
@@ -14,197 +16,199 @@ def parabola_surface_height(
     return z
 
 
-class ImagingReflector():
-    def __init__(
-        self,
-        focal_length=75,
-        aperture_radius=25,
-        random_seed=0,
-        antenna_areal_density=3,
-    ):
-        self.focal_length = focal_length
-        self.aperture_radius = aperture_radius
-        self.aperture_diameter = 2 * self.aperture_radius
-        self._random_seed = random_seed
-        self.antenna_areal_density = antenna_areal_density
-
-        self.area = self.aperture_radius**2 * np.pi
-        self._init_huygens_antennas()
-
-    def _init_huygens_antennas(self):
-        square_area = (2 * self.aperture_radius)**2
-        number_antennas_in_square = np.int(
-            np.ceil(square_area * self.antenna_areal_density)
-        )
-
-        np.random.seed(self._random_seed)
-
-        x = np.random.uniform(
-            low=-self.aperture_radius,
-            high=+self.aperture_radius,
-            size=number_antennas_in_square
-        )
-
-        y = np.random.uniform(
-            low=-self.aperture_radius,
-            high=+self.aperture_radius,
-            size=number_antennas_in_square
-        )
-
-        r = np.sqrt(x**2 + y**2)
-        inside_aperture = r <= self.aperture_radius
-
-        self.number_huygens_antennas = inside_aperture.sum()
-
-        self.huygens_antennas_positions = np.zeros(
-            shape=(self.number_huygens_antennas, 3)
-        )
-        self.huygens_antennas_positions[:, 0] = x[inside_aperture]
-        self.huygens_antennas_positions[:, 1] = y[inside_aperture]
-        self.huygens_antennas_positions[:, 2] = parabola_surface_height(
-            distance_to_optical_axis=r[inside_aperture],
-            focal_length=self.focal_length,
-        )
-
-    def __repr__(self):
-        out = '{}('.format(self.__class__.__name__)
-        out += str(self.focal_length) + 'm focal length, '
-        out += str(self.aperture_diameter) + 'm aperture diameter'
-        out += ')\n'
-        return out
+ImagingReflector = collections.namedtuple(
+    'ImagingReflector', [
+        'random_seed',
+        'focal_length',
+        'aperture_radius',
+        'aperture_diameter',
+        'antenna_areal_density',
+        'area',
+        'number_huygens_antennas',
+        'huygens_antennas_positions'])
 
 
-def imaging_reflector_from_dict(d):
+def make_ImagingReflector(
+    focal_length=75,
+    aperture_radius=25,
+    random_seed=0,
+    antenna_areal_density=3
+):
+    np.random.seed(random_seed)
+    square_area = (2*aperture_radius)**2
+    number_antennas_in_square = np.int(
+        np.ceil(square_area*antenna_areal_density))
+    x = np.random.uniform(
+        low=-aperture_radius,
+        high=+aperture_radius,
+        size=number_antennas_in_square)
+    y = np.random.uniform(
+        low=-aperture_radius,
+        high=+aperture_radius,
+        size=number_antennas_in_square)
+    r = np.sqrt(x**2 + y**2)
+    inside_aperture = r <= aperture_radius
+    number_huygens_antennas = inside_aperture.sum()
+    huygens_antennas_positions = np.zeros(shape=(number_huygens_antennas, 3))
+    huygens_antennas_positions[:, 0] = x[inside_aperture]
+    huygens_antennas_positions[:, 1] = y[inside_aperture]
+    huygens_antennas_positions[:, 2] = parabola_surface_height(
+        distance_to_optical_axis=r[inside_aperture],
+        focal_length=focal_length)
+
     return ImagingReflector(
+        random_seed=random_seed,
+        focal_length=focal_length,
+        aperture_radius=aperture_radius,
+        aperture_diameter=aperture_radius*2,
+        antenna_areal_density=antenna_areal_density,
+        area=np.pi*aperture_radius**2,
+        number_huygens_antennas=number_huygens_antennas,
+        huygens_antennas_positions=huygens_antennas_positions)
+
+
+def ImagingReflector_from_dict(d):
+    return make_ImagingReflector(
         focal_length=d['focal_length'],
         aperture_radius=d['aperture_radius'],
         random_seed=d['random_seed'],
-        antenna_areal_density=d['antenna_areal_density'],
-    )
+        antenna_areal_density=d['antenna_areal_density'])
 
 
-def imaging_reflector_to_dict(imaging_reflector):
+def ImagingReflector_to_dict(imaging_reflector):
     ir = imaging_reflector
     return {
         'focal_length': ir.focal_length,
         'aperture_radius': ir.aperture_radius,
-        'random_seed': ir._random_seed,
-        'antenna_areal_density': ir.antenna_areal_density,
-    }
+        'random_seed': ir.random_seed,
+        'antenna_areal_density': ir.antenna_areal_density}
 
 
-class ImageSensor():
-    def __init__(
-        self,
-        pixel_inner_fov=np.deg2rad(0.11),
-        fov=np.deg2rad(4.4),
-        focal_length_of_imaging_system=75,
-        image_sensor_distance=75,
-    ):
-        self.focal_length_of_imaging_system = focal_length_of_imaging_system
-        self.image_sensor_distance = image_sensor_distance
-
-        self.pixel_inner_fov = pixel_inner_fov
-        self.pixel_inner_radius = (
-            self.focal_length_of_imaging_system *
-            np.tan(self.pixel_inner_fov / 2)
-        )
-        self.pixel_inner_diameter = 2 * self.pixel_inner_radius
-
-        self.pixel_outer_radius = self.pixel_inner_radius * 2 / np.sqrt(3)
-        self.pixel_outer_diameter = 2 * self.pixel_outer_radius
-
-        self.fov = fov
-        self.radius = self.focal_length_of_imaging_system * \
-            np.tan(self.fov / 2)
-        self.diameter = 2 * self.radius
-        self.area = self.radius**2 * np.pi
-
-        self._init_pixel_positions()
-        self.antenna_areal_density = self.number_pixels / self.area
-
-    def _init_pixel_positions(self):
-        self._unit_u = self.pixel_inner_diameter * np.array([1.0, 0.0, 0.0])
-        self._unit_v = self.pixel_inner_diameter * np.array(
-            [0.5, np.sqrt(3) / 2, 0.0]
-        )
-
-        pixels_on_diagonal = int(np.ceil(self.fov / self.pixel_inner_fov))
-
-        pixel_positions = []
-        for u in np.arange(-pixels_on_diagonal, pixels_on_diagonal + 1):
-            for v in np.arange(-pixels_on_diagonal, pixels_on_diagonal + 1):
-                pos_xy = u * self._unit_u + v * self._unit_v
-                if np.linalg.norm(pos_xy) < self.radius:
-                    pixel_positions.append(
-                        pos_xy + np.array([0, 0, self.image_sensor_distance])
-                    )
-        self.pixel_positions = np.array(pixel_positions)
-        self.number_pixels = self.pixel_positions.shape[0]
-        self.pixel_directions = np.zeros(
-            shape=(self.number_pixels, 2)
-        )
-        self.pixel_directions = - np.arctan(
-            self.pixel_positions[:, 0:2] / self.focal_length_of_imaging_system
-        )
-
-    def __repr__(self):
-        out = '{}('.format(self.__class__.__name__)
-        out += str(self.number_pixels) + ' pixels, '
-        out += str(np.rad2deg(self.fov)) + 'deg fov'
-        out += ')\n'
-        return out
+ImageSensor = collections.namedtuple(
+    'ImageSensor', [
+        'focal_length_of_imaging_system',
+        'image_sensor_distance',
+        'pixel_inner_fov',
+        'pixel_inner_radius',
+        'pixel_inner_diameter',
+        'pixel_outer_radius',
+        'pixel_outer_diameter',
+        'fov',
+        'radius',
+        'diameter',
+        'area',
+        'unit_u',
+        'unit_v',
+        'pixel_positions',
+        'number_pixels',
+        'pixel_directions',
+        'antenna_areal_density'])
 
 
-def image_sensor_from_dict(d):
+def make_ImageSensor(
+    pixel_inner_fov=np.deg2rad(0.11),
+    fov=np.deg2rad(4.4),
+    focal_length_of_imaging_system=75,
+    image_sensor_distance=75,
+):
+    pixel_inner_radius = (
+        focal_length_of_imaging_system*np.tan(pixel_inner_fov/2))
+    pixel_inner_diameter = 2*pixel_inner_radius
+
+    pixel_outer_radius = pixel_inner_radius*2/np.sqrt(3)
+    pixel_outer_diameter = 2*pixel_outer_radius
+
+    radius = focal_length_of_imaging_system*np.tan(fov/2)
+    area = np.pi*radius**2
+
+    _unit_u = pixel_inner_diameter*np.array([1., 0., 0.])
+    _unit_v = pixel_inner_diameter*np.array([.5, np.sqrt(3)/2, .0])
+    pixels_on_diagonal = int(np.ceil(fov/pixel_inner_fov))
+
+    pixel_positions = []
+    for u in np.arange(-pixels_on_diagonal, pixels_on_diagonal + 1):
+        for v in np.arange(-pixels_on_diagonal, pixels_on_diagonal + 1):
+            pos_xy = u * _unit_u + v * _unit_v
+            if np.linalg.norm(pos_xy) < radius:
+                pixel_positions.append(
+                    pos_xy + np.array([0, 0, image_sensor_distance]))
+
+    pixel_positions = np.array(pixel_positions)
+    number_pixels = pixel_positions.shape[0]
+    pixel_directions = np.zeros(shape=(number_pixels, 2))
+    pixel_directions = -np.arctan(
+        pixel_positions[:, 0:2]/focal_length_of_imaging_system)
+    antenna_areal_density = number_pixels/area
+
     return ImageSensor(
+        focal_length_of_imaging_system=focal_length_of_imaging_system,
+        image_sensor_distance=image_sensor_distance,
+        pixel_inner_fov=pixel_inner_fov,
+        pixel_inner_radius=pixel_inner_radius,
+        pixel_inner_diameter=pixel_inner_diameter,
+        pixel_outer_radius=pixel_outer_radius,
+        pixel_outer_diameter=pixel_outer_diameter,
+        fov=fov,
+        radius=radius,
+        diameter=2*radius,
+        area=area,
+        unit_u=_unit_u,
+        unit_v=_unit_v,
+        pixel_positions=pixel_positions,
+        number_pixels=number_pixels,
+        pixel_directions=pixel_directions,
+        antenna_areal_density=antenna_areal_density)
+
+
+def ImageSensor_from_dict(d):
+    return make_ImageSensor(
         pixel_inner_fov=d['pixel_inner_fov'],
         fov=d['fov'],
         focal_length_of_imaging_system=d['focal_length_of_imaging_system'],
-        image_sensor_distance=d['image_sensor_distance']
-    )
+        image_sensor_distance=d['image_sensor_distance'])
 
 
-def image_sensor_to_dict(image_sensor):
-    ims = image_sensor
+def ImageSensor_to_dict(image_sensor):
+    i = image_sensor
     return {
-        'pixel_inner_fov': ims.pixel_inner_fov,
-        'fov': ims.fov,
-        'focal_length_of_imaging_system': ims.focal_length_of_imaging_system,
-        'image_sensor_distance': ims.image_sensor_distance,
-    }
+        'pixel_inner_fov': i.pixel_inner_fov,
+        'fov': i.fov,
+        'focal_length_of_imaging_system': i.focal_length_of_imaging_system,
+        'image_sensor_distance': i.image_sensor_distance}
 
 
-class HuygensImagingGeometry():
-    def __init__(
-        self,
-        imaging_reflector,
-        image_sensor,
-        speed_of_light=299792458
-    ):
-        self.imaging_reflector = imaging_reflector
-        self.image_sensor = image_sensor
-        self._speed_of_light = speed_of_light
+HuygensImagingGeometry = collections.namedtuple(
+    'HuygensImagingGeometry', [
+        'imaging_reflector',
+        'image_sensor',
+        'speed_of_light',
+        'distances',
+        'time_delays',
+        'relative_time_delays',
+        'relative_amplitudes'])
 
-        self.distances = scipy.spatial.distance_matrix(
-            image_sensor.pixel_positions,
-            imaging_reflector.huygens_antennas_positions
-        ).astype(np.float32)
+def make_HuygensImagingGeometry(
+    imaging_reflector,
+    image_sensor,
+    speed_of_light=299792458
+):
+    distances = scipy.spatial.distance_matrix(
+        image_sensor.pixel_positions,
+        imaging_reflector.huygens_antennas_positions
+    ).astype(np.float32)
 
-        self.time_delays = self.distances / self._speed_of_light
-        self.relative_time_delays = self.time_delays - self.time_delays.min()
-        self.relative_amplitudes = (
-            (1 / self.distances**2) /
-            (1 / self.distances**2).mean()
-        )
+    time_delays = distances/speed_of_light
+    relative_time_delays = time_delays - np.min(time_delays)
+    relative_amplitudes = ((1/distances**2)/(1/distances**2).mean())
 
-    def __repr__(self):
-        out = '{}('.format(self.__class__.__name__)
-        out += str(self._image_sensor.number_pixels) + ' pixels, '
-        out += str(self._imaging_reflector.number_huygens_antennas) + ' '
-        out += 'huygenes antennas on reflector'
-        out += ')\n'
-        return out
+    return HuygensImagingGeometry(
+        imaging_reflector=imaging_reflector,
+        image_sensor=image_sensor,
+        speed_of_light=speed_of_light,
+        distances=distances,
+        time_delays=time_delays,
+        relative_time_delays=relative_time_delays,
+        relative_amplitudes=relative_amplitudes)
 
 
 def add_first_to_second_at(first, second, at):
@@ -268,72 +272,125 @@ def simulate_image_sensor_response(
     return image_sensor_response
 
 
-class RawImageSensorResponse():
-    def __init__(
-        self,
-        raw_image_sensor_responses_dir,
-        number_pixels,
-        time_slice_duration
-    ):
-        raw_dir = raw_image_sensor_responses_dir
-
-        with open(join(raw_dir, 'north_component.float32'), 'rb') as fin:
-            self.north = np.fromstring(fin.read(), dtype=np.float32)
-            self.north = self.north.reshape(
-                (number_pixels, self.north.shape[0] // number_pixels)
-            )
-
-        with open(join(raw_dir, 'west_component.float32'), 'rb') as fin:
-            self.west = np.fromstring(fin.read(), dtype=np.float32)
-            self.west = self.west.reshape(
-                (number_pixels, self.west.shape[0] // number_pixels)
-            )
-
-        with open(join(raw_dir, 'vertical_component.float32'), 'rb') as fin:
-            self.vertical = np.fromstring(fin.read(), dtype=np.float32)
-            self.vertical = self.vertical.reshape(
-                (number_pixels, self.vertical.shape[0] // number_pixels)
-            )
-
-        self.number_time_slices = self.north.shape[1]
-        self.number_pixels = number_pixels
-        self.time_slice_duration = time_slice_duration
-
-    def __repr__(self):
-        out = '{}('.format(self.__class__.__name__)
-        out += str(self.number_pixels) + ' pixels, '
-        out += str(self.number_time_slices) + ' time slices, '
-        out += str(self.time_slice_duration * 1e9) + 'ns each'
-        out += ')\n'
-        return out
+RawImageSensorResponse = collections.namedtuple(
+    'RawImageSensorResponse', [
+        'north',
+        'west',
+        'vertical',
+        'number_pixels',
+        'number_time_slices',
+        'time_slice_duration'])
 
 
-class Event():
-    def __init__(self, path):
+def make_RawImageSensorResponse_from_dir(
+    raw_image_sensor_responses_dir,
+    number_pixels,
+    time_slice_duration
+):
+    raw_dir = raw_image_sensor_responses_dir
 
-        with open(os.path.join(path, 'config.json'), 'r') as fin:
-            self._config = json.loads(fin.read())
+    with open(join(raw_dir, 'north_component.float32'), 'rb') as fin:
+        north = np.fromstring(fin.read(), dtype=np.float32)
+        north = north.reshape((number_pixels, north.shape[0] // number_pixels))
 
-        self.imaging_reflector = imaging_reflector_from_dict(
-            self._config['imaging_reflector']
-        )
+    with open(join(raw_dir, 'west_component.float32'), 'rb') as fin:
+        west = np.fromstring(fin.read(), dtype=np.float32)
+        west = west.reshape((number_pixels, west.shape[0] // number_pixels))
 
-        self.image_sensor = image_sensor_from_dict(
-            self._config['image_sensor']
-        )
+    with open(join(raw_dir, 'vertical_component.float32'), 'rb') as fin:
+        vertical = np.fromstring(fin.read(), dtype=np.float32)
+        vertical = vertical.reshape(
+            (number_pixels, vertical.shape[0] // number_pixels))
 
-        self.id = self._config['event_id']
+    return RawImageSensorResponse(
+        north=north,
+        west=west,
+        vertical=vertical,
+        number_pixels=number_pixels,
+        number_time_slices=north.shape[1],
+        time_slice_duration=time_slice_duration)
 
-        self.simulation_truth = self._config['simulation_truth']
 
-        self.raw_image_sensor_response = RawImageSensorResponse(
-            os.path.join(path, 'raw_image_sensor_response'),
-            number_pixels=self.image_sensor.number_pixels,
-            time_slice_duration=self.simulation_truth['time_slice_duration']
-        )
+Event = collections.namedtuple(
+    'Event', [
+        'id',
+        'config',
+        'time_window_probe_antenna',
+        'simulation_truth',
+        'imaging_reflector',
+        'image_sensor',
+        'raw_image_sensor_response'])
 
-    def __repr__(self):
-        out = '{}('.format(self.__class__.__name__)
-        out += 'ID ' + str(self.id)
-        out += ')\n'
-        return out
+
+def make_Event_from_path(path):
+    with open(os.path.join(path, 'config.json'), 'r') as fin:
+        config = json.loads(fin.read())
+    with open(os.path.join(path, 'time_window.json'), 'r') as fin:
+        time_window = json.loads(fin.read())
+    imaging_reflector = ImagingReflector_from_dict(
+        config['imaging_reflector'])
+    image_sensor = ImageSensor_from_dict(config['image_sensor'])
+    id_ = config['event_id']
+    simulation_truth = config['simulation_truth']
+    raw_image_sensor_response = make_RawImageSensorResponse_from_dir(
+        os.path.join(path, 'raw_image_sensor_response'),
+        number_pixels=image_sensor.number_pixels,
+        time_slice_duration=simulation_truth['time_slice_duration'])
+
+    return Event(
+        id=id_,
+        config=config,
+        time_window_probe_antenna=time_window,
+        simulation_truth=simulation_truth,
+        imaging_reflector=imaging_reflector,
+        image_sensor=image_sensor,
+        raw_image_sensor_response=raw_image_sensor_response)
+
+
+def make_Event_from_tape_archive(path):
+    with tarfile.open(path, "r") as tar_file:
+        return make_next_Event_from_tape_archive(tar_file)
+
+
+def make_next_Event_from_tape_archive(tar_file):
+    config_tar_item = tar_file.next()
+    assert config_tar_item.name == "config.json"
+    config_raw = tar_file.extractfile(config_tar_item).read()
+    config = json.loads(config_raw)
+
+    imaging_reflector = ImagingReflector_from_dict(config['imaging_reflector'])
+    image_sensor = ImageSensor_from_dict(config['image_sensor'])
+
+    time_window_tar_item = tar_file.next()
+    assert time_window_tar_item.name == "time_window.json"
+    time_window_raw = tar_file.extractfile(time_window_tar_item).read()
+    time_window = json.loads(time_window_raw)
+
+    comps = {"north": None, "west": None, "vertical": None}
+    for comp in comps:
+        comp_item = tar_file.next()
+        assert comp_item.name == comp + '_component.float32'
+        comp_raw = tar_file.extractfile(comp_item).read()
+
+        field = np.fromstring(comp_raw, dtype=np.float32)
+        field = field.reshape((
+            image_sensor.number_pixels,
+            field.shape[0]//image_sensor.number_pixels))
+        comps[comp] = field
+
+    raw_image_sensor_response = RawImageSensorResponse(
+        north=comps["north"],
+        west=comps["west"],
+        vertical=comps["vertical"],
+        number_pixels=image_sensor.number_pixels,
+        number_time_slices=comps["north"].shape[1],
+        time_slice_duration=config['simulation_truth']['time_slice_duration'])
+
+    return Event(
+        id=config['event_id'],
+        config=config,
+        time_window_probe_antenna=time_window,
+        simulation_truth=config['simulation_truth'],
+        imaging_reflector=imaging_reflector,
+        image_sensor=image_sensor,
+        raw_image_sensor_response=raw_image_sensor_response)
