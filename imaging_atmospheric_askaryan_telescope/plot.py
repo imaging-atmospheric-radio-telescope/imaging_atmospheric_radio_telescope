@@ -182,7 +182,7 @@ def make_video_from_image_slices(
     optical axis of the telescope.
     """
     avconv_command = [
-        'avconv',
+        'ffmpeg',
         '-y',  # force overwriting of existing output file
         '-framerate', str(int(fps)),  # Frames per second
         '-f', 'image2',
