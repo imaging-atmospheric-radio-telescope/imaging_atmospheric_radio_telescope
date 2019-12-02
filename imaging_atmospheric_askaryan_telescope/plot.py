@@ -43,9 +43,7 @@ def add2ax(
                 (dx[d], dy[d]),
                 numVertices=6,
                 radius=bin_radius,
-                orientation=orientation
-            )
-        )
+                orientation=orientation))
     p = PatchCollection(patches, cmap=colormap, alpha=1, edgecolor='none')
     p.set_array(A)
     p.set_clim([vmin, vmax])
@@ -88,61 +86,49 @@ def save_image_slices(
     pixel_directions_y = np.rad2deg(event.image_sensor.pixel_directions[:, 1])
 
     for idx, time_slice in enumerate(time_slice_region_of_interest):
-
         fig, axarr = plt.subplots(1, 3, figsize=figsize)
-
         t = time_slice*event.simulation_truth['time_slice_duration']
         time_info = 't: ' + str(np.round(t*1e9, 1)) + 'ns'
-
         fig.suptitle(
             simulation_truth_info_string(event.simulation_truth) + ', ' +
             time_info + '\n' +
-            'north, west, and vertical electric-field /(uV/m)'
-        )
-
+            'north, west, and vertical electric-field /(uV/m)')
         add2ax(
             ax=axarr[0],
             pixel_amplitudes=north[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=abs_north,
-            vmax=-abs_north,
-        )
+            vmax=-abs_north,)
         axarr[0].set_xlabel('x/deg')
         axarr[0].set_ylabel('y/deg')
         axarr[0].spines['right'].set_visible(False)
         axarr[0].spines['top'].set_visible(False)
-
         add2ax(
             ax=axarr[1],
             pixel_amplitudes=west[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=abs_west,
-            vmax=-abs_west,
-        )
+            vmax=-abs_west,)
         axarr[1].set_xlabel('x/deg')
         axarr[1].spines['right'].set_visible(False)
         axarr[1].spines['top'].set_visible(False)
         axarr[1].yaxis.set_visible(False)
-
         add2ax(
             ax=axarr[2],
             pixel_amplitudes=vertical[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=abs_vertical,
-            vmax=-abs_vertical,
-        )
+            vmax=-abs_vertical,)
         axarr[2].set_xlabel('x/deg')
         axarr[2].spines['right'].set_visible(False)
         axarr[2].spines['top'].set_visible(False)
         axarr[2].yaxis.set_visible(False)
-
         plt.savefig(
             os.path.join(path, "image_{:06d}".format(idx)),
-            dpi=dpi
-        )
+            dpi=dpi)
         plt.close('all')
 
 
@@ -192,6 +178,5 @@ def make_video_from_image_slices(
         '-crf', '23',  # high quality 0 (best) to 53 (worst)
         '-crf_max', '25',  # worst quality allowed
         '-threads', str(threads),
-        os.path.splitext(out_path)[0] + '.mp4'
-    ]
+        os.path.splitext(out_path)[0] + '.mp4']
     subprocess.call(avconv_command)
