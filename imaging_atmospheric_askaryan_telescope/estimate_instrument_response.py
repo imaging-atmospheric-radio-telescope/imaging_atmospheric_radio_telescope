@@ -33,11 +33,16 @@ imaging_reflector_config = {
     "aperture_radius": 25,
     "random_seed": 0}
 
+OBJECT_DISTANCE = 10e3
+image_sensor_distance = 1./(
+    1./imaging_reflector_config['focal_length'] -
+    1./OBJECT_DISTANCE)
+
 image_sensor_config = {
     "pixel_inner_fov": np.deg2rad(0.11),
     "focal_length_of_imaging_system": 75,
     "fov": np.deg2rad(4.5),
-    "image_sensor_distance": 75}
+    "image_sensor_distance": image_sensor_distance}
 
 particles = {"gamma": 1, "proton": 14}
 
