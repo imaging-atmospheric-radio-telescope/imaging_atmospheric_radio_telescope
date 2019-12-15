@@ -1,31 +1,27 @@
 #!/usr/bin/env python
-# Copyright 2017 Sebastian A. Mueller
+# Copyright 2017-2019 Sebastian A. Mueller
 """
-Install CORSIKA cosmic-ray and gamma-ray air-shower simulation for the Radio
-Askarian Telescope.
+Install the CORSIKA for the Askarian-telescope.
 
-Usage: install_corsika_coreas -p=INSTALL_PATH --username=USERNAME --password=PASSWORD
+Usage: install_corsika_coreas -p=PATH --username=USERNAME --password=PASSWORD
 
 Options:
-    -p --install_path=INSTALL_PATH      The path to install CORSIKA in
-    --username=USERNAME                 Username for the KIT CORSIKA ftp-server
-    --password=PASSWORD                 Password fot the KIT CORSIKA ftp-server
+    -p --install_path=PATH              The path to install CORSIKA in
+    --username=USERNAME                 Username for the KIT-CORSIKA-server
+    --password=PASSWORD                 Password fot the KIT-CORSIKA-server
 
-During the installation, the stdout and stderr of the 'coconut_configure'
-and 'coconut_make' procedures are written into text files in the install
-path.
+During the installation, the stdout and stderr of 'coconut_configure'
+and 'coconut_make' are written to the install_path.
 Visit the CORSIKA homepage: https://www.ikp.kit.edu/corsika/
-You can test your username and password in the download section of the
-KIT CORSIKA webpages. If you do not have yet the CORSIKA username and
-password, then drop the CORSIKA developers an e-mail and kindly ask for it.
-
+to test your username and password in the download section.
+If you do not have yet the CORSIKA username and password, drop the developers
+of CORSIKA an e-mail and kindly ask for it.
 """
 import docopt
 import sys
 import os
 import tarfile
 import shutil
-import pkg_resources
 import glob
 import subprocess
 
@@ -43,22 +39,21 @@ def install(install_path, username, password):
     os.chdir(install_path)
 
     # download CORSIKA from KIT
-    corsika_tar = 'corsika-77100.tar.gz'
+    web_path = 'https://web.ikp.kit.edu/corsika/download/corsika-v770/'
+    corsika_tarname = 'corsika-77100.tar.gz'
+    link = web_path + corsika_tarname
     call_and_save_std(
-        target=[
-            'wget',
-            'ftp://' + username + ':' + password + '@' +
-            'ikp-ftp.ikp.kit.edu/corsika-v770/' + corsika_tar],
-        o_path='wget-ftp-download.o',
-        e_path='wget-ftp-download.e')
+        target=['wget', '--user', username, '--password', password, link],
+        o_path='wget.o',
+        e_path='wget.e')
 
     # untar, unzip the CORSIKA download
-    tar = tarfile.open(corsika_tar)
+    tar = tarfile.open(corsika_tarname)
     tar.extractall(path='.')
     tar.close()
 
     # Go into CORSIKA dir
-    corsika_path = os.path.splitext(os.path.splitext(corsika_tar)[0])[0]
+    corsika_path = os.path.splitext(os.path.splitext(corsika_tarname)[0])[0]
     os.chdir(corsika_path)
 
     # Provide the Askarian Telescope coconut config.h
@@ -69,15 +64,13 @@ def install(install_path, username, password):
         target=['./coconut'],
         o_path='../coconut_configure.o',
         e_path='../coconut_configure.e',
-        stdin=open('/dev/null', 'r')
-    )
+        stdin=open('/dev/null', 'r'))
 
     # coconut build
     call_and_save_std(
         target=['./coconut', '-i'],
         o_path='../coconut_make.o',
-        e_path='../coconut_make.e'
-    )
+        e_path='../coconut_make.e')
 
     # Copy std ATMPROFS to the CORSIKA run directory
     for atmprof in glob.glob('bernlohr/atmprof*'):
