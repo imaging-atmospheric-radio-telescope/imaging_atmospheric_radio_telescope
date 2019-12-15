@@ -19,11 +19,11 @@ The ```config.h``` is the CORSIKA coconut input which defines exactly which CORS
 ```bash
 /imaging_atmospheric_askaryan_telescope/corsika_coreas$ ./install_corsika_coreas.py
     --install_path=../corsika_coreas_build
-    --username=XXXXXXX
-    --password=YYYYYYY
+    --username=XXX
+    --password=YYY
 ```
 
-Here XXXXXXX is the user name and YYYYYYY is the password of the non open source FTP server of KIT where the non open source CORSIKA simulation is hosted. Go and kindly ask the KIT guys for the credentials.
+Here XXX is the username and YYY is the password of the web-server of KIT where CORSIKA is hosted. Go and kindly ask KIT for the credentials.
 
 ```bash
 /imaging_atmospheric_askaryan_telescope/corsika_coreas$ cd ../corsika_coreas_build
@@ -36,21 +36,21 @@ Here XXXXXXX is the user name and YYYYYYY is the password of the non open source
     corsika-75600.tar.gz
 ```
 
-In the ```install_path``` we find the tar-ball download, the install path of CORSIKA ```corsika-75600/``` and the stdout and stderror logs of ```coconut``` and ```make``` for the CORSIKA build process.
+In the ```install_path``` we find the corsika-tar, the install path of CORSIKA ```corsika-77100/``` and the stdout and stderror of ```coconut``` and ```make``` from CORSIKA's build.
 
 ```bash
-/imaging_atmospheric_askaryan_telescope/corsika_coreas_build$ cd corsika-75600/run/
-/imaging_atmospheric_askaryan_telescope/corsika_coreas_build/corsika-75600/run$ ls
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build$ cd corsika-77100/run/
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build/corsika-77100/run$ ls
     ...
-    corsika75600Linux_QGSII_urqmd_coreas
+    corsika77100Linux_QGSII_urqmd_coreas
     ...
 ```
 
 Among others, there should now be the CORSIKA_COREAS executable.
-Now install the telescope simulation.
+Now install the simulation for the Askarian-telescope.
 
 ```bash
-/imaging_atmospheric_askaryan_telescope/corsika_coreas_build/corsika-75600/run$ cd ../../../
+/imaging_atmospheric_askaryan_telescope/corsika_coreas_build/corsika-77100/run$ cd ../../../
 /imaging_atmospheric_askaryan_telescope$ pip install -e .
     ...
     Successfully installed askarian-telescope
@@ -67,7 +67,7 @@ coconut_make.e
 coconut_make.o
 ```
 
-Make an issue and post these logfiles in the issue. Also post the stdout of ```install_corsika_coreas.py``` and the stdout of ```pip install``` in the issue.
+Make an issue and post these logfiles in the issue. Better also post the stdout of ```install_corsika_coreas.py``` and the stdout of ```pip install``` in the issue.
 
 
 ## Simulate telescope responses
