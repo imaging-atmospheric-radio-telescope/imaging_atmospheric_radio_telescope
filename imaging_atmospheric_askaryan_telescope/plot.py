@@ -6,6 +6,8 @@ from matplotlib.collections import PatchCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
 import subprocess
+import imaging_atmospheric_askaryan_telescope as iaat
+import tempfile
 
 
 def add2ax(
@@ -159,7 +161,7 @@ def make_video_from_image_slices(
     image_slice_dir,
     out_path,
     image_slice_filename_wildcard='image_%06d.png',
-    fps=25,
+    fps=15,
     threads=1,
 ):
     """
@@ -178,7 +180,7 @@ def make_video_from_image_slices(
         '-crf', '23',  # high quality 0 (best) to 53 (worst)
         '-crf_max', '25',  # worst quality allowed
         '-threads', str(threads),
-        os.path.splitext(out_path)[0] + '.mp4']
+        os.path.splitext(out_path)[0] + '.mov']
     subprocess.call(avconv_command)
 
 
@@ -215,3 +217,119 @@ def save_total_energy_deposite(
         colormap=colormap,)
     fig.savefig(path)
 
+
+def save_event_overview_images(
+    event,
+    output_directory,
+    start_slice=None,
+    stop_slice=None,
+    colormap="viridis",
+    scale = .7
+):
+    sensor_response = iaat.telescope.simulate_antenna_response(
+        event.raw_image_sensor_response,
+        antenna_efficiency=0.5,
+        antenna_temperature=80,
+        lower_frequency_cut=1.3e9,
+        upper_frequency_cut=2.3e9,
+        order=5)
+    sr = sensor_response
+
+    os.makedirs(output_directory, exist_ok=True)
+    FREE_SPACE_IMPEDANCE_Z0 = 120*np.pi
+    ELECTRON_VOLT = 1.6022e-19
+    power_north = sr.north**2/FREE_SPACE_IMPEDANCE_Z0
+    power_west = sr.west**2/FREE_SPACE_IMPEDANCE_Z0
+    energy_north = power_north*sr.time_slice_duration
+    energy_west = power_west*sr.time_slice_duration
+    total_energy = energy_north + energy_west
+
+
+    pixel_directions_x = np.rad2deg(event.image_sensor.pixel_directions[:, 0])
+    pixel_directions_y = np.rad2deg(event.image_sensor.pixel_directions[:, 1])
+
+    final_energy_integral = np.sum(
+        total_energy[:, start_slice:stop_slice],
+        axis=1)
+    max_energy = np.max(final_energy_integral)
+
+    image_idx = 0
+    for time_slice in np.arange(start_slice, stop_slice):
+        t = time_slice*event.simulation_truth['time_slice_duration']
+        time_info = 't: ' + str(np.round(t*1e9, 1)) + 'ns'
+        total_energy_integral = np.sum(
+            total_energy[:, start_slice:time_slice], axis=1)
+
+        north_abs_max = np.max(np.abs(sr.north[:, start_slice:stop_slice]))
+        west_abs_max = np.max(np.abs(sr.west[:, start_slice:stop_slice]))
+        comp_abs_max = np.max([north_abs_max, west_abs_max])
+
+        fig = plt.figure(figsize=(16*scale, 9*scale), dpi=120/scale)
+        fig.suptitle(
+            simulation_truth_info_string(event.simulation_truth) + ', ' +
+            time_info + '\n' + r"electric field/$\mu$Vm$^{-1}$" +
+            "                                                         " +
+            "energy/eV")
+
+        ax_field_north = fig.add_axes([0. , 0.5, 0.4, 0.4])
+        ax_field_north.spines['right'].set_visible(False)
+        ax_field_north.spines['top'].set_visible(False)
+        ax_field_north.set_xlabel('c_x / deg')
+        ax_field_north.set_ylabel('c_y / deg')
+        add2ax(
+            ax=ax_field_north,
+            pixel_amplitudes=1e6*sr.north[:, time_slice],
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            colormap='seismic',
+            vmin=-1e6*comp_abs_max,
+            vmax=1e6*comp_abs_max,)
+
+        ax_field_west = fig.add_axes([0. , 0.1, 0.4, 0.4])
+        ax_field_west.spines['right'].set_visible(False)
+        ax_field_west.spines['top'].set_visible(False)
+        ax_field_west.set_xlabel('c_x / deg')
+        ax_field_west.set_ylabel('c_y / deg')
+        add2ax(
+            ax=ax_field_west,
+            pixel_amplitudes=1e6*sr.west[:, time_slice],
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            colormap='seismic',
+            vmin=-1e6*comp_abs_max,
+            vmax=1e6*comp_abs_max,)
+
+        ax_energy_integral = fig.add_axes([0.375 , 0.075, 0.6, 0.85])
+        ax_energy_integral.spines['right'].set_visible(False)
+        ax_energy_integral.spines['top'].set_visible(False)
+        ax_energy_integral.set_xlabel('c_x / deg')
+        ax_energy_integral.set_ylabel('c_y / deg')
+        add2ax(
+            ax=ax_energy_integral,
+            pixel_amplitudes=total_energy_integral/ELECTRON_VOLT,
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            colormap=colormap,
+            vmin=0.,
+            vmax=max_energy/ELECTRON_VOLT)
+        image_idx += 1
+
+        fig.savefig(
+            os.path.join(
+                output_directory,
+                "{:06d}.jpg".format(image_idx)))
+        plt.close(fig)
+
+
+def save_event_overview_video(event_path, output_path):
+    event = iaat.telescope.make_Event_from_tape_archive(event_path)
+    with tempfile.TemporaryDirectory(prefix="askaryan_video_") as tmp_dir:
+        save_event_overview_images(
+            event=event,
+            output_directory=tmp_dir,
+            start_slice=120,
+            stop_slice=180)
+        make_video_from_image_slices(
+            image_slice_dir=tmp_dir,
+            out_path=output_path,
+            image_slice_filename_wildcard='%06d.jpg')
