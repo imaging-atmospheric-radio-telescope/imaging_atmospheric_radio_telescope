@@ -32,11 +32,13 @@ Here XXX is the username and YYY is the password of the web-server of KIT where 
     coconut_configure.o
     coconut_make.e
     coconut_make.o
-    corsika-75600/
-    corsika-75600.tar.gz
+    corsika-77100/
+    corsika-77100.tar.gz
+    wget.e
+    wget.o
 ```
 
-In the ```install_path``` we find the corsika-tar, the install path of CORSIKA ```corsika-77100/``` and the stdout and stderror of ```coconut``` and ```make``` from CORSIKA's build.
+In ```install_path``` we find the archive ```corsika-77100.tar.gz``` downloaded by ```wget```, the build itself ```corsika-77100/``` and the std-out and std-error of the build's ```coconut``` and ```make```.
 
 ```bash
 /imaging_atmospheric_askaryan_telescope/corsika_coreas_build$ cd corsika-77100/run/
@@ -58,16 +60,18 @@ Now install the simulation for the Askarian-telescope.
 
 ### Trouble during installation
 
-In case the installation of CORSIKA-COREAS did not work out for you, and the CORSIKA-executable does not exist, take a look into the log-files of the compilation:
+In case the installation of CORSIKA-COREAS did not work out for you, and the CORSIKA-executable does not exist, take a look into the build's log-files:
 
 ```bash
 coconut_configure.e
 coconut_configure.o
 coconut_make.e
 coconut_make.o
+wget.e
+wget.o
 ```
 
-Make an issue and post these logfiles in the issue. Better also post the stdout of ```install_corsika_coreas.py``` and the stdout of ```pip install``` in the issue.
+Make an issue and post these logfiles.
 
 
 ## Simulate telescope responses
