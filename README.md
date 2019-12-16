@@ -80,19 +80,17 @@ First, set up a telescope geometry.
 ```python
 In [1]: import imaging_atmospheric_askaryan_telescope as at
 
-In [2]: ims  = at.telescope.ImageSensor(
+In [2]: ims  = at.telescope.make_ImageSensor(
             pixel_inner_fov=np.deg2rad(0.11),
             fov=np.deg2rad(4.5),
             focal_length_of_imaging_system=75,
-            image_sensor_distance=75
-        )
+            image_sensor_distance=75)
 
-In [3]: imr = at.telescope.ImagingReflector(
+In [3]: imr = at.telescope.make_ImagingReflector(
             focal_length=75,
             aperture_radius=25,
             random_seed=0,
-            antenna_areal_density=0.75
-        )
+            antenna_areal_density=0.75)
 ```
 Second, set up an air-shower to be observed with the before created telescope geometry.
 
