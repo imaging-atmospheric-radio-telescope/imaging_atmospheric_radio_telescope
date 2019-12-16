@@ -96,7 +96,7 @@ Second, set up an air-shower to be observed with the before created telescope ge
 
 ```python
 In [4]: at.run_corsika_coreas.simulate_event(
-            corsika_coreas_executable_path='corsika_coreas_build/corsika-75600/run/corsika75600Linux_QGSII_urqmd_coreas',
+            corsika_coreas_executable_path='corsika_coreas_build/corsika-77100/run/corsika77100Linux_QGSII_urqmd_coreas',
             out_event_dir='./my_event_42',
             event_id=42,
             primary_particle_id=14,
@@ -108,10 +108,9 @@ In [4]: at.run_corsika_coreas.simulate_event(
             core_position_on_observation_level_west=-65,
             time_slice_duration=2e-10,
             image_sensor=ims,
-            imaging_reflector=imr
-        )
+            imaging_reflector=imr)
 ```
-See CORSIKA manual for the ```primary_particle_id```. Proton is 14 and gamma is 1.
+See CORSIKA manual for the ```primary_particle_id```. Proton is ```14``` and gamma is ```1```.
 Lets take a look at the output in ```'./my_event_42'```.
 ```bash
 /imaging_atmospheric_askaryan_telescope$ cd my_event_42/
