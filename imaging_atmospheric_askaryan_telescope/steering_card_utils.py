@@ -52,9 +52,9 @@ def make_corsika_steering_card(
 
 
 DEFAULT_COREAS_TIME_BOUNDARIES = {
-    'automatic_time_boundaries': 4e-07,
-    'time_lower_boundary': -1,
-    'time_upper_boundary': 1,
+    "automatic_time_boundaries": 4e-07,
+    "time_lower_boundary": -1,
+    "time_upper_boundary": 1,
 }
 
 
@@ -83,11 +83,12 @@ def make_coreas_steering_card(
     sc += "TimeResolution = {0:.6E} ; in s\n".format(time_slice_duration)
     tb = time_boundaries
     sc += "AutomaticTimeBoundaries = {0:.6E}; ".format(
-        tb['automatic_time_boundaries'])
+        tb["automatic_time_boundaries"]
+    )
     sc += "0: off, x: automatic boundaries with width x in s\n"
-    sc += "TimeLowerBoundary = {0:.6E} ; ".format(tb['time_lower_boundary'])
+    sc += "TimeLowerBoundary = {0:.6E} ; ".format(tb["time_lower_boundary"])
     sc += "in s, only if AutomaticTimeBoundaries set to 0\n"
-    sc += "TimeUpperBoundary = {0:.6E} ; ".format(tb['time_upper_boundary'])
+    sc += "TimeUpperBoundary = {0:.6E} ; ".format(tb["time_upper_boundary"])
     sc += "in s, only if AutomaticTimeBoundaries set to 0\n"
     sc += "ResolutionReductionScale = 0 ; "
     sc += "0: off, x: decrease time resolution linearly every x cm in radius\n"
@@ -117,7 +118,7 @@ def make_coreas_steering_card(
 def make_coreas_antenna_list(huygens_antennas_positions):
     template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
     template_line += "huygens_antenna_{antenna_idx:06d}\n"
-    antenna_list = ''
+    antenna_list = ""
     for i in range(huygens_antennas_positions.shape[0]):
         antenna_list += template_line.format(
             x=huygens_antennas_positions[i, 0] * 1e2,

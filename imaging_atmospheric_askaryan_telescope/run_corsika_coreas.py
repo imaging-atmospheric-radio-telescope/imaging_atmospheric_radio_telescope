@@ -12,10 +12,7 @@ from . import coreas_bridge
 from . import json_numpy_utils as jsonumpy
 
 
-def estimate_start_time_from_antnna_response(
-    raw_time,
-    raw_field_components
-):
+def estimate_start_time_from_antnna_response(raw_time, raw_field_components):
     num_components = raw_field_components.shape[1]
     max_position_times = np.zeros(num_components)
     for component in range(num_components):
@@ -41,9 +38,9 @@ def simulate_air_shower_and_imaging_reflector_response(
     time_lower_boundary_of_probe=-1000e-6,
     time_upper_boundary_of_probe=25e-6,
     time_window_duration=4e-7,
-    fraction_of_time_window_to_be_warm_up_time=0.06
+    fraction_of_time_window_to_be_warm_up_time=0.06,
 ):
-    '''
+    """
     Simulates the electric-field-strength caused by an air-shower at the
     support-poisitions of the imaging-reflector. The result and log-files of
     the air-shower-simulation are stored in out_event_dir.
@@ -54,22 +51,21 @@ def simulate_air_shower_and_imaging_reflector_response(
     the time-window is estimated. Second, the air-shower is simulated again and
     but this time with all support-antennas of the imaging-reflector using the
     time-window estimated in the first step.
-    '''
-    probe_radius = np.sqrt(1/np.pi)
+    """
+    probe_radius = np.sqrt(1 / np.pi)
     probe = telescope.ImagingReflector(
         random_seed=0,
-        focal_length=1.,
+        focal_length=1.0,
         aperture_radius=probe_radius,
-        aperture_diameter=2.*probe_radius,
-        antenna_areal_density=1.,
-        area=1.,
+        aperture_diameter=2.0 * probe_radius,
+        antenna_areal_density=1.0,
+        area=1.0,
         number_huygens_antennas=1,
-        huygens_antennas_positions=np.zeros(shape=(1, 3)))
+        huygens_antennas_positions=np.zeros(shape=(1, 3)),
+    )
 
     os.makedirs(out_event_dir, exist_ok=True)
-    probe_event_dir = os.path.join(
-        out_event_dir,
-        'time_window_probe_antenna')
+    probe_event_dir = os.path.join(out_event_dir, "time_window_probe_antenna")
 
     simulate_air_shower_and_imaging_reflector_response_manual(
         corsika_coreas_executable_path=corsika_coreas_executable_path,
@@ -81,34 +77,45 @@ def simulate_air_shower_and_imaging_reflector_response(
         azimuth=azimuth,
         observation_level_altitude=observation_level_altitude,
         core_position_on_observation_level_north=(
-            core_position_on_observation_level_north),
+            core_position_on_observation_level_north
+        ),
         core_position_on_observation_level_west=(
-            core_position_on_observation_level_west),
+            core_position_on_observation_level_west
+        ),
         time_slice_duration=time_slice_duration_of_probe,
         imaging_reflector=probe,
         coreas_time_boundaries={
-            'automatic_time_boundaries': 0,
-            'time_lower_boundary': time_lower_boundary_of_probe,
-            'time_upper_boundary': time_upper_boundary_of_probe})
+            "automatic_time_boundaries": 0,
+            "time_lower_boundary": time_lower_boundary_of_probe,
+            "time_upper_boundary": time_upper_boundary_of_probe,
+        },
+    )
 
     probe_response = coreas_bridge.read_all_raw_time_series(
         os.path.join(
-            probe_event_dir,
-            'raw_imaging_reflector_huygens_antenna_responses'))
+            probe_event_dir, "raw_imaging_reflector_huygens_antenna_responses"
+        )
+    )
 
     start_time = estimate_start_time_from_antnna_response(
         raw_time=probe_response[0, :, 0],
-        raw_field_components=probe_response[0, :, 1:4])
+        raw_field_components=probe_response[0, :, 1:4],
+    )
 
     f = fraction_of_time_window_to_be_warm_up_time
-    time_lower_boundary = start_time - f*time_window_duration
-    time_upper_boundary = start_time + (1 - f)*time_window_duration
+    time_lower_boundary = start_time - f * time_window_duration
+    time_upper_boundary = start_time + (1 - f) * time_window_duration
 
-    with open(os.path.join(out_event_dir, 'time_window.json'), 'wt') as fout:
-        fout.write(json.dumps({
-                "start_time": start_time,
-                "time_lower_boundary": time_lower_boundary,
-                "time_upper_boundary": time_upper_boundary}))
+    with open(os.path.join(out_event_dir, "time_window.json"), "wt") as fout:
+        fout.write(
+            json.dumps(
+                {
+                    "start_time": start_time,
+                    "time_lower_boundary": time_lower_boundary,
+                    "time_upper_boundary": time_upper_boundary,
+                }
+            )
+        )
 
     simulate_air_shower_and_imaging_reflector_response_manual(
         corsika_coreas_executable_path=corsika_coreas_executable_path,
@@ -120,16 +127,18 @@ def simulate_air_shower_and_imaging_reflector_response(
         azimuth=azimuth,
         observation_level_altitude=observation_level_altitude,
         core_position_on_observation_level_north=(
-            core_position_on_observation_level_north),
+            core_position_on_observation_level_north
+        ),
         core_position_on_observation_level_west=(
-            core_position_on_observation_level_west),
+            core_position_on_observation_level_west
+        ),
         time_slice_duration=time_slice_duration,
         imaging_reflector=imaging_reflector,
         coreas_time_boundaries={
-            'automatic_time_boundaries': 0,
-            'time_lower_boundary': time_lower_boundary,
-            'time_upper_boundary': time_upper_boundary,
-        }
+            "automatic_time_boundaries": 0,
+            "time_lower_boundary": time_lower_boundary,
+            "time_upper_boundary": time_upper_boundary,
+        },
     )
 
 
@@ -146,29 +155,35 @@ def simulate_air_shower_and_imaging_reflector_response_manual(
     core_position_on_observation_level_west,
     time_slice_duration,
     imaging_reflector,
-    coreas_time_boundaries=steering_card_utils.DEFAULT_COREAS_TIME_BOUNDARIES
+    coreas_time_boundaries=steering_card_utils.DEFAULT_COREAS_TIME_BOUNDARIES,
 ):
-    with tempfile.TemporaryDirectory(prefix='corsika_coreas_') as tmp_dir:
-        tmp_run_dir = os.path.join(tmp_dir, 'run')
+    with tempfile.TemporaryDirectory(prefix="corsika_coreas_") as tmp_dir:
+        tmp_run_dir = os.path.join(tmp_dir, "run")
 
         shutil.copytree(
             os.path.dirname(corsika_coreas_executable_path),
             os.path.abspath(tmp_run_dir),
-            symlinks=False)
+            symlinks=False,
+        )
 
         # tmp paths
         tmp_corsika_coreas_executable_path = os.path.join(
-            tmp_run_dir, os.path.basename(corsika_coreas_executable_path))
+            tmp_run_dir, os.path.basename(corsika_coreas_executable_path)
+        )
         tmp_corsika_steering_card_path = os.path.join(
-            tmp_run_dir, 'RUN{:06}.inp'.format(event_id))
+            tmp_run_dir, "RUN{:06}.inp".format(event_id)
+        )
         tmp_coreas_steering_card_path = os.path.join(
-            tmp_run_dir, 'SIM{:06}.reas'.format(event_id))
+            tmp_run_dir, "SIM{:06}.reas".format(event_id)
+        )
         tmp_coreas_antenna_list_path = os.path.join(
-            tmp_run_dir, 'SIM{:06}.list'.format(event_id))
+            tmp_run_dir, "SIM{:06}.list".format(event_id)
+        )
         tmp_coreas_raw_antenna_output_dir = os.path.join(
-            tmp_run_dir, 'SIM{:06}_coreas'.format(event_id))
+            tmp_run_dir, "SIM{:06}_coreas".format(event_id)
+        )
 
-        with open(tmp_corsika_steering_card_path, 'wt') as fout:
+        with open(tmp_corsika_steering_card_path, "wt") as fout:
             fout.write(
                 steering_card_utils.make_corsika_steering_card(
                     event_id=event_id,
@@ -176,69 +191,87 @@ def simulate_air_shower_and_imaging_reflector_response_manual(
                     energy=energy,
                     zenith_distance=zenith_distance,
                     azimuth=azimuth,
-                    observation_level_altitude=observation_level_altitude,))
+                    observation_level_altitude=observation_level_altitude,
+                )
+            )
 
-        with open(tmp_coreas_steering_card_path, 'wt') as fout:
+        with open(tmp_coreas_steering_card_path, "wt") as fout:
             fout.write(
                 steering_card_utils.make_coreas_steering_card(
                     core_position_on_observation_level_north=(
-                        core_position_on_observation_level_north),
+                        core_position_on_observation_level_north
+                    ),
                     core_position_on_observation_level_west=(
-                        core_position_on_observation_level_west),
+                        core_position_on_observation_level_west
+                    ),
                     observation_level_altitude=observation_level_altitude,
                     time_slice_duration=time_slice_duration,
-                    time_boundaries=coreas_time_boundaries))
+                    time_boundaries=coreas_time_boundaries,
+                )
+            )
 
-        with open(tmp_coreas_antenna_list_path, 'wt') as fout:
+        with open(tmp_coreas_antenna_list_path, "wt") as fout:
             fout.write(
                 steering_card_utils.make_coreas_antenna_list(
                     huygens_antennas_positions=(
-                        imaging_reflector.huygens_antennas_positions)))
+                        imaging_reflector.huygens_antennas_positions
+                    )
+                )
+            )
 
         corsika_steering_card_pipe, pwrite = os.pipe()
-        with open(tmp_corsika_steering_card_path, 'rt') as fin:
+        with open(tmp_corsika_steering_card_path, "rt") as fin:
             os.write(pwrite, str.encode(fin.read()))
             os.close(pwrite)
 
         # output paths
         os.makedirs(out_event_dir, exist_ok=True)
-        out_corsika_coreas_dir = os.path.join(out_event_dir, 'corsika_coreas/')
+        out_corsika_coreas_dir = os.path.join(out_event_dir, "corsika_coreas/")
         os.makedirs(out_corsika_coreas_dir)
 
         out_corsika_o_path = os.path.join(
-            out_corsika_coreas_dir, 'corsika.std_out')
+            out_corsika_coreas_dir, "corsika.std_out"
+        )
         out_corsika_e_path = os.path.join(
-            out_corsika_coreas_dir, 'corsika.std_error')
+            out_corsika_coreas_dir, "corsika.std_error"
+        )
         out_antenna_output_dir = os.path.join(
-            out_event_dir, 'raw_imaging_reflector_huygens_antenna_responses/')
+            out_event_dir, "raw_imaging_reflector_huygens_antenna_responses/"
+        )
 
-        with open(out_corsika_o_path, 'w') as corsika_o, \
-                open(out_corsika_e_path, 'w') as corsika_e:
+        with open(out_corsika_o_path, "w") as corsika_o, open(
+            out_corsika_e_path, "w"
+        ) as corsika_e:
             subprocess.call(
                 tmp_corsika_coreas_executable_path,
                 stdin=corsika_steering_card_pipe,
                 stdout=corsika_o,
                 stderr=corsika_e,
-                cwd=tmp_run_dir)
+                cwd=tmp_run_dir,
+            )
 
-        shutil.move(
-            tmp_coreas_raw_antenna_output_dir,
-            out_antenna_output_dir)
+        shutil.move(tmp_coreas_raw_antenna_output_dir, out_antenna_output_dir)
         shutil.move(
             tmp_coreas_antenna_list_path,
             os.path.join(
                 out_corsika_coreas_dir,
-                os.path.basename(tmp_coreas_antenna_list_path)))
+                os.path.basename(tmp_coreas_antenna_list_path),
+            ),
+        )
         shutil.move(
             tmp_coreas_steering_card_path,
             os.path.join(
                 out_corsika_coreas_dir,
-                os.path.basename(tmp_coreas_steering_card_path)))
+                os.path.basename(tmp_coreas_steering_card_path),
+            ),
+        )
         shutil.move(
             tmp_corsika_steering_card_path,
             os.path.join(
                 out_corsika_coreas_dir,
-                os.path.basename(tmp_corsika_steering_card_path)))
+                os.path.basename(tmp_corsika_steering_card_path),
+            ),
+        )
 
         # input('wait to inspect the tmp directory')
 
@@ -256,14 +289,14 @@ def simulate_event(
     core_position_on_observation_level_west,
     time_slice_duration,
     imaging_reflector,
-    image_sensor
+    image_sensor,
 ):
-    '''
+    """
     Does a full simulation of a single event from the shower to the sensor
     response.
     Corsika -> Coreas -> Reflector -> Sensor Response.
     Output will be written into OUT_EVENT_DIR.
-    '''
+    """
     simulate_air_shower_and_imaging_reflector_response(
         corsika_coreas_executable_path=corsika_coreas_executable_path,
         out_event_dir=out_event_dir,
@@ -274,63 +307,73 @@ def simulate_event(
         azimuth=azimuth,
         observation_level_altitude=observation_level_altitude,
         core_position_on_observation_level_north=(
-            core_position_on_observation_level_north),
+            core_position_on_observation_level_north
+        ),
         core_position_on_observation_level_west=(
-            core_position_on_observation_level_west),
+            core_position_on_observation_level_west
+        ),
         time_slice_duration=time_slice_duration,
-        imaging_reflector=imaging_reflector,)
+        imaging_reflector=imaging_reflector,
+    )
 
-    raw_imaging_reflector_huygens_antenna_responses = (
-        coreas_bridge.read_electric_field_on_imaging_reflector(
-            path=os.path.join(
-                out_event_dir,
-                'raw_imaging_reflector_huygens_antenna_responses')))
+    raw_imaging_reflector_huygens_antenna_responses = coreas_bridge.read_electric_field_on_imaging_reflector(
+        path=os.path.join(
+            out_event_dir, "raw_imaging_reflector_huygens_antenna_responses"
+        )
+    )
 
     huygens_matrix = telescope.make_HuygensImagingGeometry(
-        imaging_reflector=imaging_reflector,
-        image_sensor=image_sensor)
+        imaging_reflector=imaging_reflector, image_sensor=image_sensor
+    )
 
     image_sensor_responses = {}
-    components = ['north_component', 'west_component', 'vertical_component']
+    components = ["north_component", "west_component", "vertical_component"]
     for component in components:
         sensor_response = telescope.simulate_image_sensor_response(
             huygens_matrix=huygens_matrix,
             raw_imaging_reflector_huygens_antenna_responses=(
-                raw_imaging_reflector_huygens_antenna_responses),
+                raw_imaging_reflector_huygens_antenna_responses
+            ),
             number_time_slices=300,
-            component=component)
-        image_sensor_responses[component] = (sensor_response)
+            component=component,
+        )
+        image_sensor_responses[component] = sensor_response
 
     out_image_sensor_response_dir = os.path.join(
-        out_event_dir,
-        'raw_image_sensor_response')
+        out_event_dir, "raw_image_sensor_response"
+    )
     os.makedirs(out_image_sensor_response_dir)
 
     for component in components:
         out_component_path = os.path.join(
-            out_image_sensor_response_dir,
-            component + '.float32')
-        with open(out_component_path, 'wb') as fout:
+            out_image_sensor_response_dir, component + ".float32"
+        )
+        with open(out_component_path, "wb") as fout:
             fout.write(np.float32(image_sensor_responses[component]).tobytes())
 
     config = {
-        'event_id': event_id,
-        'simulation_truth': {
-            'primary_particle_id': primary_particle_id,
-            'energy': energy,
-            'zenith_distance': zenith_distance,
-            'azimuth': azimuth,
-            'observation_level_altitude': observation_level_altitude,
-            'core_position_on_observation_level_north': (
-                core_position_on_observation_level_north),
-            'core_position_on_observation_level_west': (
-                core_position_on_observation_level_west),
-            'time_slice_duration': time_slice_duration},
-        'image_sensor': telescope.ImageSensor_to_dict(image_sensor),
-        'imaging_reflector': telescope.ImagingReflector_to_dict(
-            imaging_reflector)}
+        "event_id": event_id,
+        "simulation_truth": {
+            "primary_particle_id": primary_particle_id,
+            "energy": energy,
+            "zenith_distance": zenith_distance,
+            "azimuth": azimuth,
+            "observation_level_altitude": observation_level_altitude,
+            "core_position_on_observation_level_north": (
+                core_position_on_observation_level_north
+            ),
+            "core_position_on_observation_level_west": (
+                core_position_on_observation_level_west
+            ),
+            "time_slice_duration": time_slice_duration,
+        },
+        "image_sensor": telescope.ImageSensor_to_dict(image_sensor),
+        "imaging_reflector": telescope.ImagingReflector_to_dict(
+            imaging_reflector
+        ),
+    }
 
-    out_image_sensor_config_path = os.path.join(out_event_dir, 'config.json')
+    out_image_sensor_config_path = os.path.join(out_event_dir, "config.json")
 
-    with open(out_image_sensor_config_path, 'w') as fout:
+    with open(out_image_sensor_config_path, "w") as fout:
         fout.write(json.dumps(config, indent=4, cls=jsonumpy.NumPyJSONEncoder))

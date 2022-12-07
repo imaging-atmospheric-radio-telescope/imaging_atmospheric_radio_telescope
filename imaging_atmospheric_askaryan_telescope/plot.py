@@ -15,7 +15,7 @@ def add2ax(
     pixel_amplitudes,
     pixel_directions_x,
     pixel_directions_y,
-    colormap='seismic',
+    colormap="seismic",
     hexrotation=0,
     vmin=None,
     vmax=None,
@@ -31,8 +31,8 @@ def add2ax(
         vmax = A.max()
 
     fov = np.abs(dx).max() * 1.05
-    area = fov*fov
-    bin_radius = 1.15 * np.sqrt(area/number_pixels)
+    area = fov * fov
+    bin_radius = 1.15 * np.sqrt(area / number_pixels)
     nfov = fov + bin_radius
     ax.set_xlim([-nfov, nfov])
     ax.set_ylim([-nfov, nfov])
@@ -45,17 +45,19 @@ def add2ax(
                 (dx[d], dy[d]),
                 numVertices=6,
                 radius=bin_radius,
-                orientation=orientation))
-    p = PatchCollection(patches, cmap=colormap, alpha=1, edgecolor='none')
+                orientation=orientation,
+            )
+        )
+    p = PatchCollection(patches, cmap=colormap, alpha=1, edgecolor="none")
     p.set_array(A)
     p.set_clim([vmin, vmax])
 
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size="5%", pad=0.05)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(p, cax=cax)
 
     ax.add_collection(p)
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
     return p
 
 
@@ -68,9 +70,9 @@ def save_image_slices(
 ):
     os.makedirs(path, exist_ok=True)
 
-    north = event.raw_image_sensor_response.north*1e6  # in uV/m
-    west = event.raw_image_sensor_response.west*1e6
-    vertical = event.raw_image_sensor_response.vertical*1e6
+    north = event.raw_image_sensor_response.north * 1e6  # in uV/m
+    west = event.raw_image_sensor_response.west * 1e6
+    vertical = event.raw_image_sensor_response.vertical * 1e6
 
     north_max = north[:, :].max()
     north_min = north[:, :].min()
@@ -89,33 +91,38 @@ def save_image_slices(
 
     for idx, time_slice in enumerate(time_slice_region_of_interest):
         fig, axarr = plt.subplots(1, 3, figsize=figsize)
-        t = time_slice*event.simulation_truth['time_slice_duration']
-        time_info = 't: ' + str(np.round(t*1e9, 1)) + 'ns'
+        t = time_slice * event.simulation_truth["time_slice_duration"]
+        time_info = "t: " + str(np.round(t * 1e9, 1)) + "ns"
         fig.suptitle(
-            simulation_truth_info_string(event.simulation_truth) + ', ' +
-            time_info + '\n' +
-            'north, west, and vertical electric-field /(uV/m)')
+            simulation_truth_info_string(event.simulation_truth)
+            + ", "
+            + time_info
+            + "\n"
+            + "north, west, and vertical electric-field /(uV/m)"
+        )
         add2ax(
             ax=axarr[0],
             pixel_amplitudes=north[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=abs_north,
-            vmax=-abs_north,)
-        axarr[0].set_xlabel('x/deg')
-        axarr[0].set_ylabel('y/deg')
-        axarr[0].spines['right'].set_visible(False)
-        axarr[0].spines['top'].set_visible(False)
+            vmax=-abs_north,
+        )
+        axarr[0].set_xlabel("x/deg")
+        axarr[0].set_ylabel("y/deg")
+        axarr[0].spines["right"].set_visible(False)
+        axarr[0].spines["top"].set_visible(False)
         add2ax(
             ax=axarr[1],
             pixel_amplitudes=west[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=abs_west,
-            vmax=-abs_west,)
-        axarr[1].set_xlabel('x/deg')
-        axarr[1].spines['right'].set_visible(False)
-        axarr[1].spines['top'].set_visible(False)
+            vmax=-abs_west,
+        )
+        axarr[1].set_xlabel("x/deg")
+        axarr[1].spines["right"].set_visible(False)
+        axarr[1].spines["top"].set_visible(False)
         axarr[1].yaxis.set_visible(False)
         add2ax(
             ax=axarr[2],
@@ -123,44 +130,49 @@ def save_image_slices(
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=abs_vertical,
-            vmax=-abs_vertical,)
-        axarr[2].set_xlabel('x/deg')
-        axarr[2].spines['right'].set_visible(False)
-        axarr[2].spines['top'].set_visible(False)
+            vmax=-abs_vertical,
+        )
+        axarr[2].set_xlabel("x/deg")
+        axarr[2].spines["right"].set_visible(False)
+        axarr[2].spines["top"].set_visible(False)
         axarr[2].yaxis.set_visible(False)
-        plt.savefig(
-            os.path.join(path, "image_{:06d}".format(idx)),
-            dpi=dpi)
-        plt.close('all')
+        plt.savefig(os.path.join(path, "image_{:06d}".format(idx)), dpi=dpi)
+        plt.close("all")
 
 
 def simulation_truth_info_string(simulation_truth):
     st = simulation_truth
-    s = ''
-    if st['primary_particle_id'] == 1:
-        s += 'Gamma'
-    if st['primary_particle_id'] == 14:
-        s += 'Proton'
-    s += ', '
-    s += 'E: '+str(np.round(st['energy'])) + 'GeV, '
-    s += 'Az: '+str(np.round(np.rad2deg(st['azimuth']), 1)) + 'deg, '
-    s += 'Zd: '+str(np.round(np.rad2deg(st['zenith_distance']), 1)) + 'deg, '
-    s += 'Core North: ' + str(
-            np.round(st['core_position_on_observation_level_north'], 1)
-        ) + 'm, '
-    s += 'Core West: ' + str(
-            np.round(st['core_position_on_observation_level_west'], 1)
-        ) + 'm, '
-    s += 'Obs. altitude: ' + str(
-            np.round(st['observation_level_altitude'])
-        ) + 'm a.s.l'
+    s = ""
+    if st["primary_particle_id"] == 1:
+        s += "Gamma"
+    if st["primary_particle_id"] == 14:
+        s += "Proton"
+    s += ", "
+    s += "E: " + str(np.round(st["energy"])) + "GeV, "
+    s += "Az: " + str(np.round(np.rad2deg(st["azimuth"]), 1)) + "deg, "
+    s += "Zd: " + str(np.round(np.rad2deg(st["zenith_distance"]), 1)) + "deg, "
+    s += (
+        "Core North: "
+        + str(np.round(st["core_position_on_observation_level_north"], 1))
+        + "m, "
+    )
+    s += (
+        "Core West: "
+        + str(np.round(st["core_position_on_observation_level_west"], 1))
+        + "m, "
+    )
+    s += (
+        "Obs. altitude: "
+        + str(np.round(st["observation_level_altitude"]))
+        + "m a.s.l"
+    )
     return s
 
 
 def make_video_from_image_slices(
     image_slice_dir,
     out_path,
-    image_slice_filename_wildcard='image_%06d.png',
+    image_slice_filename_wildcard="image_%06d.png",
     fps=15,
     threads=1,
 ):
@@ -170,51 +182,60 @@ def make_video_from_image_slices(
     optical axis of the telescope.
     """
     avconv_command = [
-        'ffmpeg',
-        '-y',  # force overwriting of existing output file
-        '-framerate', str(int(fps)),  # Frames per second
-        '-f', 'image2',
-        '-i', os.path.join(image_slice_dir, image_slice_filename_wildcard),
-        '-c:v', 'h264',
+        "ffmpeg",
+        "-y",  # force overwriting of existing output file
+        "-framerate",
+        str(int(fps)),  # Frames per second
+        "-f",
+        "image2",
+        "-i",
+        os.path.join(image_slice_dir, image_slice_filename_wildcard),
+        "-c:v",
+        "h264",
         # '-s', '1920x1080',  # sample images to FullHD 1080p
-        '-crf', '23',  # high quality 0 (best) to 53 (worst)
-        '-crf_max', '25',  # worst quality allowed
-        '-threads', str(threads),
-        os.path.splitext(out_path)[0] + '.mov']
+        "-crf",
+        "23",  # high quality 0 (best) to 53 (worst)
+        "-crf_max",
+        "25",  # worst quality allowed
+        "-threads",
+        str(threads),
+        os.path.splitext(out_path)[0] + ".mov",
+    ]
     subprocess.call(avconv_command)
 
 
 def save_total_energy_deposite(
-    event,
-    path,
-    start_slice,
-    stop_slice,
-    colormap='viridis'
+    event, path, start_slice, stop_slice, colormap="viridis"
 ):
-    FREE_SPACE_IMPEDANCE_Z0 = 120*np.pi
+    FREE_SPACE_IMPEDANCE_Z0 = 120 * np.pi
     ELECTRON_VOLT = 1.6022e-19
     isr = event.raw_image_sensor_response
-    power_north = isr.north**2/FREE_SPACE_IMPEDANCE_Z0
-    power_west = isr.west**2/FREE_SPACE_IMPEDANCE_Z0
-    energy_north = power_north*isr.time_slice_duration
-    power_west = power_west*isr.time_slice_duration
+    power_north = isr.north ** 2 / FREE_SPACE_IMPEDANCE_Z0
+    power_west = isr.west ** 2 / FREE_SPACE_IMPEDANCE_Z0
+    energy_north = power_north * isr.time_slice_duration
+    power_west = power_west * isr.time_slice_duration
     total_power = energy_north + power_west
-    total_power_integral = np.sum(total_power[:, start_slice:stop_slice], axis=1)
+    total_power_integral = np.sum(
+        total_power[:, start_slice:stop_slice], axis=1
+    )
     fig = plt.figure(figsize=(16, 9), dpi=120)
     fig.suptitle(simulation_truth_info_string(event.simulation_truth))
-    ax = fig.add_axes([0.1 , 0.1, 0.8, 0.8])
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.set_xlabel('c_x / deg')
-    ax.set_ylabel('c_y / deg')
+    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.set_xlabel("c_x / deg")
+    ax.set_ylabel("c_y / deg")
     add2ax(
         ax=ax,
-        pixel_amplitudes=total_power_integral/ELECTRON_VOLT,
+        pixel_amplitudes=total_power_integral / ELECTRON_VOLT,
         pixel_directions_x=np.rad2deg(
-            event.image_sensor.pixel_directions[:, 0]),
+            event.image_sensor.pixel_directions[:, 0]
+        ),
         pixel_directions_y=np.rad2deg(
-            event.image_sensor.pixel_directions[:, 1]),
-        colormap=colormap,)
+            event.image_sensor.pixel_directions[:, 1]
+        ),
+        colormap=colormap,
+    )
     fig.savefig(path)
 
 
@@ -224,7 +245,7 @@ def save_event_overview_images(
     start_slice=None,
     stop_slice=None,
     colormap="viridis",
-    scale = .7
+    scale=0.7,
 ):
     sensor_response = iaat.telescope.simulate_antenna_response(
         event.raw_image_sensor_response,
@@ -232,92 +253,99 @@ def save_event_overview_images(
         antenna_temperature=80,
         lower_frequency_cut=1.3e9,
         upper_frequency_cut=2.3e9,
-        order=5)
+        order=5,
+    )
     sr = sensor_response
 
     os.makedirs(output_directory, exist_ok=True)
-    FREE_SPACE_IMPEDANCE_Z0 = 120*np.pi
+    FREE_SPACE_IMPEDANCE_Z0 = 120 * np.pi
     ELECTRON_VOLT = 1.6022e-19
-    power_north = sr.north**2/FREE_SPACE_IMPEDANCE_Z0
-    power_west = sr.west**2/FREE_SPACE_IMPEDANCE_Z0
-    energy_north = power_north*sr.time_slice_duration
-    energy_west = power_west*sr.time_slice_duration
+    power_north = sr.north ** 2 / FREE_SPACE_IMPEDANCE_Z0
+    power_west = sr.west ** 2 / FREE_SPACE_IMPEDANCE_Z0
+    energy_north = power_north * sr.time_slice_duration
+    energy_west = power_west * sr.time_slice_duration
     total_energy = energy_north + energy_west
-
 
     pixel_directions_x = np.rad2deg(event.image_sensor.pixel_directions[:, 0])
     pixel_directions_y = np.rad2deg(event.image_sensor.pixel_directions[:, 1])
 
     final_energy_integral = np.sum(
-        total_energy[:, start_slice:stop_slice],
-        axis=1)
+        total_energy[:, start_slice:stop_slice], axis=1
+    )
     max_energy = np.max(final_energy_integral)
 
     image_idx = 0
     for time_slice in np.arange(start_slice, stop_slice):
-        t = time_slice*event.simulation_truth['time_slice_duration']
-        time_info = 't: ' + str(np.round(t*1e9, 1)) + 'ns'
+        t = time_slice * event.simulation_truth["time_slice_duration"]
+        time_info = "t: " + str(np.round(t * 1e9, 1)) + "ns"
         total_energy_integral = np.sum(
-            total_energy[:, start_slice:time_slice], axis=1)
+            total_energy[:, start_slice:time_slice], axis=1
+        )
 
         north_abs_max = np.max(np.abs(sr.north[:, start_slice:stop_slice]))
         west_abs_max = np.max(np.abs(sr.west[:, start_slice:stop_slice]))
         comp_abs_max = np.max([north_abs_max, west_abs_max])
 
-        fig = plt.figure(figsize=(16*scale, 9*scale), dpi=120/scale)
+        fig = plt.figure(figsize=(16 * scale, 9 * scale), dpi=120 / scale)
         fig.suptitle(
-            simulation_truth_info_string(event.simulation_truth) + ', ' +
-            time_info + '\n' + r"electric field/$\mu$Vm$^{-1}$" +
-            "                                                         " +
-            "energy/eV")
+            simulation_truth_info_string(event.simulation_truth)
+            + ", "
+            + time_info
+            + "\n"
+            + r"electric field/$\mu$Vm$^{-1}$"
+            + "                                                         "
+            + "energy/eV"
+        )
 
-        ax_field_north = fig.add_axes([0. , 0.5, 0.4, 0.4])
-        ax_field_north.spines['right'].set_visible(False)
-        ax_field_north.spines['top'].set_visible(False)
-        ax_field_north.set_xlabel('c_x / deg')
-        ax_field_north.set_ylabel('c_y / deg')
+        ax_field_north = fig.add_axes([0.0, 0.5, 0.4, 0.4])
+        ax_field_north.spines["right"].set_visible(False)
+        ax_field_north.spines["top"].set_visible(False)
+        ax_field_north.set_xlabel("c_x / deg")
+        ax_field_north.set_ylabel("c_y / deg")
         add2ax(
             ax=ax_field_north,
-            pixel_amplitudes=1e6*sr.north[:, time_slice],
+            pixel_amplitudes=1e6 * sr.north[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
-            colormap='seismic',
-            vmin=-1e6*comp_abs_max,
-            vmax=1e6*comp_abs_max,)
+            colormap="seismic",
+            vmin=-1e6 * comp_abs_max,
+            vmax=1e6 * comp_abs_max,
+        )
 
-        ax_field_west = fig.add_axes([0. , 0.1, 0.4, 0.4])
-        ax_field_west.spines['right'].set_visible(False)
-        ax_field_west.spines['top'].set_visible(False)
-        ax_field_west.set_xlabel('c_x / deg')
-        ax_field_west.set_ylabel('c_y / deg')
+        ax_field_west = fig.add_axes([0.0, 0.1, 0.4, 0.4])
+        ax_field_west.spines["right"].set_visible(False)
+        ax_field_west.spines["top"].set_visible(False)
+        ax_field_west.set_xlabel("c_x / deg")
+        ax_field_west.set_ylabel("c_y / deg")
         add2ax(
             ax=ax_field_west,
-            pixel_amplitudes=1e6*sr.west[:, time_slice],
+            pixel_amplitudes=1e6 * sr.west[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
-            colormap='seismic',
-            vmin=-1e6*comp_abs_max,
-            vmax=1e6*comp_abs_max,)
+            colormap="seismic",
+            vmin=-1e6 * comp_abs_max,
+            vmax=1e6 * comp_abs_max,
+        )
 
-        ax_energy_integral = fig.add_axes([0.375 , 0.075, 0.6, 0.85])
-        ax_energy_integral.spines['right'].set_visible(False)
-        ax_energy_integral.spines['top'].set_visible(False)
-        ax_energy_integral.set_xlabel('c_x / deg')
-        ax_energy_integral.set_ylabel('c_y / deg')
+        ax_energy_integral = fig.add_axes([0.375, 0.075, 0.6, 0.85])
+        ax_energy_integral.spines["right"].set_visible(False)
+        ax_energy_integral.spines["top"].set_visible(False)
+        ax_energy_integral.set_xlabel("c_x / deg")
+        ax_energy_integral.set_ylabel("c_y / deg")
         add2ax(
             ax=ax_energy_integral,
-            pixel_amplitudes=total_energy_integral/ELECTRON_VOLT,
+            pixel_amplitudes=total_energy_integral / ELECTRON_VOLT,
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             colormap=colormap,
-            vmin=0.,
-            vmax=max_energy/ELECTRON_VOLT)
+            vmin=0.0,
+            vmax=max_energy / ELECTRON_VOLT,
+        )
         image_idx += 1
 
         fig.savefig(
-            os.path.join(
-                output_directory,
-                "{:06d}.jpg".format(image_idx)))
+            os.path.join(output_directory, "{:06d}.jpg".format(image_idx))
+        )
         plt.close(fig)
 
 
@@ -328,8 +356,10 @@ def save_event_overview_video(event_path, output_path):
             event=event,
             output_directory=tmp_dir,
             start_slice=120,
-            stop_slice=180)
+            stop_slice=180,
+        )
         make_video_from_image_slices(
             image_slice_dir=tmp_dir,
             out_path=output_path,
-            image_slice_filename_wildcard='%06d.jpg')
+            image_slice_filename_wildcard="%06d.jpg",
+        )

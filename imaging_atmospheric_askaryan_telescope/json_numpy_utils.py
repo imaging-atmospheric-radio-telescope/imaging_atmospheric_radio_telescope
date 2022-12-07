@@ -3,10 +3,11 @@ import json
 
 
 class NumPyJSONEncoder(json.JSONEncoder):
-    '''
+    """
     By mgilson, Software Engineer at Argo AI, 2017
     Handles numpy number types correctly
-    '''
+    """
+
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
