@@ -8,6 +8,7 @@ import os
 from os.path import join
 import json
 import tarfile
+import glob
 
 
 def parabola_surface_height(
@@ -76,14 +77,14 @@ def make_mirror(
     imre["radius"] = radius
     imre["diameter"] = 2.0 * radius
     imre["area"] = np.pi * radius ** 2
-    imre["probe_areal_density"] = probe_areal_density
-    imre["probe_positions"] = make_probe_positions(
+    imre["antenna_areal_density"] = probe_areal_density
+    imre["antenna_positions"] = make_probe_positions(
         random_seed=0,
         focal_length=focal_length,
         radius=radius,
         probe_areal_density=probe_areal_density,
     )
-    imre["num_probes"] = imre["probe_positions"].shape[0]
+    imre["num_antennas"] = imre["antenna_positions"].shape[0]
     return imre
 
 
@@ -127,18 +128,18 @@ def make_sensor(
     imse["outer_radius"] = sensor_outer_radius
     imse["outer_diameter"] = 2 * sensor_outer_radius
 
-    imse["feed_horn_inner_radius"] = feed_horn_inner_radius
-    imse["feed_horn_positions"] = make_feed_horn_positions(
+    imse["antenna_inner_radius"] = feed_horn_inner_radius
+    imse["antenna_positions"] = make_feed_horn_positions(
         sensor_outer_radius=sensor_outer_radius,
         sensor_distance=sensor_distance,
-        feed_horn_inner_radius=imse["feed_horn_inner_radius"],
+        feed_horn_inner_radius=imse["antenna_inner_radius"],
     )
-    imse["feed_horn_areal_density"] = feed_horn_areal_density(
-        feed_horn_inner_radius=imse["feed_horn_inner_radius"],
+    imse["antenna_areal_density"] = feed_horn_areal_density(
+        feed_horn_inner_radius=imse["antenna_inner_radius"],
     )
-    imse["num_feed_horns"] = imse["feed_horn_positions"].shape[0]
-    imse["feed_horn_area"] = 1.0 / imse["feed_horn_areal_density"]
-    imse["area"] = imse["feed_horn_area"] * imse["num_feed_horns"]
+    imse["num_antennas"] = imse["antenna_positions"].shape[0]
+    imse["antenna_area"] = 1.0 / imse["antenna_areal_density"]
+    imse["area"] = imse["antenna_area"] * imse["num_antennas"]
     return imse
 
 
@@ -158,7 +159,7 @@ def make_matrix(
     assert speed_of_light > 0.0
 
     distances = scipy.spatial.distance_matrix(
-        sensor["feed_horn_positions"], mirror["probe_positions"],
+        sensor["antenna_positions"], mirror["antenna_positions"],
     ).astype(np.float32)
 
     absolute_time_delays = distances / speed_of_light
@@ -201,45 +202,97 @@ def add_first_to_second_at(first, second, at):
     second[start:end] += first[start - at : end - at]
 
 
-def make_feed_horn_responses(
-    telescope,
-    mirror_antenna_responses,
-    num_time_slices=300,
-    component="north",
+def make_sensor_electric_fields(
+    telescope, mirror_electric_fields, num_time_slices,
 ):
-    feed_horn_responses = np.zeros(
-        shape=(telescope["sensor"]["num_feed_horns"], num_time_slices)
-    )
 
-    antenna_responses = mirror_antenna_responses[component]
-    time_slice_duration = mirror_antenna_responses["time_slice_duration"]
-    antenna_start_slice_offsets = mirror_antenna_responses[
-        "antenna_start_slice_offsets"
-    ]
+    mir = mirror_electric_fields
+
+    out = {}
+    out["global_start_time"] = mir["global_start_time"]
+    out["time_slice_duration"] = mir["time_slice_duration"]
+    out["num_time_slices"] = num_time_slices
+    out["num_antennas"] = telescope["sensor"]["num_antennas"]
+    out["electric_fields"] = np.zeros(
+        shape=(out["num_antennas"], out["num_time_slices"], 3),
+        dtype=np.float32,
+    )
 
     mirror_gain = (
-        telescope["mirror"]["area"] / telescope["sensor"]["feed_horn_area"]
+        telescope["sensor"]["antenna_areal_density"]
+        / telescope["mirror"]["antenna_areal_density"]
     )
 
-    for ifh in range(telescope["sensor"]["num_feed_horns"]):
-        for ipb in range(telescope["mirror"]["num_probes"]):
-            time_delay = telescope["matrix"]["relative_time_delays"][ifh, ipb]
+    for dim in range(3):
+        for ise in range(telescope["sensor"]["num_antennas"]):
+            print(dim, ise)
+            for imi in range(telescope["mirror"]["num_antennas"]):
+                time_delay = telescope["matrix"]["relative_time_delays"][
+                    ise, imi
+                ]
 
-            slice_delay = int(np.round(time_delay / time_slice_duration))
+                slice_delay = int(
+                    np.round(time_delay / out["time_slice_duration"])
+                )
 
-            gain = 1.0
-            gain *= telescope["matrix"]["relative_amplitudes"][ifh, ipb]
-            gain *= mirror_gain
+                gain = 1.0
+                gain *= telescope["matrix"]["relative_amplitudes"][ise, imi]
+                gain *= mirror_gain
 
-            start_slice_delay = antenna_start_slice_offsets[ipb]
+                add_first_to_second_at(
+                    first=mir["electric_fields"][imi, :, dim] * gain,
+                    second=out["electric_fields"][ise, :, dim],
+                    at=slice_delay,
+                )
+    return out
 
-            add_first_to_second_at(
-                first=antenna_responses[ipb, :] * gain,
-                second=feed_horn_responses[ifh, :],
-                at=slice_delay + start_slice_delay,
-            )
 
-    return feed_horn_responses
+def write_electric_fields(path, electric_fields):
+    s = electric_fields
+    os.makedirs(path, exist_ok=True)
+
+    with open(os.path.join(path, "time_slice_duration.float64"), "wb") as f:
+        f.write(np.float64(s["time_slice_duration"]).tobytes())
+
+    with open(os.path.join(path, "num_time_slices.uint64"), "wb") as f:
+        f.write(np.uint64(s["num_time_slices"]).tobytes())
+
+    with open(os.path.join(path, "num_antennas.uint64"), "wb") as f:
+        f.write(np.uint64(s["num_antennas"]).tobytes())
+
+    with open(os.path.join(path, "global_start_time.float64"), "wb") as f:
+        f.write(np.float64(s["global_start_time"]).tobytes())
+
+    assert s["electric_fields"].dtype == np.float32
+    with open(
+        os.path.join(path, "electric_fields.antenna.time.dim.float32"), "wb"
+    ) as f:
+        f.write(s["electric_fields"].tobytes(order="C"))
+
+
+def read_electric_fields(path):
+    o = {}
+    with open(os.path.join(path, "time_slice_duration.float64"), "rb") as f:
+        o["time_slice_duration"] = np.frombuffer(f.read(), dtype="float64")[0]
+
+    with open(os.path.join(path, "num_time_slices.uint64"), "rb") as f:
+        o["num_time_slices"] = np.frombuffer(f.read(), dtype="uint64")[0]
+
+    with open(os.path.join(path, "num_antennas.uint64"), "rb") as f:
+        o["num_antennas"] = np.frombuffer(f.read(), dtype="uint64")[0]
+
+    with open(os.path.join(path, "global_start_time.float64"), "rb") as f:
+        o["global_start_time"] = np.frombuffer(f.read(), dtype="float64")[0]
+
+    with open(
+        os.path.join(path, "electric_fields.antenna.time.dim.float32"), "rb"
+    ) as f:
+        arr = np.frombuffer(f.read(), dtype="float32")
+        o["electric_fields"] = arr.reshape(
+            o["num_antennas"], o["num_time_slices"], 3,
+        )
+
+    return o
 
 
 """

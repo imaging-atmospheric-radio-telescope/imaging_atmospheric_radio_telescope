@@ -1,9 +1,14 @@
 # Copyright 2017 Sebastian A. Mueller
-import numpy as np
+
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.patches import RegularPolygon
 from matplotlib.collections import PatchCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 import os
 import subprocess
 import imaging_atmospheric_askaryan_telescope as iaat
@@ -366,3 +371,90 @@ def save_event_overview_video(event_path, output_path):
             out_path=output_path,
             image_slice_filename_wildcard="%06d.jpg",
         )
+
+
+def save_image_slices_electric_field(
+    electric_fields,
+    antenna_positions,
+    path,
+    time_slice_region_of_interest=np.arange(70, 200),
+    dpi=160,
+    figsize=(12, 4),
+):
+    ef = electric_fields
+    os.makedirs(path, exist_ok=True)
+
+    north = ef["electric_fields"][:, :, 0] * 1e6  # in uV/m
+    west = ef["electric_fields"][:, :, 1] * 1e6
+    vertical = ef["electric_fields"][:, :, 2] * 1e6
+
+    north_max = north[:, :].max()
+    north_min = north[:, :].min()
+    abs_north = np.max(np.abs([north_max, north_min]))
+
+    west_max = west[:, :].max()
+    west_min = west[:, :].min()
+    abs_west = np.max(np.abs([west_max, west_min]))
+
+    vertical_max = vertical[:, :].max()
+    vertical_min = vertical[:, :].min()
+    abs_vertical = np.max(np.abs([vertical_max, vertical_min]))
+
+    pixel_directions_x = antenna_positions[:, 0]
+    pixel_directions_y = antenna_positions[:, 1]
+
+    for idx, time_slice in enumerate(time_slice_region_of_interest):
+        fig, axarr = plt.subplots(1, 3, figsize=figsize)
+        t = time_slice * ef["time_slice_duration"]
+        time_info = (
+            "t: "
+            + str(np.round(t * 1e12, 0))
+            + "ps, slice: {: 6d}".format(time_slice)
+        )
+        fig.suptitle(
+            # simulation_truth_info_string(event.simulation_truth)
+            # + ", "
+            time_info
+            + "\n"
+            + "north, west, and vertical electric-field /(uV/m)"
+        )
+        add2ax(
+            ax=axarr[0],
+            pixel_amplitudes=north[:, time_slice],
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            vmin=abs_north,
+            vmax=-abs_north,
+        )
+        axarr[0].set_xlabel("x/m")
+        axarr[0].set_ylabel("y/m")
+        axarr[0].spines["right"].set_visible(False)
+        axarr[0].spines["top"].set_visible(False)
+        add2ax(
+            ax=axarr[1],
+            pixel_amplitudes=west[:, time_slice],
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            vmin=abs_west,
+            vmax=-abs_west,
+        )
+        axarr[1].set_xlabel("x/m")
+        axarr[1].spines["right"].set_visible(False)
+        axarr[1].spines["top"].set_visible(False)
+        axarr[1].yaxis.set_visible(False)
+        add2ax(
+            ax=axarr[2],
+            pixel_amplitudes=vertical[:, time_slice],
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            vmin=abs_vertical,
+            vmax=-abs_vertical,
+        )
+        axarr[2].set_xlabel("x/m")
+        axarr[2].spines["right"].set_visible(False)
+        axarr[2].spines["top"].set_visible(False)
+        axarr[2].yaxis.set_visible(False)
+        plt.savefig(
+            os.path.join(path, "image_{:06d}.jpg".format(idx)), dpi=dpi
+        )
+        plt.close("all")
