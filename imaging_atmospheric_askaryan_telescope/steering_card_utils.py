@@ -13,6 +13,8 @@ def make_corsika_steering_card(
     zenith_distance=0.0,
     azimuth=0.0,
     observation_level_altitude=2200,
+    earth_magnetic_field_x_muT=12.5,
+    earth_magnetic_field_z_muT=-25.9,
 ):
     zd_deg = np.rad2deg(zenith_distance)
     az_deg = np.rad2deg(azimuth)
@@ -42,7 +44,9 @@ def make_corsika_steering_card(
     sc += "MUADDI T\n"
     sc += "PAROUT F  F\n"
     sc += "MAXPRT 1\n"
-    sc += "MAGNET 19.71 -14.18\n"
+    sc += "MAGNET {0:.3E} {0:.3E}\n".format(
+        earth_magnetic_field_x_muT, earth_magnetic_field_z_muT,
+    )
     sc += "LONGI T   5.  T  T\n"
     sc += "RADNKG 5.000E+05\n"
     sc += "DATBAS F\n"
@@ -115,15 +119,16 @@ def make_coreas_steering_card(
     return sc
 
 
-def make_coreas_antenna_list(huygens_antennas_positions):
+def make_coreas_antenna_list(positions, prefix=""):
     template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
-    template_line += "huygens_antenna_{antenna_idx:06d}\n"
+    template_line += "{prefix:s}{antenna_idx:06d}\n"
     antenna_list = ""
-    for i in range(huygens_antennas_positions.shape[0]):
+    for i in range(positions.shape[0]):
         antenna_list += template_line.format(
-            x=huygens_antennas_positions[i, 0] * 1e2,
-            y=huygens_antennas_positions[i, 1] * 1e2,
-            z=huygens_antennas_positions[i, 2] * 1e2,
+            x=positions[i, 0] * 1e2,
+            y=positions[i, 1] * 1e2,
+            z=positions[i, 2] * 1e2,
+            prefix=prefix,
             antenna_idx=i,
         )
     return antenna_list

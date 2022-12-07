@@ -29,11 +29,11 @@ def assert_same_time_slice_duration(
 
 
 def time_series_paths_in_numerical_order(path):
-    all_time_series_paths = glob.glob(os.path.join(path, "*.dat"))
+    all_time_series_paths = glob.glob(os.path.join(path, "raw_*.dat"))
     antenna_indices = []
     for time_series_path in all_time_series_paths:
         basename = os.path.basename(time_series_path)
-        antenna_index = int(basename[20:26])
+        antenna_index = int(basename[4:10])
         antenna_indices.append(antenna_index)
     antenna_indices = np.array(antenna_indices)
     order = np.argsort(antenna_indices)
@@ -84,8 +84,57 @@ def read_electric_field_on_imaging_reflector(path):
         "global_end_time": global_end_time,
         "antenna_start_time_offsets": antenna_start_time_offsets,
         "antenna_start_slice_offsets": antenna_start_slice_offsets,
-        "north_component": raw[:, :, COREAS_NORTH_COMPONENT],
-        "west_component": raw[:, :, COREAS_WEST_COMPONENT],
-        "vertical_component": raw[:, :, COREAS_VERTICAL_COMPONENT],
+        "north": raw[:, :, COREAS_NORTH_COMPONENT],
+        "west": raw[:, :, COREAS_WEST_COMPONENT],
+        "vertical": raw[:, :, COREAS_VERTICAL_COMPONENT],
         "number_time_slices": raw.shape[1],
     }
+
+
+ANTENNA_RESPONSE_DTYPES = {
+    "time_slice_duration": "float64",
+    "global_start_time": "float64",
+    "global_end_time": "float64",
+    "antenna_start_time_offsets": "float64",
+    "antenna_start_slice_offsets": "int64",
+    "north": "float32",
+    "west": "float32",
+    "vertical": "float32",
+    "number_time_slices": "uint64",
+}
+
+
+def write_antenna_response(response, path):
+    os.makedirs(path, exist_ok=True)
+
+    dtypes = ANTENNA_RESPONSE_DTYPES
+
+    for dt in dtypes:
+        with open(os.path.join(path, dt + "." + dtypes[dt]), "wb") as f:
+            f.write(np.array(response[dt]).astype(dtypes[dt]).tobytes())
+
+
+def read_antenna_response(path):
+    dtypes = ANTENNA_RESPONSE_DTYPES
+    out = {}
+    for dt in dtypes:
+        with open(os.path.join(path, dt + "." + dtypes[dt]), "rb") as f:
+            out[dt] = np.frombuffer(f.read(), dtype=dtypes[dt])
+
+    out["time_slice_duration"] = out["time_slice_duration"][0]
+    out["global_start_time"] = out["global_start_time"][0]
+    out["global_end_time"] = out["global_end_time"][0]
+    out["antenna_start_time_offsets"] = out["antenna_start_time_offsets"]
+    out["antenna_start_slice_offsets"] = out["antenna_start_slice_offsets"]
+    out["number_time_slices"] = out["number_time_slices"][0]
+    num_antennas = out["antenna_start_slice_offsets"].shape[0]
+
+    out["north"] = out["north"].reshape(
+        num_antennas, out["number_time_slices"]
+    )
+    out["west"] = out["west"].reshape(num_antennas, out["number_time_slices"])
+    out["vertical"] = out["vertical"].reshape(
+        num_antennas, out["number_time_slices"]
+    )
+
+    return out
