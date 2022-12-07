@@ -40,16 +40,20 @@ def make_ImagingReflector(
     number_antennas_in_square = np.int(
         np.ceil(square_area * antenna_areal_density)
     )
-    x = np.random.uniform(
-        low=-aperture_radius,
-        high=+aperture_radius,
-        size=number_antennas_in_square,
-    )
-    y = np.random.uniform(
-        low=-aperture_radius,
-        high=+aperture_radius,
-        size=number_antennas_in_square,
-    )
+
+    gs = 1.0 / np.sqrt(antenna_areal_density)
+    sr = aperture_radius + gs
+    x = []
+    y = []
+    for xp in np.linspace(-sr, sr, (2 * sr / gs)):
+        for yp in np.linspace(-sr, sr, (2 * sr / gs)):
+            xf = xp + np.random.uniform(low=-gs / 3, high=gs / 3, size=1)
+            yf = yp + np.random.uniform(low=-gs / 3, high=gs / 3, size=1)
+            x.append(xf)
+            y.append(yf)
+    x = np.array(x)
+    y = np.array(y)
+
     r = np.sqrt(x ** 2 + y ** 2)
     inside_aperture = r <= aperture_radius
     number_huygens_antennas = inside_aperture.sum()
