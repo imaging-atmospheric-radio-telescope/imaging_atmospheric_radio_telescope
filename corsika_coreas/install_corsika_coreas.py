@@ -27,29 +27,30 @@ import subprocess
 
 
 def call_and_save_std(target, o_path, e_path, stdin=None):
-    with open(o_path, 'w') as stdout, open(e_path, 'w') as stderr:
+    with open(o_path, "w") as stdout, open(e_path, "w") as stderr:
         subprocess.call(target, stdout=stdout, stderr=stderr, stdin=stdin)
 
 
 def install(install_path, username, password):
-    corsika_config_path = os.path.abspath('./config.h')
+    corsika_config_path = os.path.abspath("./config.h")
     assert os.path.isfile(corsika_config_path)
 
     os.makedirs(install_path, exist_ok=True)
     os.chdir(install_path)
 
     # download CORSIKA from KIT
-    web_path = 'https://web.ikp.kit.edu/corsika/download/corsika-v770/'
-    corsika_tarname = 'corsika-77100.tar.gz'
+    web_path = "https://web.ikp.kit.edu/corsika/download/corsika-v770/"
+    corsika_tarname = "corsika-77100.tar.gz"
     link = web_path + corsika_tarname
     call_and_save_std(
-        target=['wget', '--user', username, '--password', password, link],
-        o_path='wget.o',
-        e_path='wget.e')
+        target=["wget", "--user", username, "--password", password, link],
+        o_path="wget.o",
+        e_path="wget.e",
+    )
 
     # untar, unzip the CORSIKA download
     tar = tarfile.open(corsika_tarname)
-    tar.extractall(path='.')
+    tar.extractall(path=".")
     tar.close()
 
     # Go into CORSIKA dir
@@ -57,26 +58,28 @@ def install(install_path, username, password):
     os.chdir(corsika_path)
 
     # Provide the Askarian Telescope coconut config.h
-    shutil.copyfile(corsika_config_path, 'include/config.h')
+    shutil.copyfile(corsika_config_path, "include/config.h")
 
     # coconut configure
     call_and_save_std(
-        target=['./coconut'],
-        o_path='../coconut_configure.o',
-        e_path='../coconut_configure.e',
-        stdin=open('/dev/null', 'r'))
+        target=["./coconut"],
+        o_path="../coconut_configure.o",
+        e_path="../coconut_configure.e",
+        stdin=open("/dev/null", "r"),
+    )
 
     # coconut build
     call_and_save_std(
-        target=['./coconut', '-i'],
-        o_path='../coconut_make.o',
-        e_path='../coconut_make.e')
+        target=["./coconut", "-i"],
+        o_path="../coconut_make.o",
+        e_path="../coconut_make.e",
+    )
 
     # Copy std ATMPROFS to the CORSIKA run directory
-    for atmprof in glob.glob('bernlohr/atmprof*'):
-        shutil.copy(atmprof, 'run')
+    for atmprof in glob.glob("bernlohr/atmprof*"):
+        shutil.copy(atmprof, "run")
 
-    if os.path.isfile('run/corsika77100Linux_QGSII_urqmd_coreas'):
+    if os.path.isfile("run/corsika77100Linux_QGSII_urqmd_coreas"):
         sys.exit(0)
     else:
         sys.exit(1)
@@ -86,11 +89,13 @@ def main():
     try:
         arguments = docopt.docopt(__doc__)
         install(
-            install_path=arguments['--install_path'],
-            username=arguments['--username'],
-            password=arguments['--password'])
+            install_path=arguments["--install_path"],
+            username=arguments["--username"],
+            password=arguments["--password"],
+        )
     except docopt.DocoptExit as e:
         print(e)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
