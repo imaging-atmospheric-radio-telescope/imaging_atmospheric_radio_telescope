@@ -35,7 +35,8 @@ ImagingReflector = collections.namedtuple(
 def make_ImagingReflector(
     focal_length=75, aperture_radius=25, random_seed=0, antenna_areal_density=3
 ):
-    np.random.seed(random_seed)
+    prng = np.random.Generator(np.random.PCG64(random_seed))
+
     square_area = (2 * aperture_radius) ** 2
     number_antennas_in_square = np.int(
         np.ceil(square_area * antenna_areal_density)
@@ -47,8 +48,8 @@ def make_ImagingReflector(
     y = []
     for xp in np.linspace(-sr, sr, (2 * sr / gs)):
         for yp in np.linspace(-sr, sr, (2 * sr / gs)):
-            xf = xp + np.random.uniform(low=-gs / 3, high=gs / 3, size=1)
-            yf = yp + np.random.uniform(low=-gs / 3, high=gs / 3, size=1)
+            xf = xp + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
+            yf = yp + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
             x.append(xf)
             y.append(yf)
     x = np.array(x)
@@ -446,6 +447,7 @@ def _butter_bandpass_filter(data, lowcut, highcut, fs, order=5, axis=0):
 
 
 def simulate_antenna_response(
+    prng,
     raw_image_sensor_response,
     antenna_efficiency=0.5,
     antenna_temperature=80,
@@ -496,13 +498,13 @@ def simulate_antenna_response(
     )
     noise_e_field = np.sqrt(antenna_noise_power * VACUUM_IMPEDANCE)
 
-    north += np.random.normal(
+    north += prng.normal(
         loc=0.0, scale=noise_e_field, size=(north.shape[0], north.shape[1])
     )
-    west += np.random.normal(
+    west += prng.normal(
         loc=0.0, scale=noise_e_field, size=(west.shape[0], west.shape[1])
     )
-    vertical += np.random.normal(
+    vertical += prng.normal(
         loc=0.0,
         scale=noise_e_field,
         size=(vertical.shape[0], vertical.shape[1]),

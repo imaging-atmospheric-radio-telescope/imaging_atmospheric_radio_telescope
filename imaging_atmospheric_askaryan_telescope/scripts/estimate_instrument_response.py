@@ -4,9 +4,8 @@ import os
 import random
 import sun_grid_engine_map as sge
 
-
 RANDOM_SEED = 0
-np.random.seed(RANDOM_SEED)
+prng = np.random.Generator(np.random.PCG64(RANDOM_SEED))
 
 CORSIKA_PATH = os.path.join(
     "/",
@@ -71,6 +70,7 @@ for particle in particles:
         corsika_coreas_path=CORSIKA_PATH,
         steering_card=card,
         out_dir=particle_dir,
+        prng=prng,
     )
 
     jobs += particle_jobs

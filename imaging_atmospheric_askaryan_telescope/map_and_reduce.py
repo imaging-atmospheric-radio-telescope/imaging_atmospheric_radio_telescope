@@ -59,7 +59,7 @@ def run_job(job):
     return 1
 
 
-def make_jobs(corsika_coreas_path, steering_card, out_dir):
+def make_jobs(corsika_coreas_path, steering_card, out_dir, prng):
     assert op.exists(corsika_coreas_path)
     sc = steering_card
 
@@ -69,6 +69,7 @@ def make_jobs(corsika_coreas_path, steering_card, out_dir):
     )
 
     event_parameters = iaat.run_utils.draw_event_parameters(
+        prng=prng,
         number_events=sc["run"]["number_events"],
         primary_particle_id=sc["run"]["primary_particle_id"],
         energy=sc["run"]["energy"],

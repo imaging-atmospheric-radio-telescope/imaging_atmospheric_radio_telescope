@@ -246,9 +246,12 @@ def save_event_overview_images(
     stop_slice=None,
     colormap="viridis",
     scale=0.7,
+    random_seed=0,
 ):
+    prng = np.random.Generator(np.random.PCG64(random_seed))
     sensor_response = iaat.telescope.simulate_antenna_response(
-        event.raw_image_sensor_response,
+        prng=prng,
+        raw_image_sensor_response=event.raw_image_sensor_response,
         antenna_efficiency=0.5,
         antenna_temperature=80,
         lower_frequency_cut=1.3e9,
