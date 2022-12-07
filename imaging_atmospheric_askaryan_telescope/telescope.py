@@ -17,33 +17,32 @@ def parabola_surface_height(
     return z
 
 
-ImagingReflector = collections.namedtuple(
-    "ImagingReflector",
-    [
-        "random_seed",
-        "focal_length",
-        "aperture_radius",
-        "aperture_diameter",
-        "antenna_areal_density",
-        "area",
-        "number_huygens_antennas",
-        "huygens_antennas_positions",
-    ],
-)
-
-
-def make_ImagingReflector(
-    focal_length=75, aperture_radius=25, random_seed=0, antenna_areal_density=3
+def make_probe_positions(
+    random_seed=0, focal_length=75, radius=25, probe_areal_density=3
 ):
+    """
+    Returns the randomly drawn positions of huygens probes on a parabolic
+    imaging reflector.
+
+    Parameters
+    ----------
+    random_seed : int
+        Seed for probe positions.
+    focal_length : float
+        Focal-length of imaging reflector.
+    radius : float
+        Radius of the imaging reflector.
+    probe_areal_density : float
+        Density of probes per area in imaging reflector.
+    """
+    assert focal_length > 0.0
+    assert radius > 0.0
+    assert probe_areal_density > 0.0
+
     prng = np.random.Generator(np.random.PCG64(random_seed))
 
-    square_area = (2 * aperture_radius) ** 2
-    number_antennas_in_square = np.int(
-        np.ceil(square_area * antenna_areal_density)
-    )
-
-    gs = 1.0 / np.sqrt(antenna_areal_density)
-    sr = aperture_radius + gs
+    gs = 1.0 / np.sqrt(probe_areal_density)
+    sr = radius + gs
     x = []
     y = []
     for xp in np.linspace(-sr, sr, (2 * sr / gs)):
@@ -56,46 +55,41 @@ def make_ImagingReflector(
     y = np.array(y)
 
     r = np.sqrt(x ** 2 + y ** 2)
-    inside_aperture = r <= aperture_radius
-    number_huygens_antennas = inside_aperture.sum()
-    huygens_antennas_positions = np.zeros(shape=(number_huygens_antennas, 3))
-    huygens_antennas_positions[:, 0] = x[inside_aperture]
-    huygens_antennas_positions[:, 1] = y[inside_aperture]
-    huygens_antennas_positions[:, 2] = parabola_surface_height(
+    inside_aperture = r <= radius
+    number_probes = inside_aperture.sum()
+
+    positions = np.zeros(shape=(number_probes, 3))
+    positions[:, 0] = x[inside_aperture]
+    positions[:, 1] = y[inside_aperture]
+    positions[:, 2] = parabola_surface_height(
         distance_to_optical_axis=r[inside_aperture], focal_length=focal_length
     )
+    return positions
 
-    return ImagingReflector(
-        random_seed=random_seed,
+
+def make_mirror(
+    random_seed=0,
+    focal_length=75,
+    radius=25,
+    probe_areal_density=3,
+):
+    imre = {}
+    imre["random_seed"] = random_seed
+    imre["focal_length"] = focal_length
+    imre["radius"] = radius
+    imre["diameter"] = 2.0 * radius
+    imre["area"] = np.pi * radius ** 2
+    imre["probe_areal_density"] = probe_areal_density
+    imre["probe_positions"] = make_probe_positions(
+        random_seed=0,
         focal_length=focal_length,
-        aperture_radius=aperture_radius,
-        aperture_diameter=aperture_radius * 2,
-        antenna_areal_density=antenna_areal_density,
-        area=np.pi * aperture_radius ** 2,
-        number_huygens_antennas=number_huygens_antennas,
-        huygens_antennas_positions=huygens_antennas_positions,
+        radius=radius,
+        probe_areal_density=probe_areal_density,
     )
+    imre["num_probes"] = imre["probe_positions"].shape[0]
+    return imre
 
-
-def ImagingReflector_from_dict(d):
-    return make_ImagingReflector(
-        focal_length=d["focal_length"],
-        aperture_radius=d["aperture_radius"],
-        random_seed=d["random_seed"],
-        antenna_areal_density=d["antenna_areal_density"],
-    )
-
-
-def ImagingReflector_to_dict(imaging_reflector):
-    ir = imaging_reflector
-    return {
-        "focal_length": ir.focal_length,
-        "aperture_radius": ir.aperture_radius,
-        "random_seed": ir.random_seed,
-        "antenna_areal_density": ir.antenna_areal_density,
-    }
-
-
+"""
 ImageSensor = collections.namedtuple(
     "ImageSensor",
     [
@@ -118,8 +112,69 @@ ImageSensor = collections.namedtuple(
         "antenna_areal_density",
     ],
 )
+"""
+
+UNIT_HEX_U = np.array([1.0, 0.0, 0.0])
+UNIT_HEX_V = np.array([0.5, np.sqrt(3) / 2, 0.0])
+
+def make_feed_horn_positions(
+    sensor_outer_radius,
+    sensor_distance,
+    feed_horn_inner_radius,
+):
+    assert sensor_outer_radius > 0
+    assert sensor_distance > 0
+    assert feed_horn_inner_radius > 0
+
+    hex_u = 2.0 * feed_horn_inner_radius * UNIT_HEX_U
+    hex_v = 2.0 * feed_horn_inner_radius * UNIT_HEX_V
+
+    feed_horn_outer_radius = feed_horn_inner_radius * (2.0 / np.sqrt(3.0))
+
+    num = int(np.ceil(sensor_outer_radius / feed_horn_inner_radius))
+
+    positions = []
+    for u in np.arange(-num, num + 1):
+        for v in np.arange(-num, num + 1):
+            pos_xy = u * hex_u + v * hex_v
+            r = np.linalg.norm(pos_xy)
+            if r + feed_horn_outer_radius < sensor_outer_radius:
+                positions.append(
+                    pos_xy + np.array([0, 0, sensor_distance])
+                )
+    return np.array(positions)
 
 
+def feed_horn_areal_density(feed_horn_inner_radius):
+    feed_horn_area = feed_horn_inner_radius ** 2 * np.pi
+    return 1.0 / feed_horn_area
+
+
+def make_sensor(
+    sensor_outer_radius,
+    sensor_distance,
+    feed_horn_inner_radius,
+):
+    imse = {}
+    imse["outer_radius"] = sensor_outer_radius
+    imse["outer_diameter"] = 2 * sensor_outer_radius
+
+    imse["feed_horn_inner_radius"] = feed_horn_inner_radius
+    imse["feed_horn_positions"] = make_feed_horn_positions(
+        sensor_outer_radius=sensor_outer_radius,
+        sensor_distance=sensor_distance,
+        feed_horn_inner_radius=imse["feed_horn_inner_radius"],
+    )
+    imse["feed_horn_areal_density"] = feed_horn_areal_density(
+        feed_horn_inner_radius=imse["feed_horn_inner_radius"],
+    )
+    imse["num_feed_horns"] = imse["feed_horn_positions"].shape[0]
+    imse["feed_horn_area"] = 1.0 / imse["feed_horn_areal_density"]
+    imse["area"] = imse["feed_horn_area"] * imse["num_feed_horns"] 
+    return imse
+
+
+"""
 def make_ImageSensor(
     pixel_inner_fov=np.deg2rad(0.11),
     fov=np.deg2rad(4.4),
@@ -196,8 +251,9 @@ def ImageSensor_to_dict(image_sensor):
         "focal_length_of_imaging_system": i.focal_length_of_imaging_system,
         "image_sensor_distance": i.image_sensor_distance,
     }
+"""
 
-
+"""
 HuygensImagingGeometry = collections.namedtuple(
     "HuygensImagingGeometry",
     [
@@ -233,6 +289,52 @@ def make_HuygensImagingGeometry(
         relative_time_delays=relative_time_delays,
         relative_amplitudes=relative_amplitudes,
     )
+"""
+
+def make_matrix(
+    mirror,
+    sensor,
+    speed_of_light,
+):
+    """
+    Parameters
+    ----------
+    mirror : dict
+        Positions of the huygenes probes on the imaging mirror.
+    sensor : dict
+        Positions of the feed horns in the image-sensor.
+    speed_of_light : float
+        The speed of light between the imaging reflector and the image-sensor.
+    """
+    assert speed_of_light > 0.0
+
+    distances =  scipy.spatial.distance_matrix(
+        sensor["feed_horn_positions"],
+        mirror["probe_positions"],
+    ).astype(np.float32)
+
+    absolute_time_delays = distances / speed_of_light
+    relative_time_delays = absolute_time_delays - np.min(absolute_time_delays)
+    relative_amplitudes = (1 / distances ** 2) / (1 / distances ** 2).mean()
+
+    imma = {}
+    imma["distances"] = distances
+    imma["absolute_time_delays"] = absolute_time_delays
+    imma["relative_time_delays"] = relative_time_delays
+    imma["relative_amplitudes"] = relative_amplitudes
+    return imma
+
+
+def make_telescope(mirror, sensor, speed_of_light):
+    tele = {}
+    tele["sensor"] = sensor
+    tele["mirror"] = mirror
+    tele["matrix"] = make_matrix(
+        mirror=mirror,
+        sensor=sensor,
+        speed_of_light=speed_of_light,
+    )
+    return tele
 
 
 def add_first_to_second_at(first, second, at):
@@ -252,7 +354,7 @@ def add_first_to_second_at(first, second, at):
 
     second[start:end] += first[start - at : end - at]
 
-
+"""
 def simulate_image_sensor_response(
     huygens_matrix,
     raw_imaging_reflector_huygens_antenna_responses,
@@ -294,6 +396,48 @@ def simulate_image_sensor_response(
                 at=dish2pixel_slice_delay + dish_record_slice_delay,
             )
     return image_sensor_response
+"""
+
+def make_feed_horn_responses(
+    telescope,
+    probe_responses,
+    num_time_slices=300,
+    component="north_component",
+):
+    feed_horn_responses = np.zeros(
+        shape=(telescope["sensor"]["num_feed_horns"], num_time_slices)
+    )
+
+    probe_responses = probe_responses[component]
+    time_slice_duration = probe_responses["time_slice_duration"]
+    antenna_start_slice_offsets = probe_responses["antenna_start_slice_offsets"]
+
+    mirror_gain = (
+        telescope["mirror"]["area"] / telescope["sensor"]["feed_horn_area"]
+    )
+
+    for ifh in range(telescope["sensor"]["num_feed_horns"]):
+        for ipb in range(telescope["mirror"]["num_probes"]):
+            time_delay = telescope["matrix"]["relative_time_delays"][ifh, ipb]
+
+            slice_delay = int(np.round(time_delay / time_slice_duration))
+
+            gain = 1.0
+            gain *= telescope["matrix"]["relative_amplitudes"][ifh, ipb]
+            gain *= mirror_gain
+
+            start_slice_delay = antenna_start_slice_offsets[ipb]
+
+            add_first_to_second_at(
+                first=probe_responses[ipb, :] * gain,
+                second=feed_horn_responses[ifh, :],
+                at=slice_delay + start_slice_delay,
+            )
+
+    return feed_horn_responses
+
+
+
 
 
 RawImageSensorResponse = collections.namedtuple(

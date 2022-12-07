@@ -33,7 +33,7 @@ def simulate_air_shower_and_imaging_reflector_response(
     core_position_on_observation_level_north,
     core_position_on_observation_level_west,
     time_slice_duration,
-    imaging_reflector,
+    imaging_reflector_probe_positions,
     time_slice_duration_of_probe=2e-9,
     time_lower_boundary_of_probe=-1000e-6,
     time_upper_boundary_of_probe=25e-6,
@@ -57,7 +57,6 @@ def simulate_air_shower_and_imaging_reflector_response(
         random_seed=0,
         focal_length=1.0,
         aperture_radius=probe_radius,
-        aperture_diameter=2.0 * probe_radius,
         antenna_areal_density=1.0,
         area=1.0,
         number_huygens_antennas=1,
@@ -83,7 +82,7 @@ def simulate_air_shower_and_imaging_reflector_response(
             core_position_on_observation_level_west
         ),
         time_slice_duration=time_slice_duration_of_probe,
-        imaging_reflector=probe,
+        imaging_reflector_huygens_antennas_positions=probe,
         coreas_time_boundaries={
             "automatic_time_boundaries": 0,
             "time_lower_boundary": time_lower_boundary_of_probe,
@@ -133,7 +132,7 @@ def simulate_air_shower_and_imaging_reflector_response(
             core_position_on_observation_level_west
         ),
         time_slice_duration=time_slice_duration,
-        imaging_reflector=imaging_reflector,
+        imaging_reflector_huygens_antennas_positions=imaging_reflector_huygens_antennas_positions,
         coreas_time_boundaries={
             "automatic_time_boundaries": 0,
             "time_lower_boundary": time_lower_boundary,
@@ -154,7 +153,7 @@ def simulate_air_shower_and_imaging_reflector_response_manual(
     core_position_on_observation_level_north,
     core_position_on_observation_level_west,
     time_slice_duration,
-    imaging_reflector,
+    imaging_reflector_probe_positions,
     coreas_time_boundaries=steering_card_utils.DEFAULT_COREAS_TIME_BOUNDARIES,
 ):
     with tempfile.TemporaryDirectory(prefix="corsika_coreas_") as tmp_dir:
@@ -214,7 +213,7 @@ def simulate_air_shower_and_imaging_reflector_response_manual(
             fout.write(
                 steering_card_utils.make_coreas_antenna_list(
                     huygens_antennas_positions=(
-                        imaging_reflector.huygens_antennas_positions
+                        imaging_reflector_probe_positions
                     )
                 )
             )
@@ -313,7 +312,7 @@ def simulate_event(
             core_position_on_observation_level_west
         ),
         time_slice_duration=time_slice_duration,
-        imaging_reflector=imaging_reflector,
+        imaging_reflector_huygens_antennas_positions=imaging_reflector["huygens_antennas_positions"],
     )
 
     raw_imaging_reflector_huygens_antenna_responses = coreas_bridge.read_electric_field_on_imaging_reflector(

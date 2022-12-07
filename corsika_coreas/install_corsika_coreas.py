@@ -91,4 +91,6 @@ def install(corsika_tar_path, corsika_config_path, install_path):
     for atmprof in glob.glob("bernlohr/atmprof*"):
         shutil.copy(atmprof, "run")
 
-    assert os.path.isfile(os.path.join("run", "corsika77100Linux_QGSII_urqmd_coreas"))
+    assert os.path.isfile(
+        os.path.join("run", "corsika77100Linux_QGSII_urqmd_coreas")
+    )
