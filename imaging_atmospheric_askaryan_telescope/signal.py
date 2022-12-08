@@ -112,3 +112,38 @@ def electric_field_of_thermal_noise(
         antenna_bandwidth=antenna_bandwidth,
     )
     return np.sqrt(P * VACUUM_IMPEDANCE)
+
+
+def lnb_mixer(
+    amplitudes,
+    time_slice_duration,
+    local_oscillator_frequency,
+    intermediate_frequency_start,
+    intermediate_frequency_stop,
+):
+    num_channels, num_time_slices, num_dims = amplitudes.shape
+
+    _, sine_ampl = make_sin(
+        frequency=local_oscillator_frequency,
+        time_slice_duration=time_slice_duration,
+        num_time_slices=num_time_slices,
+    )
+
+    amplmix = np.zeros(shape=amplitudes.shape)
+    for channel in range(num_channels):
+        for dim in range(num_dims):
+            ss = sine_ampl * amplitudes[channel, :, dim]
+            amplmix[channel, :, dim] = ss
+
+    amplban = np.zeros(shape=amplitudes.shape)
+    for channel in range(num_channels):
+        for dim in range(num_dims):
+            ss = butter_bandpass_filter(
+                amplitudes=amplmix[channel, :, dim],
+                frequency_start=intermediate_frequency_start,
+                frequency_stop=intermediate_frequency_stop,
+                time_slice_duration=time_slice_duration,
+            )
+            amplban[channel, :, dim] = ss
+
+    return amplban

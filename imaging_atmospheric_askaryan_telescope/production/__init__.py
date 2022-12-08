@@ -261,3 +261,15 @@ def simulate_telescope_response(
             path=os.path.join(sensor_dir, "electric_fields"),
             electric_fields=sensor_electric_fields,
         )
+
+    lnb_dir = os.path.join(out_dir, "lnb")
+    if not os.path.exists(lnb_dir):
+
+        feed_horn_gain = (
+            telescope["sensor"]["antenna_area"]
+            / telescope["lnb"]["effective_area"]
+        )
+
+        signal = electric_fields.read(
+            path=os.path.join(sensor_dir, "electric_fields"),
+        )

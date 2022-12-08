@@ -1,4 +1,5 @@
 import numpy as np
+from . import lownoiseblock
 
 
 def make_timing(
@@ -58,17 +59,10 @@ def make_timing(
         10 * oversampling * tt["electric_fields"]["time_slice_duration"]
     )
     tt["start_time_probe"]["position"] = [0.0, 0.0, 0.0]
-    tt["start_time_probe"]["time_lower_boundary"] = -250e-6
-    tt["start_time_probe"]["time_upper_boundary"] = 25e-6
+    tt["start_time_probe"]["time_lower_boundary"] = -7e3 * time_window_duration
+    tt["start_time_probe"]["time_upper_boundary"] = 7e2 * time_window_duration
 
     return tt
-
-
-LNB_ASTRA_UNIVERSAL = {
-    "local_oscillator_frequency": 9.75e9,
-    "intermediate_frequency_start": 950e6,
-    "intermediate_frequency_stop": 1950e6,
-}
 
 
 def make_timing_from_lnb(

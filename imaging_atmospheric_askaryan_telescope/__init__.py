@@ -7,3 +7,4 @@ from . import production
 from . import signal
 from . import electric_fields
 from . import json_numpy_utils
+from . import lownoiseblock

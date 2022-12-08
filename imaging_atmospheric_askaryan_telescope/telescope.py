@@ -169,12 +169,13 @@ def make_matrix(
     return imma
 
 
-def make_telescope(mirror, sensor, speed_of_light):
+def make_telescope(mirror, sensor, lnb, speed_of_light):
     tele = {}
     tele["sensor"] = sensor
     tele["mirror"] = mirror
+    tele["lnb"] = lnb
     tele["matrix"] = make_matrix(
-        mirror=mirror, sensor=sensor, speed_of_light=signal.SPEED_OF_LIGHT,
+        mirror=mirror, sensor=sensor, speed_of_light=speed_of_light,
     )
     return tele
 
