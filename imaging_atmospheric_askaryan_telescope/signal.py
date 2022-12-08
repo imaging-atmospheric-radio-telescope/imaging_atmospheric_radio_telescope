@@ -4,6 +4,24 @@ from scipy.signal import lfilter
 import numpy as np
 
 
+def add_first_to_second_at(first, second, at):
+    if at > second.shape[0]:
+        return
+
+    end = at + first.shape[0]
+    if end < 0:
+        return
+
+    if end >= second.shape[0]:
+        end = second.shape[0]
+
+    start = at
+    if start < 0:
+        start = 0
+
+    second[start:end] += first[start - at : end - at]
+
+
 def _butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq

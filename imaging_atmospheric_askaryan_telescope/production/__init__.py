@@ -7,104 +7,10 @@ import shutil
 import json
 
 from .. import telescope as simtelescope
+from .. import electric_fields
+from .. import timing_and_sampling
 from .. import corsika
 from .. import json_numpy_utils as jsonumpy
-from . import time_window
-
-
-def simulate_mirror_electric_fields(
-    corsika_coreas_executable_path,
-    out_probe_dir,
-    out_dir,
-    event_id,
-    primary_particle,
-    site,
-    time_slice_duration,
-    time_window_duration,
-    mirror_antenna_positions,
-    time_slice_duration_of_probe=None,
-    time_lower_boundary_of_probe=-1000e-6,
-    time_upper_boundary_of_probe=25e-6,
-    fraction_of_time_window_to_be_warm_up_time=0.06,
-):
-    """
-    Simulates the electric-field-strength caused by an air-shower at the
-    support-poisitions of the imaging-reflector. The result and log-files of
-    the air-shower-simulation are stored in out_dir.
-
-    The time-window for the electric-field-strength is estimated in advance.
-    First the air-shower is simulated and the response of one single
-    probe-antenna is simulated. Based on the time-series of the probe-antenna,
-    the time-window is estimated. Second, the air-shower is simulated again and
-    but this time with all support-antennas of the imaging-reflector using the
-    time-window estimated in the first step.
-    """
-    if time_slice_duration_of_probe is None:
-        time_slice_duration_of_probe = 10 * time_slice_duration
-
-    probe_position = np.array([[0.0, 0.0, 0.0]])
-
-    os.makedirs(out_probe_dir, exist_ok=True)
-    os.makedirs(out_dir, exist_ok=True)
-
-    simulate_mirror_electric_fields_manual(
-        corsika_coreas_executable_path=corsika_coreas_executable_path,
-        out_dir=out_probe_dir,
-        event_id=event_id,
-        primary_particle=primary_particle,
-        site=site,
-        time_slice_duration=time_slice_duration_of_probe,
-        mirror_antenna_positions=probe_position,
-        coreas_time_boundaries={
-            "automatic_time_boundaries": 0,
-            "time_lower_boundary": time_lower_boundary_of_probe,
-            "time_upper_boundary": time_upper_boundary_of_probe,
-        },
-    )
-
-    probe_electric_field = corsika.coreas.read_raw_electric_fields(
-        os.path.join(out_probe_dir, "electric_fields")
-    )
-
-    start_time = time_window.estimate_start_time_from_antnna_response(
-        raw_time=probe_electric_field[0, :, 0],
-        raw_field_components=probe_electric_field[0, :, 1:4],
-    )
-
-    (
-        time_lower_boundary,
-        time_upper_boundary,
-    ) = time_window.make_time_window_bounds(
-        start_time=start_time,
-        time_window_duration=time_window_duration,
-        fraction_of_time_window_to_be_warm_up_time=fraction_of_time_window_to_be_warm_up_time,
-    )
-
-    with open(os.path.join(out_probe_dir, "time_window.json"), "wt") as fout:
-        fout.write(
-            json.dumps(
-                {
-                    "start_time": start_time,
-                    "time_lower_boundary": time_lower_boundary,
-                    "time_upper_boundary": time_upper_boundary,
-                }
-            )
-        )
-
-    simulate_mirror_electric_fields_manual(
-        corsika_coreas_executable_path=corsika_coreas_executable_path,
-        out_dir=out_dir,
-        event_id=event_id,
-        primary_particle=primary_particle,
-        site=site,
-        time_slice_duration=time_slice_duration,
-        mirror_antenna_positions=mirror_antenna_positions,
-        coreas_time_boundaries={
-            "automatic_time_boundaries": 0,
-            "time_lower_boundary": time_lower_boundary,
-            "time_upper_boundary": time_upper_boundary,
-        },
-    )
 
 
 def simulate_mirror_electric_fields_manual(
@@ -239,10 +145,8 @@ def simulate_telescope_response(
     event_id,
     primary_particle,
     site,
-    time_slice_duration,
-    time_window_duration,
     telescope,
-    num_time_slices=300,
+    timing,
 ):
     """
     Does a full simulation of a single event from the shower to the sensor
@@ -251,49 +155,109 @@ def simulate_telescope_response(
     Output will be written into out_dir.
     """
 
-    if not os.path.exists(os.path.join(out_dir, "mirror")):
-        simulate_mirror_electric_fields(
+    probe_dir = os.path.join(out_dir, "probe")
+    if not os.path.exists(probe_dir):
+
+        start_time_probe = timing["start_time_probe"]
+        simulate_mirror_electric_fields_manual(
             corsika_coreas_executable_path=corsika_coreas_executable_path,
-            out_probe_dir=os.path.join(out_dir, "time_window"),
-            out_dir=os.path.join(out_dir, "mirror"),
+            out_dir=probe_dir,
             event_id=event_id,
             primary_particle=primary_particle,
             site=site,
-            time_slice_duration=time_slice_duration,
-            time_window_duration=time_window_duration,
+            time_slice_duration=start_time_probe["time_slice_duration"],
+            mirror_antenna_positions=np.array([start_time_probe["position"]]),
+            coreas_time_boundaries={
+                "automatic_time_boundaries": 0,
+                "time_lower_boundary": start_time_probe["time_lower_boundary"],
+                "time_upper_boundary": start_time_probe["time_upper_boundary"],
+            },
+        )
+
+        probe_raw_electric_field = corsika.coreas.read_raw_electric_fields(
+            os.path.join(probe_dir, "electric_fields")
+        )
+
+        start_time_based_on_probe = timing_and_sampling.estimate_start_time_from_antnna_response(
+            raw_time=probe_raw_electric_field[0, :, 0],
+            raw_field_components=probe_raw_electric_field[0, :, 1:4],
+        )
+
+        (
+            time_lower_boundary,
+            time_upper_boundary,
+        ) = timing_and_sampling.make_time_window_bounds(
+            start_time=start_time_based_on_probe,
+            time_window_duration=timing["electric_fields"]["mirror"][
+                "time_window_duration"
+            ],
+            fraction_of_time_window_to_be_warm_up_time=timing[
+                "electric_fields"
+            ]["mirror"]["warm_up_fraction_wrt_to_start_time_probe"],
+        )
+
+        time_window = {
+            "start_time_based_on_probe": start_time_based_on_probe,
+            "time_lower_boundary": time_lower_boundary,
+            "time_upper_boundary": time_upper_boundary,
+        }
+
+        with open(os.path.join(out_dir, "time_window.json"), "wt") as fout:
+            fout.write(json.dumps(time_window))
+
+    mirror_dir = os.path.join(out_dir, "mirror")
+    if not os.path.exists(mirror_dir):
+
+        with open(os.path.join(out_dir, "time_window.json"), "rt") as f:
+            time_window = json.loads(f.read())
+
+        simulate_mirror_electric_fields_manual(
+            corsika_coreas_executable_path=corsika_coreas_executable_path,
+            out_dir=mirror_dir,
+            event_id=event_id,
+            primary_particle=primary_particle,
+            site=site,
+            time_slice_duration=timing["electric_fields"][
+                "time_slice_duration"
+            ],
             mirror_antenna_positions=telescope["mirror"]["antenna_positions"],
+            coreas_time_boundaries={
+                "automatic_time_boundaries": 0,
+                "time_lower_boundary": time_window["time_lower_boundary"],
+                "time_upper_boundary": time_window["time_upper_boundary"],
+            },
         )
 
         mirror_raw_electric_fields = corsika.coreas.read_raw_electric_fields(
-            path=os.path.join(out_dir, "mirror", "electric_fields"),
+            path=os.path.join(mirror_dir, "electric_fields"),
         )
 
         mirror_electric_fields = corsika.coreas.make_electric_fields(
             raw_electric_fields=mirror_raw_electric_fields
         )
 
-        simtelescope.write_electric_fields(
-            path=os.path.join(out_dir, "mirror", "electric_fields"),
+        electric_fields.write(
+            path=os.path.join(mirror_dir, "electric_fields"),
             electric_fields=mirror_electric_fields,
         )
 
     sensor_dir = os.path.join(out_dir, "sensor")
-    sensor_electric_fields_dir = os.path.join(sensor_dir, "electric_fields")
+    if not os.path.exists(sensor_dir):
+        os.makedirs(sensor_dir)
 
-    if not os.path.exists(sensor_electric_fields_dir):
-        os.makedirs(sensor_electric_fields_dir)
-
-        mirror_electric_fields = simtelescope.read_electric_fields(
+        mirror_electric_fields = electric_fields.read(
             path=os.path.join(out_dir, "mirror", "electric_fields"),
         )
 
-        sensor_electric_fields = simtelescope.make_sensor_electric_fields(
+        sensor_electric_fields = simtelescope.propagate_electric_field_from_mirror_to_sensor(
             telescope=telescope,
             mirror_electric_fields=mirror_electric_fields,
-            num_time_slices=num_time_slices,
+            num_time_slices=timing["electric_fields"]["sensor"][
+                "num_time_slices"
+            ],
         )
 
-        simtelescope.write_electric_fields(
-            path=sensor_electric_fields_dir,
+        electric_fields.write(
+            path=os.path.join(sensor_dir, "electric_fields"),
             electric_fields=sensor_electric_fields,
         )

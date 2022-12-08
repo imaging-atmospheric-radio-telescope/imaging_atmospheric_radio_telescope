@@ -1,14 +1,9 @@
 # Copyright 2017 Sebastian A. Mueller
 import numpy as np
-import collections
+import scipy
 import scipy.spatial.distance
-from scipy.signal import butter
-from scipy.signal import lfilter
 import os
-from os.path import join
-import json
-import tarfile
-import glob
+from . import signal
 
 
 def parabola_surface_height(
@@ -179,33 +174,14 @@ def make_telescope(mirror, sensor, speed_of_light):
     tele["sensor"] = sensor
     tele["mirror"] = mirror
     tele["matrix"] = make_matrix(
-        mirror=mirror, sensor=sensor, speed_of_light=speed_of_light,
+        mirror=mirror, sensor=sensor, speed_of_light=signal.SPEED_OF_LIGHT,
     )
     return tele
 
 
-def add_first_to_second_at(first, second, at):
-    if at > second.shape[0]:
-        return
-
-    end = at + first.shape[0]
-    if end < 0:
-        return
-
-    if end >= second.shape[0]:
-        end = second.shape[0]
-
-    start = at
-    if start < 0:
-        start = 0
-
-    second[start:end] += first[start - at : end - at]
-
-
-def make_sensor_electric_fields(
+def propagate_electric_field_from_mirror_to_sensor(
     telescope, mirror_electric_fields, num_time_slices,
 ):
-
     mir = mirror_electric_fields
 
     out = {}
@@ -239,64 +215,12 @@ def make_sensor_electric_fields(
                 gain *= telescope["matrix"]["relative_amplitudes"][ise, imi]
                 gain *= mirror_gain
 
-                add_first_to_second_at(
+                signal.add_first_to_second_at(
                     first=mir["electric_fields"][imi, :, dim] * gain,
                     second=out["electric_fields"][ise, :, dim],
                     at=slice_delay,
                 )
     return out
-
-
-def write_electric_fields(path, electric_fields):
-    s = electric_fields
-    os.makedirs(path, exist_ok=True)
-
-    with open(os.path.join(path, "time_slice_duration.float64"), "wb") as f:
-        f.write(np.float64(s["time_slice_duration"]).tobytes())
-
-    with open(os.path.join(path, "num_time_slices.uint64"), "wb") as f:
-        f.write(np.uint64(s["num_time_slices"]).tobytes())
-
-    with open(os.path.join(path, "num_antennas.uint64"), "wb") as f:
-        f.write(np.uint64(s["num_antennas"]).tobytes())
-
-    with open(os.path.join(path, "global_start_time.float64"), "wb") as f:
-        f.write(np.float64(s["global_start_time"]).tobytes())
-
-    assert s["electric_fields"].dtype == np.float32
-    with open(
-        os.path.join(path, "electric_fields.antenna.time.dim.float32"), "wb"
-    ) as f:
-        f.write(s["electric_fields"].tobytes(order="C"))
-
-
-def read_electric_fields(path):
-    o = {}
-    with open(os.path.join(path, "time_slice_duration.float64"), "rb") as f:
-        o["time_slice_duration"] = np.frombuffer(f.read(), dtype="float64")[0]
-
-    with open(os.path.join(path, "num_time_slices.uint64"), "rb") as f:
-        o["num_time_slices"] = np.frombuffer(f.read(), dtype="uint64")[0]
-
-    with open(os.path.join(path, "num_antennas.uint64"), "rb") as f:
-        o["num_antennas"] = np.frombuffer(f.read(), dtype="uint64")[0]
-
-    with open(os.path.join(path, "global_start_time.float64"), "rb") as f:
-        o["global_start_time"] = np.frombuffer(f.read(), dtype="float64")[0]
-
-    with open(
-        os.path.join(path, "electric_fields.antenna.time.dim.float32"), "rb"
-    ) as f:
-        arr = np.frombuffer(f.read(), dtype="float32")
-        o["electric_fields"] = arr.reshape(
-            o["num_antennas"], o["num_time_slices"], 3,
-        )
-
-    return o
-
-
-def rotate_electric_field():
-    pass
 
 
 """
