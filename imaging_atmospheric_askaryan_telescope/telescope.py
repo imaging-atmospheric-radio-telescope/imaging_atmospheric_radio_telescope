@@ -295,6 +295,10 @@ def read_electric_fields(path):
     return o
 
 
+def rotate_electric_field():
+    pass
+
+
 """
 RawImageSensorResponse = collections.namedtuple(
     "RawImageSensorResponse",
@@ -431,20 +435,6 @@ def make_next_Event_from_tape_archive(tar_file):
         raw_image_sensor_response=raw_image_sensor_response,
     )
 """
-
-
-def _butter_bandpass(lowcut, highcut, fs, order=5):
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = scipy.signal.butter(order, [low, high], btype="band")
-    return b, a
-
-
-def _butter_bandpass_filter(data, lowcut, highcut, fs, order=5, axis=0):
-    b, a = _butter_bandpass(lowcut, highcut, fs, order=order)
-    y = scipy.signal.lfilter(b, a, data, axis=axis)
-    return y
 
 
 def simulate_antenna_response(

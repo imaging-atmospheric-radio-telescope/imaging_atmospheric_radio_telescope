@@ -100,7 +100,7 @@ def assert_same_time_slice_duration(
         )
         valid = (
             np.abs(time_slice_duration_this_antenna - time_slice_duration)
-            < time_slice_duration / 100
+            < time_slice_duration / 10
         )
         assert np.all(valid)
     return time_slice_duration
@@ -130,11 +130,11 @@ def read_raw_electric_fields(path):
     antenna_responses = []
     CGS_to_SI = CGS_statVolt_per_cm_to_SI_Volt_per_meter
     for time_series_path in all_time_series_paths:
-        time_series = np.genfromtxt(time_series_path, dtype=np.float32)
-        time_series[:, COREAS_NORTH_COMPONENT] *= CGS_to_SI
-        time_series[:, COREAS_WEST_COMPONENT] *= CGS_to_SI
-        time_series[:, COREAS_VERTICAL_COMPONENT] *= CGS_to_SI
-        antenna_responses.append(time_series)
+        raw = np.genfromtxt(time_series_path, dtype=np.float64)
+        raw[:, COREAS_NORTH_COMPONENT] *= CGS_to_SI
+        raw[:, COREAS_WEST_COMPONENT] *= CGS_to_SI
+        raw[:, COREAS_VERTICAL_COMPONENT] *= CGS_to_SI
+        antenna_responses.append(raw)
     return np.array(antenna_responses)
 
 
@@ -154,13 +154,12 @@ def make_electric_fields(raw_electric_fields):
     start_slice_offsets = np.round(
         start_time_offsets / time_slice_duration
     ).astype(np.int64)
-
     assert np.all(start_slice_offsets == 0)
 
     return {
         "time_slice_duration": time_slice_duration,
         "num_time_slices": raw.shape[1],
         "num_antennas": raw.shape[0],
-        "electric_fields": raw[:, :, 1:4],
+        "electric_fields": raw[:, :, 1:4].astype(np.float32),
         "global_start_time": global_start_time,
     }

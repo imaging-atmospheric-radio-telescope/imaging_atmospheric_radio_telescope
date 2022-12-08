@@ -40,7 +40,7 @@ def simulate_mirror_electric_fields(
     time-window estimated in the first step.
     """
     if time_slice_duration_of_probe is None:
-        time_slice_duration_of_probe = time_slice_duration
+        time_slice_duration_of_probe = 10 * time_slice_duration
 
     probe_position = np.array([[0.0, 0.0, 0.0]])
 

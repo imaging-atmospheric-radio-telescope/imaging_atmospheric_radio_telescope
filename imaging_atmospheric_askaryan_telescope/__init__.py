@@ -3,5 +3,6 @@ from . import sites
 from . import corsika
 from . import telescope
 from . import production
+from . import signal
 
 from . import json_numpy_utils

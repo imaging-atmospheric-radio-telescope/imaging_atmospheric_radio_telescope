@@ -408,8 +408,8 @@ def save_image_slices_electric_field(
         t = time_slice * ef["time_slice_duration"]
         time_info = (
             "t: "
-            + str(np.round(t * 1e12, 0))
-            + "ps, slice: {: 6d}".format(time_slice)
+            + str(np.round(t * 1e9, 3))
+            + "ns, slice: {: 6d}".format(time_slice)
         )
         fig.suptitle(
             # simulation_truth_info_string(event.simulation_truth)
