@@ -47,9 +47,11 @@ primary_particle = {
     "core_north_m": 30,
     "core_west_m": 80,
 }
+
 """
+earth_radius = 6300e3
 astra_power = 3.3e3
-astra_earth_area = np.pi * 6.3e3 ** 2
+astra_earth_area = np.pi * earth_radius ** 2
 astra_power_density = astra_power / astra_earth_area
 """
 
