@@ -113,24 +113,21 @@ def save_image_slices_power(
 
     powerx = power[:, :, 0] * 1e9  # in nW
     powery = power[:, :, 1] * 1e9
-
-    powerx_max = powerx[:, :].max()
-    powery_max = powery[:, :].max()
-
-    power_max = np.max([powerx_max, powery_max])
+    powers = powerx + powery
+    power_max = powers[:, :].max()
 
     pixel_directions_x = antenna_positions[:, 0]
     pixel_directions_y = antenna_positions[:, 1]
 
     for idx, time_slice in enumerate(time_slice_region_of_interest):
-        fig, axarr = plt.subplots(1, 2, figsize=figsize)
+        fig, axarr = plt.subplots(1, 3, figsize=figsize)
         t = time_slice * time_slice_duration
         time_info = (
             "t: "
             + str(np.round(t * 1e9, 3))
             + "ns, slice: {: 6d}".format(time_slice)
         )
-        fig.suptitle(time_info + "\n" + "north, and west power / nW")
+        fig.suptitle(time_info + "\n" + "north, west, and sum power / nW")
         add2ax(
             ax=axarr[0],
             pixel_amplitudes=powerx[:, time_slice],
@@ -144,6 +141,7 @@ def save_image_slices_power(
         axarr[0].set_ylabel("y/m")
         axarr[0].spines["right"].set_visible(False)
         axarr[0].spines["top"].set_visible(False)
+
         add2ax(
             ax=axarr[1],
             pixel_amplitudes=powery[:, time_slice],
@@ -157,6 +155,20 @@ def save_image_slices_power(
         axarr[1].spines["right"].set_visible(False)
         axarr[1].spines["top"].set_visible(False)
         axarr[1].yaxis.set_visible(False)
+
+        add2ax(
+            ax=axarr[2],
+            pixel_amplitudes=powers[:, time_slice],
+            pixel_directions_x=pixel_directions_x,
+            pixel_directions_y=pixel_directions_y,
+            vmin=0,
+            vmax=power_max,
+            colormap="viridis",
+        )
+        axarr[2].set_xlabel("x/m")
+        axarr[2].spines["right"].set_visible(False)
+        axarr[2].spines["top"].set_visible(False)
+        axarr[2].yaxis.set_visible(False)
 
         plt.savefig(
             os.path.join(path, "image_{:06d}.jpg".format(idx)), dpi=dpi

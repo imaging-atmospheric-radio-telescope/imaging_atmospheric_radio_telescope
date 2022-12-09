@@ -77,13 +77,18 @@ def make_timing_from_lnb(
     )
 
 
-def estimate_start_time_from_antnna_response(raw_time, raw_field_components):
-    num_components = raw_field_components.shape[1]
-    max_position_times = np.zeros(num_components)
-    for component in range(num_components):
-        first_slice = np.min(np.nonzero(raw_field_components[:, component]))
-        max_position_times[component] = raw_time[first_slice]
-    return np.median(max_position_times)
+def estimate_start_time_from_electric_fields(electric_fields):
+    e = electric_fields
+    first_slices = []
+    for ant in range(e["num_antennas"]):
+        for dim in range(3):
+            first_slice = np.min(np.nonzero(e["electric_fields"][ant, :, dim]))
+            first_slices.append(first_slice)
+
+    start_slice = np.median(first_slices)
+    start_time_relative = start_slice * e["time_slice_duration"]
+    start_time = start_time_relative + e["global_start_time"]
+    return start_time
 
 
 def make_time_window_bounds(

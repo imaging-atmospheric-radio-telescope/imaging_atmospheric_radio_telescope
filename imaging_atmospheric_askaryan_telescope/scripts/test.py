@@ -36,7 +36,7 @@ corsika_coreas_executable_path = os.path.join(
     "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 130
+event_id = 132
 event_path = "test{:06d}".format(event_id)
 
 primary_particle = {
@@ -69,8 +69,8 @@ iaat.production.simulate_telescope_response(
     timing=timing,
 )
 
-sensor_electric_fields = iaat.electric_fields.read(
-    path=os.path.join(event_path, "sensor", "electric_fields")
+sensor_electric_fields = iaat.electric_fields.read_tar(
+    path=os.path.join(event_path, "sensor", "electric_fields.tar")
 )
 signal_efield_at_lnb = (
     feed_horn_gain
@@ -124,7 +124,8 @@ _expected_noise_power = iaat.signal.electric_power_of_thermal_noise(
 total_efield_at_lnb = signal_efield_at_lnb + noise_efield_at_lnb
 
 total_power = iaat.signal.calculate_antenna_power(
-    effective_area=lnb_effective_area, electric_field=total_efield_at_lnb,
+    effective_area=telescope["lnb"]["effective_area"],
+    electric_field=total_efield_at_lnb,
 )
 
 total_power_integral = np.zeros(shape=total_power.shape)

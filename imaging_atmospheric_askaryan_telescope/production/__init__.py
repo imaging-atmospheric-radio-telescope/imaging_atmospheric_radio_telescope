@@ -105,7 +105,9 @@ def simulate_mirror_electric_fields_manual(
 
         cor_o_path = os.path.join(cor_dir, "corsika.o")
         cor_e_path = os.path.join(cor_dir, "corsika.e")
-        antenna_dir = os.path.join(out_dir, "electric_fields")
+
+        raw_antenna_dir = os.path.join(out_dir, "electric_fields.raw")
+        antenna_path = os.path.join(out_dir, "electric_fields.tar")
 
         with open(cor_o_path, "w") as cor_o, open(cor_e_path, "w") as cor_e:
             subprocess.call(
@@ -116,7 +118,7 @@ def simulate_mirror_electric_fields_manual(
                 cwd=tmp_run_dir,
             )
 
-        shutil.move(tmp_coreas_antenna_dir, antenna_dir)
+        # input cards
         shutil.move(
             tmp_coreas_antenna_list_path,
             os.path.join(
@@ -134,6 +136,20 @@ def simulate_mirror_electric_fields_manual(
             os.path.join(
                 cor_dir, os.path.basename(tmp_corsika_steering_card_path),
             ),
+        )
+
+        # output electric fields
+        shutil.move(tmp_coreas_antenna_dir, raw_antenna_dir)
+
+        # unify output antennas
+        raw_electric_fields = corsika.coreas.read_raw_electric_fields(
+            raw_antenna_dir
+        )
+        unified_electric_field = corsika.coreas.make_electric_fields(
+            raw_electric_fields=raw_electric_fields
+        )
+        electric_fields.write_tar(
+            path=antenna_path, electric_fields=unified_electric_field,
         )
 
         # input('wait to inspect the tmp directory')
@@ -174,13 +190,12 @@ def simulate_telescope_response(
             },
         )
 
-        probe_raw_electric_field = corsika.coreas.read_raw_electric_fields(
-            os.path.join(probe_dir, "electric_fields")
+        probe_electric_fields = electric_fields.read_tar(
+            path=os.path.join(probe_dir, "electric_fields.tar")
         )
 
-        start_time_based_on_probe = timing_and_sampling.estimate_start_time_from_antnna_response(
-            raw_time=probe_raw_electric_field[0, :, 0],
-            raw_field_components=probe_raw_electric_field[0, :, 1:4],
+        start_time_based_on_probe = timing_and_sampling.estimate_start_time_from_electric_fields(
+            electric_fields=probe_electric_fields
         )
 
         (
@@ -228,25 +243,12 @@ def simulate_telescope_response(
             },
         )
 
-        mirror_raw_electric_fields = corsika.coreas.read_raw_electric_fields(
-            path=os.path.join(mirror_dir, "electric_fields"),
-        )
-
-        mirror_electric_fields = corsika.coreas.make_electric_fields(
-            raw_electric_fields=mirror_raw_electric_fields
-        )
-
-        electric_fields.write(
-            path=os.path.join(mirror_dir, "electric_fields"),
-            electric_fields=mirror_electric_fields,
-        )
-
     sensor_dir = os.path.join(out_dir, "sensor")
     if not os.path.exists(sensor_dir):
         os.makedirs(sensor_dir)
 
-        mirror_electric_fields = electric_fields.read(
-            path=os.path.join(out_dir, "mirror", "electric_fields"),
+        mirror_electric_fields = electric_fields.read_tar(
+            path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
         )
 
         sensor_electric_fields = simtelescope.propagate_electric_field_from_mirror_to_sensor(
@@ -257,8 +259,8 @@ def simulate_telescope_response(
             ],
         )
 
-        electric_fields.write(
-            path=os.path.join(sensor_dir, "electric_fields"),
+        electric_fields.write_tar(
+            path=os.path.join(sensor_dir, "electric_fields.tar"),
             electric_fields=sensor_electric_fields,
         )
 
@@ -270,6 +272,6 @@ def simulate_telescope_response(
             / telescope["lnb"]["effective_area"]
         )
 
-        signal = electric_fields.read(
-            path=os.path.join(sensor_dir, "electric_fields"),
+        signal = electric_fields.read_tar(
+            path=os.path.join(sensor_dir, "electric_fields.tar"),
         )
