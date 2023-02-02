@@ -71,6 +71,19 @@ def download(
 
 
 def install(corsika_tar_path, corsika_config_path, install_path):
+    """
+    Install corsika-coreas.
+
+    Parameters
+    ----------
+    corsika_tar_path : str
+        Path to the corsika.tar which you downloaded from KIT.
+    corsika_config_path : str
+        Path to the config.h header-file which exactly defines how
+        to build this flavor of corsika.
+    install_path : str
+        Directory to install in.
+    """
     install_path = os.path.abspath(install_path)
     corsika_config_path = os.path.abspath(corsika_config_path)
 
@@ -109,7 +122,3 @@ def install(corsika_tar_path, corsika_config_path, install_path):
     # Copy std ATMPROFS to the CORSIKA run directory
     for atmprof in glob.glob("bernlohr/atmprof*"):
         shutil.copy(atmprof, "run")
-
-    assert os.path.isfile(
-        os.path.join("run", "corsika77100Linux_QGSII_urqmd_coreas")
-    )
