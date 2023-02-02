@@ -30,7 +30,7 @@ telescope = iaat.telescope.make_telescope(
 telescope["transmission_from_air_into_feed_horn"] = 0.5
 
 corsika_coreas_executable_path = os.path.join(
-    "corsika_coreas_build",
+    "build",
     "corsika-77100",
     "run",
     "corsika77100Linux_QGSII_urqmd_coreas",
