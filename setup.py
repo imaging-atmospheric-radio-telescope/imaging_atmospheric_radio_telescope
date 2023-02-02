@@ -1,7 +1,8 @@
 # Copyright 2017 Sebastian A. Mueller
-from distutils.core import setup
+import setuptools
+import os
 
-setup(
+setuptools.setup(
     name="imaging_atmospheric_askaryan_telescope",
     version="0.0.1",
     description="Simulate and investigate the "
@@ -11,7 +12,10 @@ setup(
     author_email="sebmuell@phys.ethz.ch",
     license="GPLv3",
     packages=["imaging_atmospheric_askaryan_telescope",],
-    package_data={"imaging_atmospheric_askaryan_telescope": []},
+    package_data={"imaging_atmospheric_askaryan_telescope": [
+            os.path.join("corsika", "coreas", "install", "resources", "config.h")
+        ]
+    },
     install_requires=["docopt", "scipy", "matplotlib",],
     entry_points={"console_scripts": []},
     zip_safe=False,

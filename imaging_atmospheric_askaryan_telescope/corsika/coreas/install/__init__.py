@@ -3,9 +3,14 @@ import tarfile
 import shutil
 import glob
 import hashlib
+import pkg_resources
 from . import utils
 
 
+CORSIKA_CONFIG_PATH = pkg_resources.resource_filename(
+    "imaging_atmospheric_askaryan_telescope",
+    os.path.join("corsika", "coreas", "install", "resources", "config.h"),
+)
 CORSIKA_77100_TAR_GZ_HASH_MD5SUM = "bc67b14c957a024baf7f2893ab246d34"
 CORSIKA_DOWNLOAD_URL = "https://web.ikp.kit.edu/corsika/download/old/v771/"
 CORSIKA_NAME = "corsika-77100"
@@ -70,7 +75,9 @@ def download(
     )
 
 
-def install(corsika_tar_path, corsika_config_path, install_path):
+def install(
+    corsika_tar_path, install_path, corsika_config_path=CORSIKA_CONFIG_PATH
+):
     """
     Install corsika-coreas.
 
