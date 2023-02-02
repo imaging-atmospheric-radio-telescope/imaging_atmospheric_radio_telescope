@@ -7,7 +7,7 @@ import hashlib
 
 
 CORSIKA_77100_TAR_GZ_HASH_HEXDIGEST = "bc67b14c957a024baf7f2893ab246d34"
-CORSIKA_WEB_PATH = "https://web.ikp.kit.edu/corsika/download/old/v771/"
+CORSIKA_DOWNLOAD_URL = "https://web.ikp.kit.edu/corsika/download/old/v771/"
 CORSIKA_NAME = "corsika-77100"
 CORSIKA_TAR_FILENAME = CORSIKA_NAME + ".tar.gz"
 
@@ -25,8 +25,8 @@ def call_and_save_std(target, o_path, e_path, stdin=None):
         subprocess.call(target, stdout=stdout, stderr=stderr, stdin=stdin)
 
 
-def download_corsika_tar(
-    output_dir, username, password, web_path, corsika_tar_filename,
+def download(
+    output_dir, username, password, corsika_download_url, corsika_tar_filename,
 ):
     # download CORSIKA from KIT
     # wget uses $http_proxy environment-variables in case of proxy
@@ -40,7 +40,7 @@ def download_corsika_tar(
             username,
             "--password",
             password,
-            web_path + corsika_tar_filename,
+            corsika_download_url + corsika_tar_filename,
         ],
         stdout_path=os.path.join(
             output_dir, corsika_tar_filename + ".wget.stdout"
