@@ -1,12 +1,12 @@
 import os
 import tarfile
 import shutil
-import subprocess
 import glob
 import hashlib
+from . import utils
 
 
-CORSIKA_77100_TAR_GZ_HASH_HEXDIGEST = "bc67b14c957a024baf7f2893ab246d34"
+CORSIKA_77100_TAR_GZ_HASH_MD5SUM = "bc67b14c957a024baf7f2893ab246d34"
 CORSIKA_DOWNLOAD_URL = "https://web.ikp.kit.edu/corsika/download/old/v771/"
 CORSIKA_NAME = "corsika-77100"
 CORSIKA_TAR_FILENAME = CORSIKA_NAME + ".tar.gz"
@@ -20,17 +20,12 @@ def md5sum(path):
     return hash_md5.hexdigest()
 
 
-def call_and_save_std(target, o_path, e_path, stdin=None):
-    with open(o_path, "w") as stdout, open(e_path, "w") as stderr:
-        subprocess.call(target, stdout=stdout, stderr=stderr, stdin=stdin)
-
-
 def download(
     output_dir, username, password, corsika_download_url, corsika_tar_filename,
 ):
     # download CORSIKA from KIT
     # wget uses $http_proxy environment-variables in case of proxy
-    call_and_save_std(
+    utils.call_and_save_std(
         target=[
             "wget",
             "--no-check-certificate",
@@ -73,7 +68,7 @@ def install(corsika_tar_path, corsika_config_path, install_path):
     shutil.copyfile(corsika_config_path, os.path.join("include", "config.h"))
 
     # coconut configure
-    call_and_save_std(
+    utils.call_and_save_std(
         target=["./coconut"],
         o_path="../coconut_configure.o",
         e_path="../coconut_configure.e",
@@ -81,7 +76,7 @@ def install(corsika_tar_path, corsika_config_path, install_path):
     )
 
     # coconut build
-    call_and_save_std(
+    utils.call_and_save_std(
         target=["./coconut", "-i"],
         o_path="../coconut_make.o",
         e_path="../coconut_make.e",
