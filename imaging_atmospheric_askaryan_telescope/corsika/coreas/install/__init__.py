@@ -21,10 +21,34 @@ def md5sum(path):
 
 
 def download(
-    output_dir, username, password, corsika_download_url, corsika_tar_filename,
+    output_dir,
+    username,
+    password,
+    corsika_download_url=CORSIKA_DOWNLOAD_URL,
+    corsika_tar_filename=CORSIKA_TAR_FILENAME,
 ):
-    # download CORSIKA from KIT
-    # wget uses $http_proxy environment-variables in case of proxy
+    """
+    Downloads CORSIKA.tar from KIT's servers.
+    Kindly ask the CORSIKA developers to provide you the username/password.
+
+    Parameters
+    ----------
+    output_dir : str
+        Directory to save CORSIKA.tar in.
+    username : str
+        The CORSIKA username for downloads.
+    password : str
+        The CORSIKA password for downloads.
+    corsika_download_url : str, default CORSIKA_DOWNLOAD_URL
+        URL to the directory to download from.
+    corsika_tar_filename : str, default: CORSIKA_TAR_FILENAME
+        The filename to download
+
+    Internal
+    --------
+    Uses wget.
+    wget uses $http_proxy environment-variables in case of proxy
+    """
     utils.call_and_save_std(
         target=[
             "wget",
