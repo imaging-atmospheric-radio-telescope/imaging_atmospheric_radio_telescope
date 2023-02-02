@@ -39,7 +39,7 @@ def download(
         The CORSIKA username for downloads.
     password : str
         The CORSIKA password for downloads.
-    corsika_download_url : str, default CORSIKA_DOWNLOAD_URL
+    corsika_download_url : str, default: CORSIKA_DOWNLOAD_URL
         URL to the directory to download from.
     corsika_tar_filename : str, default: CORSIKA_TAR_FILENAME
         The filename to download
