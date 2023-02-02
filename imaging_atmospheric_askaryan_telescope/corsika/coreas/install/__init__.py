@@ -7,7 +7,7 @@ import hashlib
 
 
 CORSIKA_77100_TAR_GZ_HASH_HEXDIGEST = "bc67b14c957a024baf7f2893ab246d34"
-WEB_PATH = "https://web.ikp.kit.edu/corsika/download/old/v771/"
+CORSIKA_WEB_PATH = "https://web.ikp.kit.edu/corsika/download/old/v771/"
 CORSIKA_NAME = "corsika-77100"
 CORSIKA_TAR_FILENAME = CORSIKA_NAME + ".tar.gz"
 
