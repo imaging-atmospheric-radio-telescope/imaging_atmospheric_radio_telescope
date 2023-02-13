@@ -10,7 +10,6 @@ from .. import telescope as simtelescope
 from .. import electric_fields
 from .. import timing_and_sampling
 from .. import corsika
-from .. import json_numpy_utils as jsonumpy
 
 
 def simulate_mirror_electric_fields_manual(

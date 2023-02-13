@@ -9,16 +9,31 @@ from . import signal
 def parabola_surface_height(
     distance_to_optical_axis, focal_length,
 ):
+    """
+    Parameters
+    ----------
+    distance_to_optical_axis : float
+        The distance to the parabola's optical axis for where the height of
+        the parabola is estimated.
+    focal_length : float
+        The parabola's focal-length.
+    """
     z = 1 / (4.0 * focal_length) * distance_to_optical_axis ** 2
     return z
 
 
 def make_probe_positions(
-    random_seed=0, focal_length=75, radius=25, probe_areal_density=3
+    random_seed=0,
+    focal_length=75,
+    outer_radius=25,
+    inner_radius=10,
+    probe_areal_density=3,
 ):
     """
     Returns the randomly drawn positions of huygens probes on a parabolic
-    imaging reflector.
+    imaging reflector. The x-, y-positions can be limited in an anulus with
+    an innner, and outer radius. The z-position is computed from the
+    focal-lenght.
 
     Parameters
     ----------
@@ -26,19 +41,23 @@ def make_probe_positions(
         Seed for probe positions.
     focal_length : float
         Focal-length of imaging reflector.
-    radius : float
-        Radius of the imaging reflector.
+    outer_radius : float
+        Outer radius of aperture's annulus.
+    inner_radius : float
+        Inner radius of aperture's annulus.
     probe_areal_density : float
         Density of probes per area in imaging reflector.
     """
     assert focal_length > 0.0
-    assert radius > 0.0
+    assert outer_radius > 0.0
+    assert inner_radius > 0.0
+    assert outer_radius > inner_radius
     assert probe_areal_density > 0.0
 
     prng = np.random.Generator(np.random.PCG64(random_seed))
 
     gs = 1.0 / np.sqrt(probe_areal_density)
-    sr = radius + gs
+    sr = outer_radius + gs
     x = []
     y = []
     for xp in np.linspace(-sr, sr, (2 * sr / gs)):
@@ -51,32 +70,43 @@ def make_probe_positions(
     y = np.array(y)
 
     r = np.sqrt(x ** 2 + y ** 2)
-    inside_aperture = r <= radius
-    number_probes = inside_aperture.sum()
+
+    inside_outer = r <= outer_radius
+    outside_inner = r >= inner_radius
+
+    in_annulus = np.logical_and(inside_outer, outside_inner)
+
+    number_probes = in_annulus.sum()
 
     positions = np.zeros(shape=(number_probes, 3))
-    positions[:, 0] = x[inside_aperture]
-    positions[:, 1] = y[inside_aperture]
+    positions[:, 0] = x[in_annulus]
+    positions[:, 1] = y[in_annulus]
     positions[:, 2] = parabola_surface_height(
-        distance_to_optical_axis=r[inside_aperture], focal_length=focal_length
+        distance_to_optical_axis=r[in_annulus], focal_length=focal_length
     )
     return positions
 
 
 def make_mirror(
-    random_seed=0, focal_length=75, radius=25, probe_areal_density=3,
+    random_seed=0,
+    focal_length=75,
+    outer_radius=25,
+    inner_radius=12,
+    probe_areal_density=3,
 ):
     imre = {}
     imre["random_seed"] = random_seed
     imre["focal_length"] = focal_length
-    imre["radius"] = radius
-    imre["diameter"] = 2.0 * radius
-    imre["area"] = np.pi * radius ** 2
+    imre["outer_radius"] = outer_radius
+    imre["inner_radius"] = inner_radius
+    imre["diameter"] = 2.0 * outer_radius
+    imre["area"] = np.pi * (outer_radius ** 2 - inner_radius ** 2)
     imre["antenna_areal_density"] = probe_areal_density
     imre["antenna_positions"] = make_probe_positions(
-        random_seed=0,
+        random_seed=random_seed,
         focal_length=focal_length,
-        radius=radius,
+        outer_radius=outer_radius,
+        inner_radius=inner_radius,
         probe_areal_density=probe_areal_density,
     )
     imre["num_antennas"] = imre["antenna_positions"].shape[0]
@@ -90,6 +120,19 @@ UNIT_HEX_V = np.array([0.5, np.sqrt(3) / 2, 0.0])
 def make_feed_horn_positions(
     sensor_outer_radius, sensor_distance, feed_horn_inner_radius,
 ):
+    """
+    Returns the positions of feed-horns placed in a disk.
+
+    Parameters
+    ----------
+    sensor_outer_radius : float
+        Outer radius of the plane of sensors.
+    sensor_distance : float
+        This sensor's distance from the mirror's principal plane (z-axis).
+    feed_horn_inner_radius : float
+        The inner radius (hexagonal packing) of the feed-horn. This means
+        the center of a neighboring feed-horn is 2 * inner radius away.
+    """
     assert sensor_outer_radius > 0
     assert sensor_distance > 0
     assert feed_horn_inner_radius > 0
@@ -111,8 +154,15 @@ def make_feed_horn_positions(
     return np.array(positions)
 
 
+def _area_of_hexagon(inner_radius):
+    return 2.0 * np.sqrt(3.0) * inner_radius ** 2.0
+
+
 def feed_horn_areal_density(feed_horn_inner_radius):
-    feed_horn_area = feed_horn_inner_radius ** 2 * np.pi
+    """
+    Compute how many feed-horns can be placed in a unit of area.
+    """
+    feed_horn_area = _area_of_hexagon(inner_radius=feed_horn_inner_radius)
     return 1.0 / feed_horn_area
 
 
@@ -142,6 +192,9 @@ def make_matrix(
     mirror, sensor, speed_of_light,
 ):
     """
+    Estimate the imaging matrix which propagates spherical waves from the
+    mirror's probing antennas to the sensor's feed-horns.
+
     Parameters
     ----------
     mirror : dict

@@ -13,7 +13,11 @@ timing = iaat.timing_and_sampling.make_timing_from_lnb(
 )
 
 mirror = iaat.telescope.make_mirror(
-    random_seed=0, focal_length=25.5, radius=8.5, probe_areal_density=6,
+    random_seed=0,
+    focal_length=18.9,
+    outer_radius=6.3,
+    inner_radius=3.15,
+    probe_areal_density=14,
 )
 
 sensor = iaat.telescope.make_sensor(
@@ -30,13 +34,10 @@ telescope = iaat.telescope.make_telescope(
 telescope["transmission_from_air_into_feed_horn"] = 0.5
 
 corsika_coreas_executable_path = os.path.join(
-    "build",
-    "corsika-77100",
-    "run",
-    "corsika77100Linux_QGSII_urqmd_coreas",
+    "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 132
+event_id = 200
 event_path = "test{:06d}".format(event_id)
 
 primary_particle = {
@@ -49,10 +50,10 @@ primary_particle = {
 }
 
 """
-earth_radius = 6300e3
-astra_power = 3.3e3
-astra_earth_area = np.pi * earth_radius ** 2
-astra_power_density = astra_power / astra_earth_area
+earth_radius_m = 6300e3
+astra_power_W = 3.3e3
+astra_earth_area_m2 = np.pi * earth_radius_m ** 2
+astra_power_density_W_per_m2 = astra_power_W / astra_earth_area_m2
 """
 
 feed_horn_gain = (

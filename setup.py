@@ -12,8 +12,11 @@ setuptools.setup(
     author_email="sebmuell@phys.ethz.ch",
     license="GPLv3",
     packages=["imaging_atmospheric_askaryan_telescope",],
-    package_data={"imaging_atmospheric_askaryan_telescope": [
-            os.path.join("corsika", "coreas", "install", "resources", "config.h")
+    package_data={
+        "imaging_atmospheric_askaryan_telescope": [
+            os.path.join(
+                "corsika", "coreas", "install", "resources", "config.h"
+            )
         ]
     },
     install_requires=["docopt", "scipy", "matplotlib",],

@@ -5,6 +5,21 @@ import numpy as np
 
 
 def add_first_to_second_at(first, second, at):
+    """
+    Adds the values in 'first' to the values in 'second' with the
+    starting index in 'second' being 'at'.
+
+    Parameters
+    ----------
+    first : array
+        A series of values to be added to 'second'.
+    second : array
+        A series of values to add values from 'first' to.
+        'second' is modified in place.
+    at : int
+        The starting index in 'second' where the values of 'first' are added
+        to.
+    """
     if at > second.shape[0]:
         return
 
@@ -38,6 +53,20 @@ def butter_bandpass_filter(
     order=5,
     axis=0,
 ):
+    """
+    Return amplitudes after passing a band-pass.
+
+    Parameters
+    ----------
+    amplitudes : array (float)
+        The amplitudes of a signal
+    time_slice_duration : float
+        Defines the duration of a slice in 'amplitudes'.
+    frequency_start : float
+        Lower frequency of band-pass.
+    frequency_stop : float
+        Upper frequency of band-pass.
+    """
     fs = 1.0 / time_slice_duration
     b, a = _butter_bandpass(
         lowcut=frequency_start, highcut=frequency_stop, fs=fs, order=order,
@@ -47,6 +76,9 @@ def butter_bandpass_filter(
 
 
 def make_sin(frequency, time_slice_duration, num_time_slices):
+    """
+    Returns the moments and amplitudes (2-tuple) of a sine-wave.
+    """
     N = num_time_slices
     dt = time_slice_duration
     t = np.linspace(0, N * dt, N, endpoint=False)
@@ -60,6 +92,10 @@ def butter_bench(
     num_time_slices=1000,
     time_slice_duration=0.5 * (1 / 10e9),
 ):
+    """
+    A benchmark for band-pass-filters.
+    It estimates the transmission-ratio for multiple frequencies.
+    """
     ratio = []
     for f in frequencies:
         Ain = make_sin(
