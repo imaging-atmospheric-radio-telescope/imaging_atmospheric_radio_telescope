@@ -109,3 +109,17 @@ def read_tar(path):
 
 def rotate_electric_field():
     pass
+
+
+def make_time_bin_edges(electric_fields, global_time=True):
+    ef = electric_fields
+    exposure_time = ef["num_time_slices"]*ef["time_slice_duration"]
+    time_bin_edges = np.linspace(0, exposure_time, ef["num_time_slices"] + 1)
+    if global_time:
+        time_bin_edges = time_bin_edges + ef["global_start_time"]
+    return time_bin_edges
+
+
+def make_antenna_bin_edges(electric_fields):
+    N = electric_fields["num_antennas"]
+    return np.linspace(0.0, N, N+1) - 0.5
