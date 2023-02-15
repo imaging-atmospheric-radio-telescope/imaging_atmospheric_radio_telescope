@@ -4,7 +4,7 @@ import numpy as np
 
 def make_steering_card(
     event_id=1,
-    primary_particle_id=14,
+    primary_particle_type="proton",
     energy=100,
     zenith_distance=0.0,
     azimuth=0.0,
@@ -15,6 +15,7 @@ def make_steering_card(
     zd_deg = np.rad2deg(zenith_distance)
     az_deg = np.rad2deg(azimuth)
     obs_level_cm = observation_level_altitude * 1e2
+    primary_particle_id = particle_id(particle_type=primary_particle_type)
 
     sc = "RUNNR {:d}\n".format(event_id)
     sc += "EVTNR {:d}\n".format(1)
@@ -49,3 +50,12 @@ def make_steering_card(
 
     sc += "EXIT\n"
     return sc
+
+
+def particle_id(particle_type):
+    m = {
+        "gamma": 1,
+        "proton": 14,
+        "helium": 402,
+    }
+    return m[particle_type]
