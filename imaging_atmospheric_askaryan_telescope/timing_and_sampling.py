@@ -8,6 +8,7 @@ def make_timing(
     lnb_intermediate_frequency_start=950e6,
     lnb_intermediate_frequency_stop=1950e6,
     oversampling=6,
+    readout_integrates_num_simulation_time_slices=234,
     time_window_duration=35e-9,
 ):
     assert lnb_local_oscillator_frequency > 0.0
@@ -15,6 +16,7 @@ def make_timing(
     assert lnb_intermediate_frequency_stop > 0.0
     assert lnb_intermediate_frequency_start < lnb_intermediate_frequency_stop
     assert oversampling > 0
+    assert readout_integrates_num_simulation_time_slices > 0
     assert np.mod(oversampling, 1.0) < 1e-9
 
     tt = {}
@@ -77,11 +79,24 @@ def make_timing(
     tt["start_time_probe"]["time_lower_boundary"] = -TIME_TO_TRAVEL_OVERHEAD
     tt["start_time_probe"]["time_upper_boundary"] = TIME_TO_TRAVEL_OVERHEAD
 
+    tt["readout"] = {}
+    tt["readout"][
+        "integrates_num_simulation_time_slices"
+    ] = readout_integrates_num_simulation_time_slices
+    tt["readout"]["time_slice_duration"] = (
+        tt["electric_fields"]["time_slice_duration"]
+        * tt["readout"]["integrates_num_simulation_time_slices"]
+    )
+    tt["readout"]["frequency"] = 1.0 / tt["readout"]["time_slice_duration"]
+
     return tt
 
 
 def make_timing_from_lnb(
-    lnb, oversampling=6, time_window_duration=35e-9,
+    lnb,
+    oversampling=6,
+    time_window_duration=35e-9,
+    readout_integrates_num_simulation_time_slices=234,
 ):
     return make_timing(
         lnb_local_oscillator_frequency=lnb["local_oscillator_frequency"],
@@ -89,6 +104,7 @@ def make_timing_from_lnb(
         lnb_intermediate_frequency_stop=lnb["intermediate_frequency_stop"],
         oversampling=oversampling,
         time_window_duration=time_window_duration,
+        readout_integrates_num_simulation_time_slices=readout_integrates_num_simulation_time_slices,
     )
 
 

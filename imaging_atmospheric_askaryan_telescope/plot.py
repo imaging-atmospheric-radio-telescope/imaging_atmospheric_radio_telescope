@@ -197,8 +197,9 @@ def make_video_from_image_slices(
     subprocess.call(avconv_command)
 
 
-def save_image_slices_power(
-    power,
+def save_image_slices_energy_deposite(
+    total_power_sliding_integral,
+    integration_time,
     time_slice_duration,
     antenna_positions,
     path,
@@ -208,10 +209,12 @@ def save_image_slices_power(
 ):
     os.makedirs(path, exist_ok=True)
 
-    powerx = power[:, :, 0] * 1e9  # in nW
-    powery = power[:, :, 1] * 1e9
-    powers = powerx + powery
-    power_max = powers[:, :].max()
+    ene = total_power_sliding_integral
+
+    enex = ene[:, :, 0] * 1.602e19  # in eV
+    eney = ene[:, :, 1] * 1.602e19  # in eV
+    enes = enex + eney
+    power_max = enes[:, :].max()
 
     pixel_directions_x = antenna_positions[:, 0]
     pixel_directions_y = antenna_positions[:, 1]
@@ -220,14 +223,17 @@ def save_image_slices_power(
         fig, axarr = plt.subplots(1, 3, figsize=figsize)
         t = time_slice * time_slice_duration
         time_info = (
-            "t: "
+            "time: "
             + str(np.round(t * 1e9, 3))
-            + "ns, slice: {: 6d}".format(time_slice)
+            + "ns, (simulated time-slice: {: 6d})".format(time_slice)
         )
-        fig.suptitle(time_info + "\n" + "north, west, and sum power / nW")
+        fig.suptitle(
+            time_info + "\n" + "(north, west, sum) deposited energy / eV, "
+            "integration-time: {:.2f}ns".format(integration_time * 1e9)
+        )
         add2ax(
             ax=axarr[0],
-            pixel_amplitudes=powerx[:, time_slice],
+            pixel_amplitudes=enex[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=0,
@@ -241,7 +247,7 @@ def save_image_slices_power(
 
         add2ax(
             ax=axarr[1],
-            pixel_amplitudes=powery[:, time_slice],
+            pixel_amplitudes=eney[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=0,
@@ -255,7 +261,7 @@ def save_image_slices_power(
 
         add2ax(
             ax=axarr[2],
-            pixel_amplitudes=powers[:, time_slice],
+            pixel_amplitudes=enes[:, time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=0,

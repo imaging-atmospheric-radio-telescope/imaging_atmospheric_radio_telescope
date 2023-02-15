@@ -9,7 +9,10 @@ prng = np.random.Generator(np.random.PCG64(42))
 lnb = iaat.lownoiseblock.ASTRA_UNIVERSAL
 
 timing = iaat.timing_and_sampling.make_timing_from_lnb(
-    lnb=lnb, oversampling=6, time_window_duration=35e-9,
+    lnb=lnb,
+    oversampling=6,
+    time_window_duration=35e-9,
+    readout_integrates_num_simulation_time_slices=234,
 )
 
 mirror = iaat.telescope.make_mirror(
@@ -154,20 +157,24 @@ total_power = iaat.signal.calculate_antenna_power(
     electric_field=total_efield_at_lnb,
 )
 
-total_power_integral = np.zeros(shape=total_power.shape)
-T = 40 * timing["oversampling"]
-for t in range(int(sensor_electric_fields["num_time_slices"]) - T):
-    w = np.sum(total_power[:, t : t + T, :], axis=1)
-    total_power_integral[:, t, :] = w
+total_power_sliding_integral = np.zeros(shape=total_power.shape)
+
+numT = timing["readout"]["integrates_num_simulation_time_slices"]
+integration_time = timing["readout"]["time_slice_duration"]
+
+for t in range(int(sensor_electric_fields["num_time_slices"]) - numT):
+    w = np.sum(total_power[:, t : t + numT, :], axis=1)
+    total_power_sliding_integral[:, t, :] = w * integration_time
 
 
-iaat_plot.save_image_slices_power(
-    power=total_power_integral,
+iaat_plot.save_image_slices_energy_deposite(
+    total_power_sliding_integral=total_power_sliding_integral,
+    integration_time=integration_time,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
     antenna_positions=telescope["sensor"]["antenna_positions"],
     path=os.path.join(plot_dir, "sensor_noise"),
     time_slice_region_of_interest=np.arange(
-        0, timing["electric_fields"]["sensor"]["num_time_slices"], T,
+        0, timing["electric_fields"]["sensor"]["num_time_slices"], numT,
     ),
     dpi=80,
     figsize=(12, 4),
