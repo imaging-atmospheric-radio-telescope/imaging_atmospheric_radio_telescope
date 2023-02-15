@@ -120,6 +120,7 @@ def time_series_paths_in_numerical_order(path):
     return all_time_series_paths
 
 
+# https://www.unitconverters.net/electric-field-strength/statvolt-centimeter-to-volt-meter.htm
 CGS_statVolt_per_cm_to_SI_Volt_per_meter = 2.99792458e4
 
 
