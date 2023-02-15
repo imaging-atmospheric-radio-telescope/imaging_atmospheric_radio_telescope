@@ -101,7 +101,7 @@ for component in ["mirror", "sensor"]:
 sensor_electric_fields = iaat.electric_fields.read_tar(
     path=os.path.join(event_path, "sensor", "electric_fields.tar")
 )
-signal_efield_at_lnb = (
+signal_efield_in_lnb = (
     feed_horn_gain
     * telescope["transmission_from_air_into_feed_horn"]
     * sensor_electric_fields["electric_fields"]
@@ -110,8 +110,8 @@ signal_efield_at_lnb = (
 """
 mixer
 """
-signal_efield_at_lnb = iaat.signal.lnb_mixer(
-    amplitudes=signal_efield_at_lnb,
+signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
+    amplitudes=signal_efield_in_lnb,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
     local_oscillator_frequency=timing["lnb"]["local_oscillator_frequency"],
     intermediate_frequency_start=timing["lnb"]["intermediate_frequency_start"],
@@ -120,7 +120,7 @@ signal_efield_at_lnb = iaat.signal.lnb_mixer(
 
 _signal_power = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area"],
-    electric_field=signal_efield_at_lnb,
+    electric_field=signal_efield_leaving_lnb,
 )
 
 electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_noise(
@@ -128,21 +128,23 @@ electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_n
     antenna_bandwidth=timing["lnb"]["bandwidth"],
 )
 
-noise_efield_at_lnb = np.sqrt(
+noise_num_time_slices = int(sensor_electric_fields["num_time_slices"]) * int(2)
+
+noise_efield_leaving_lnb = np.sqrt(
     1 / telescope["lnb"]["effective_area"]
 ) * prng.normal(
     loc=0.0,
     scale=electric_field_thermal_noise_amplitude,
     size=(
         sensor_electric_fields["num_antennas"],
-        sensor_electric_fields["num_time_slices"],
+        noise_num_time_slices,
         3,
     ),
 )
 
 _noise_power = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area"],
-    electric_field=noise_efield_at_lnb,
+    electric_field=noise_efield_leaving_lnb,
 )
 
 _expected_noise_power = iaat.signal.electric_power_of_thermal_noise(
@@ -150,20 +152,22 @@ _expected_noise_power = iaat.signal.electric_power_of_thermal_noise(
     antenna_bandwidth=timing["lnb"]["bandwidth"],
 )
 
-total_efield_at_lnb = signal_efield_at_lnb + noise_efield_at_lnb
+numS = sensor_electric_fields["num_time_slices"]
+total_efield_leaving_lnb = noise_efield_leaving_lnb
+total_efield_leaving_lnb[:, numS:, :] += signal_efield_leaving_lnb
 
-total_power = iaat.signal.calculate_antenna_power(
+total_power_leaving_lnb = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area"],
-    electric_field=total_efield_at_lnb,
+    electric_field=total_efield_leaving_lnb,
 )
 
-total_power_sliding_integral = np.zeros(shape=total_power.shape)
+total_power_sliding_integral = np.zeros(shape=total_power_leaving_lnb.shape)
 
 numT = timing["readout"]["integrates_num_simulation_time_slices"]
 integration_time = timing["readout"]["time_slice_duration"]
 
-for t in range(int(sensor_electric_fields["num_time_slices"]) - numT):
-    w = np.sum(total_power[:, t : t + numT, :], axis=1)
+for t in range(noise_num_time_slices - numT):
+    w = np.sum(total_power_leaving_lnb[:, t : t + numT, :], axis=1)
     total_power_sliding_integral[:, t, :] = w * integration_time
 
 
@@ -174,7 +178,7 @@ iaat_plot.save_image_slices_energy_deposite(
     antenna_positions=telescope["sensor"]["antenna_positions"],
     path=os.path.join(plot_dir, "sensor_noise"),
     time_slice_region_of_interest=np.arange(
-        0, timing["electric_fields"]["sensor"]["num_time_slices"], numT,
+        0, noise_num_time_slices, numT,
     ),
     dpi=80,
     figsize=(12, 4),
