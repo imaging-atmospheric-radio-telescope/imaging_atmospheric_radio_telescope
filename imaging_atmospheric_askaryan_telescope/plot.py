@@ -81,11 +81,32 @@ def write_figure_electric_fields_overview(
         amplitude_scale=1e6,
     )
     gst_ns = 1e9 * electric_fields["global_start_time"]
-    ax.set_title("time {:.2f}ns".format(gst_ns), loc="right")
-    ax.set_xlabel("telescope time / ns")
+    ax.set_title("absolute time: {:.2f}ns".format(gst_ns), loc="right")
+    ax.set_xlabel("relative time / ns")
     ax.set_ylabel("channels / 1")
     plt.colorbar(im, cax=ax_cmap)
     ax_cmap.set_ylabel("norm(electric field) / $\mu$ V m$^{-1}$")
+    fig.savefig(path, dpi=dpi)
+    plt.close("all")
+
+
+def write_figure_antenna_positions(
+    positions, path, figsize=(16 / 2, 9 / 2), dpi=200,
+):
+    fig = plt.figure(figsize=figsize)
+    # left, bottom, width, height
+    ax = fig.add_axes([0.15, 0.125, 0.8, 0.8])
+
+    r = np.hypot(positions[:, 0], positions[:, 1])
+    rmax = np.max(r) * 1.1
+    ax.plot(positions[:, 0], positions[:, 1], "xk")
+
+    ax.set_xlim([-rmax, rmax])
+    ax.set_ylim([-rmax, rmax])
+    ax.set_aspect("equal")
+
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("y / m")
     fig.savefig(path, dpi=dpi)
     plt.close("all")
 

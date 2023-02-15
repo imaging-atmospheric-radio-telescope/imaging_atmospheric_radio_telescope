@@ -1,5 +1,6 @@
 import numpy as np
 from . import lownoiseblock
+from . import signal
 
 
 def make_timing(
@@ -54,13 +55,27 @@ def make_timing(
         )
     )
 
+    """
+    From the CoReas Manual:
+
+    TimeLowerBoundary
+    -----------------
+    Sets a global lower bound for the time window to be calculated. (Only applicable
+    if AutomaticTimeBoundaries=0 and not recommended, setting of Automatic-
+    TimeBoundaries is preferred.) Value is in seconds, where 0 denotes the time
+    when an imaginary leading particle propagating at the speed of light hits the
+    specified shower core.
+    """
+    OVERHEAD_DISTANCE = 10e4
+    TIME_TO_TRAVEL_OVERHEAD = OVERHEAD_DISTANCE / signal.SPEED_OF_LIGHT
+
     tt["start_time_probe"] = {}
     tt["start_time_probe"]["time_slice_duration"] = (
         10 * oversampling * tt["electric_fields"]["time_slice_duration"]
     )
     tt["start_time_probe"]["position"] = [0.0, 0.0, 0.0]
-    tt["start_time_probe"]["time_lower_boundary"] = -7e3 * time_window_duration
-    tt["start_time_probe"]["time_upper_boundary"] = 7e2 * time_window_duration
+    tt["start_time_probe"]["time_lower_boundary"] = -TIME_TO_TRAVEL_OVERHEAD
+    tt["start_time_probe"]["time_upper_boundary"] = TIME_TO_TRAVEL_OVERHEAD
 
     return tt
 

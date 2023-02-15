@@ -39,7 +39,7 @@ corsika_coreas_executable_path = os.path.join(
     "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 201
+event_id = 203
 event_path = "test{:06d}".format(event_id)
 
 primary_particle = {
@@ -75,14 +75,23 @@ iaat.production.simulate_telescope_response(
 """
 plot electic fields
 """
+plot_dir = os.path.join(event_path, "plot")
+os.makedirs(plot_dir, exist_ok=True)
 for component in ["probe", "mirror", "sensor"]:
-    fig_path = os.path.join(event_path, "plot", component + ".jpg")
+    fig_path = os.path.join(plot_dir, component + ".jpg")
     if not os.path.exists(fig_path):
         field_path = os.path.join(event_path, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
         iaat_plot.write_figure_electric_fields_overview(
-            electric_fields=field,
-            path=fig_path
+            electric_fields=field, path=fig_path
+        )
+# instrument
+# ----------
+for component in ["mirror", "sensor"]:
+    fig_path = os.path.join(plot_dir, component + ".antenna_positions.jpg")
+    if not os.path.exists(fig_path):
+        iaat_plot.write_figure_antenna_positions(
+            positions=telescope[component]["antenna_positions"], path=fig_path
         )
 
 
@@ -156,7 +165,7 @@ iaat_plot.save_image_slices_power(
     power=total_power_integral,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
     antenna_positions=telescope["sensor"]["antenna_positions"],
-    path=os.path.join(event_path, "plot", "sensor_noise"),
+    path=os.path.join(plot_dir, "sensor_noise"),
     time_slice_region_of_interest=np.arange(
         0, timing["electric_fields"]["sensor"]["num_time_slices"], T,
     ),
