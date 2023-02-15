@@ -21,7 +21,9 @@ mirror = iaat.telescope.make_mirror(
 )
 
 sensor = iaat.telescope.make_sensor(
-    sensor_outer_radius=1.1, sensor_distance=25.5, feed_horn_inner_radius=0.03,
+    sensor_outer_radius=mirror["focal_length"] * np.deg2rad(3.25),
+    sensor_distance=mirror["focal_length"],
+    feed_horn_inner_radius=0.0274,
 )
 
 telescope = iaat.telescope.make_telescope(
@@ -37,16 +39,16 @@ corsika_coreas_executable_path = os.path.join(
     "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 200
+event_id = 201
 event_path = "test{:06d}".format(event_id)
 
 primary_particle = {
-    "id": 1,
-    "energy_GeV": 3000,
-    "zenith_distance_rad": np.deg2rad(0.7),
+    "type": "gamma",
+    "energy_GeV": 5000,
+    "zenith_distance_rad": np.deg2rad(1.2),
     "azimuth_rad": 0.0,
-    "core_north_m": 30,
-    "core_west_m": 80,
+    "core_north_m": 20,
+    "core_west_m": 40,
 }
 
 """
@@ -69,6 +71,20 @@ iaat.production.simulate_telescope_response(
     telescope=telescope,
     timing=timing,
 )
+
+"""
+plot electic fields
+"""
+for component in ["probe", "mirror", "sensor"]:
+    fig_path = os.path.join(event_path, "plot", component + ".jpg")
+    if not os.path.exists(fig_path):
+        field_path = os.path.join(event_path, component, "electric_fields.tar")
+        field = iaat.electric_fields.read_tar(field_path)
+        iaat_plot.write_figure_electric_fields_overview(
+            electric_fields=field,
+            path=fig_path
+        )
+
 
 sensor_electric_fields = iaat.electric_fields.read_tar(
     path=os.path.join(event_path, "sensor", "electric_fields.tar")
