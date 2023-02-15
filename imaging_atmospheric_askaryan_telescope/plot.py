@@ -14,6 +14,82 @@ import imaging_atmospheric_askaryan_telescope as iaat
 import tempfile
 
 
+def ax_add_electric_field(
+    ax,
+    electric_fields,
+    dimension_mask=[1, 1, 0],
+    cmap=None,
+    norm=None,
+    vmin=None,
+    vmax=None,
+    time_scale=1,
+    amplitude_scale=1,
+):
+    time_bin_edges = iaat.electric_fields.make_time_bin_edges(
+        electric_fields=electric_fields, global_time=False,
+    )
+    antenna_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
+        electric_fields=electric_fields
+    )
+
+    E = electric_fields["electric_fields"]
+    E_amplitude = np.linalg.norm(E[:, :, dimension_mask], axis=2)
+    E_amplitude *= amplitude_scale
+
+    if vmin == None and vmax == None:
+        E_max = np.max(E_amplitude)
+        vmax = 10 ** np.ceil(np.log10(E_max))
+        vmin = vmax * 1e-3
+
+    im = ax.pcolormesh(
+        time_bin_edges * time_scale,
+        antenna_bin_edges,
+        E_amplitude,
+        cmap=cmap,
+        norm=norm,
+        vmin=vmin,
+        vmax=vmax,
+    )
+    return im
+
+
+def write_figure_electric_fields_overview(
+    electric_fields,
+    path,
+    figsize=(16 / 2, 9 / 2),
+    dpi=200,
+    cmap="viridis",
+    norm=matplotlib.colors.LogNorm(),
+    vmin=None,
+    vmax=None,
+    dimension_mask=[1, 1, 0],
+):
+    fig = plt.figure(figsize=figsize)
+    # left, bottom, width, height
+    ax = fig.add_axes([0.15, 0.125, 0.65, 0.8])
+    ax_cmap = fig.add_axes([0.85, 0.125, 0.025, 0.8])
+
+    im = ax_add_electric_field(
+        ax=ax,
+        electric_fields=electric_fields,
+        dimension_mask=dimension_mask,
+        cmap=cmap,
+        norm=norm,
+        vmin=vmin,
+        vmax=vmax,
+        time_scale=1e9,
+        amplitude_scale=1e6,
+    )
+    gst_ns = 1e9 * electric_fields["global_start_time"]
+    ax.set_title("time {:.2f}ns".format(gst_ns), loc="right")
+    ax.set_xlabel("telescope time / ns")
+    ax.set_ylabel("channels / 1")
+    plt.colorbar(im, cax=ax_cmap)
+    ax_cmap.set_ylabel("norm(electric field) / $\mu$ V m$^{-1}$")
+    fig.savefig(path, dpi=dpi)
+    plt.close("all")
+
+
 def add2ax(
     ax,
     pixel_amplitudes,
