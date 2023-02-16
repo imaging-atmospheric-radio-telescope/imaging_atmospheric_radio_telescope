@@ -135,11 +135,7 @@ noise_efield_leaving_lnb = np.sqrt(
 ) * prng.normal(
     loc=0.0,
     scale=electric_field_thermal_noise_amplitude,
-    size=(
-        sensor_electric_fields["num_antennas"],
-        noise_num_time_slices,
-        3,
-    ),
+    size=(sensor_electric_fields["num_antennas"], noise_num_time_slices, 3,),
 )
 
 _noise_power = iaat.signal.calculate_antenna_power(
@@ -177,9 +173,7 @@ iaat_plot.save_image_slices_energy_deposite(
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
     antenna_positions=telescope["sensor"]["antenna_positions"],
     path=os.path.join(plot_dir, "sensor_noise"),
-    time_slice_region_of_interest=np.arange(
-        0, noise_num_time_slices, numT,
-    ),
+    time_slice_region_of_interest=np.arange(0, noise_num_time_slices, numT,),
     dpi=80,
     figsize=(12, 4),
 )

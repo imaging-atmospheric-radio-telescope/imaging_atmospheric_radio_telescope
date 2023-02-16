@@ -14,10 +14,19 @@ The goal of this package is to explore the capabilities and practicality of such
 
 ## Install
 
+The python-package.
+
 ```bash
 pip install -e imaging_atmospheric_askaryan_telescope/
 ```
-This installs the python-package.
+
+Enter the python-package directory.
+```bash
+cd imaging_atmospheric_askaryan_telescope
+```
+
+Download CORSIKA-CoREAS from KIT.
+You need to ask the developers of CORSIKA for the username and password.
 
 ```python
 import imaging_atmospheric_askaryan_telescope as iaat
@@ -28,19 +37,27 @@ iaat.corsika.coreas.install.download(
     password="YYY",
 )
 ```
-This downloads the CORSIKA-CoREAS simulation.
-You need to ask the developers of CORSIKA for the username and password.
+
+Check if it is the exact version we expect.
+
 
 ```python
-iaat.corsika.coreas.install.install(
-    corsika_tar_path="build/corsika-77100.tar.gz",
-    install_path="build",
+iaat.corsika.coreas.install.is_expected_version(
+    corsika_tar_gz_path="build/corsika-77100.tar.gz",
 )
 ```
-This will build CORSIKA-CoREAS in the 'build' directory.
+
+Finally build CORSIKA-CoREAS in the 'build' directory.
+
+```python
+iaat.corsika.coreas.install.build(
+    corsika_tar_gz_path="build/corsika-77100.tar.gz",
+    build_dir="build",
+)
+```
 
 ## test
-This is not a unit-test but more like the one script runs a minimum example.
+This is not a unit-test. It is more like a minimal example.
 ```bash
 python imaging_atmospheric_askaryan_telescope/scripts/test.py
 ```

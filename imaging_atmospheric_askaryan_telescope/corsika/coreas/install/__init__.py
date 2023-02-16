@@ -11,7 +11,7 @@ CORSIKA_CONFIG_PATH = pkg_resources.resource_filename(
     "imaging_atmospheric_askaryan_telescope",
     os.path.join("corsika", "coreas", "install", "resources", "config.h"),
 )
-CORSIKA_77100_TAR_GZ_HASH_MD5SUM = "bc67b14c957a024baf7f2893ab246d34"
+CORSIKA_77100_TAR_GZ_MD5SUM = "bc67b14c957a024baf7f2893ab246d34"
 CORSIKA_DOWNLOAD_URL = "https://web.ikp.kit.edu/corsika/download/old/v771/"
 CORSIKA_NAME = "corsika-77100"
 CORSIKA_TAR_FILENAME = CORSIKA_NAME + ".tar.gz"
@@ -75,37 +75,37 @@ def download(
     )
 
 
-def install(
-    corsika_tar_path, install_path, corsika_config_path=CORSIKA_CONFIG_PATH
+def build(
+    corsika_tar_gz_path, build_dir, corsika_config_path=CORSIKA_CONFIG_PATH
 ):
     """
     Install corsika-coreas.
 
     Parameters
     ----------
-    corsika_tar_path : str
+    corsika_tar_gz_path : str
         Path to the corsika.tar which you downloaded from KIT.
     corsika_config_path : str
         Path to the config.h header-file which exactly defines how
         to build this flavor of corsika.
-    install_path : str
+    build_dir : str
         Directory to install in.
     """
-    install_path = os.path.abspath(install_path)
+    build_dir = os.path.abspath(build_dir)
     corsika_config_path = os.path.abspath(corsika_config_path)
 
-    os.makedirs(install_path, exist_ok=True)
+    os.makedirs(build_dir, exist_ok=True)
 
     # untar, unzip the CORSIKA download
-    tar = tarfile.open(corsika_tar_path)
-    tar.extractall(path=install_path)
+    tar = tarfile.open(corsika_tar_gz_path)
+    tar.extractall(path=build_dir)
     tar.close()
 
     # Go into CORSIKA dir
     corsika_basename = os.path.basename(
-        os.path.splitext(os.path.splitext(corsika_tar_path)[0])[0]
+        os.path.splitext(os.path.splitext(corsika_tar_gz_path)[0])[0]
     )
-    corsika_path = os.path.join(install_path, corsika_basename)
+    corsika_path = os.path.join(build_dir, corsika_basename)
     os.chdir(corsika_path)
 
     # Provide the coconut config.h
@@ -129,3 +129,22 @@ def install(
     # Copy std ATMPROFS to the CORSIKA run directory
     for atmprof in glob.glob("bernlohr/atmprof*"):
         shutil.copy(atmprof, "run")
+
+
+def is_expected_version(corsika_tar_gz_path):
+    """
+    Returns True/False depending on 'corsika_tar_gz_path' has the
+    expected md5sum.
+    """
+    actual_md5sum = md5sum(path=corsika_tar_gz_path)
+    if actual_md5sum == CORSIKA_77100_TAR_GZ_MD5SUM:
+        return True
+    else:
+        msg = ""
+        msg += "Expected '{:s}' ".format(corsika_tar_gz_path)
+        msg += "to have md5sum: '{:s}' of '{:s}', ".format(
+            CORSIKA_77100_TAR_GZ_MD5SUM, CORSIKA_TAR_FILENAME,
+        )
+        msg += "but it actually has md5sum: {:s}.".format(actual_md5sum)
+        print(msg)
+        return False
