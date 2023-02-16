@@ -54,13 +54,6 @@ primary_particle = {
     "core_west_m": 40,
 }
 
-"""
-earth_radius_m = 6300e3
-astra_power_W = 3.3e3
-astra_earth_area_m2 = np.pi * earth_radius_m ** 2
-astra_power_density_W_per_m2 = astra_power_W / astra_earth_area_m2
-"""
-
 feed_horn_gain = (
     telescope["sensor"]["antenna_area"] / telescope["lnb"]["effective_area"]
 )
