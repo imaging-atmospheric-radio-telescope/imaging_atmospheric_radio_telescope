@@ -14,10 +14,24 @@ import imaging_atmospheric_askaryan_telescope as iaat
 import tempfile
 
 
+def ax_set_spines(ax, positions=["left", "bottom", "right", "top"]):
+    for pos in ["left", "bottom", "right", "top"]:
+        if pos in positions:
+            ax.spines[pos].set_visible(True)
+        else:
+            ax.spines[pos].set_visible(False)
+
+
+def make_vmax_to_match_decades(v):
+    floating_v_max = np.max(v)
+    vmax = 10 ** np.ceil(np.log10(floating_v_max))
+    return vmax
+
+
 def ax_add_electric_field(
     ax,
     electric_fields,
-    dimension_mask=[1, 1, 0],
+    component_mask=[1, 1, 0],
     cmap=None,
     norm=None,
     vmin=None,
@@ -32,13 +46,13 @@ def ax_add_electric_field(
         electric_fields=electric_fields
     )
 
-    E = electric_fields["electric_fields"]
-    E_amplitude = np.linalg.norm(E[:, :, dimension_mask], axis=2)
+    E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
+        electric_fields=electric_fields, component_mask=component_mask,
+    )
     E_amplitude *= amplitude_scale
 
     if vmin == None and vmax == None:
-        E_max = np.max(E_amplitude)
-        vmax = 10 ** np.ceil(np.log10(E_max))
+        vmax = make_vmax_to_match_decades(v=E_amplitude)
         vmin = vmax * 1e-3
 
     im = ax.pcolormesh(
@@ -62,7 +76,7 @@ def write_figure_electric_fields_overview(
     norm=matplotlib.colors.LogNorm(),
     vmin=None,
     vmax=None,
-    dimension_mask=[1, 1, 0],
+    component_mask=[1, 1, 0],
 ):
     fig = plt.figure(figsize=figsize)
     # left, bottom, width, height
@@ -72,7 +86,7 @@ def write_figure_electric_fields_overview(
     im = ax_add_electric_field(
         ax=ax,
         electric_fields=electric_fields,
-        dimension_mask=dimension_mask,
+        component_mask=component_mask,
         cmap=cmap,
         norm=norm,
         vmin=vmin,
@@ -88,6 +102,167 @@ def write_figure_electric_fields_overview(
     ax_cmap.set_ylabel("norm(electric field) / $\mu$ V m$^{-1}$")
     fig.savefig(path, dpi=dpi)
     plt.close("all")
+
+
+def write_matrix(
+    path,
+    matrix,
+    x_bin_edges,
+    y_bin_edges,
+    x_label,
+    y_label,
+    z_label,
+    cmap="viridis",
+    cmap_marker=None,
+    norm=None,
+    vmin=None,
+    vmax=None,
+    figsize=(16 / 2, 9 / 2),
+    dpi=200,
+    title=None,
+):
+    fig = plt.figure(figsize=figsize)
+    # left, bottom, width, height
+    ax = fig.add_axes([0.15, 0.125, 0.65, 0.8])
+    ax.set_title(title)
+    ax_cmap = fig.add_axes([0.85, 0.125, 0.025, 0.8])
+    im = ax.pcolormesh(
+        x_bin_edges,
+        y_bin_edges,
+        matrix,
+        cmap=cmap,
+        norm=norm,
+        vmin=vmin,
+        vmax=vmax,
+    )
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    plt.colorbar(im, cax=ax_cmap)
+    ax_cmap.set_ylabel(z_label)
+    if cmap_marker:
+        ax_cmap.plot(ax_cmap.get_xlim(), [cmap_marker, cmap_marker], "r-")
+
+    fig.savefig(path, dpi=dpi)
+    plt.close("all")
+
+
+def write_figure_electric_fields_power_density_spectrum(
+    path,
+    electric_fields,
+    component_mask,
+    num_time_slices_to_average_over,
+    cmap="viridis",
+    norm=None,
+    vmin=None,
+    vmax=None,
+    figsize=(16 / 2, 9 / 2),
+    dpi=200,
+    vim_fraction_of_vmax=1e-4,
+):
+    if norm == None:
+        norm = matplotlib.colors.LogNorm()
+
+    ef = electric_fields
+
+    pds = np.zeros(
+        shape=(ef["num_antennas"], 1 + (num_time_slices_to_average_over // 2))
+    )
+
+    E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
+        electric_fields=electric_fields, component_mask=component_mask,
+    )
+
+    _last_f_antenna_bin_edges = None
+    for antenna in range(ef["num_antennas"]):
+        (
+            f_antenna_bin_edges,
+            pds_antenna,
+        ) = iaat.signal.estimate_power_spectrum_density(
+            amplitudes=E_amplitude[antenna, :],
+            time_slice_duration=ef["time_slice_duration"],
+            num_time_slices_to_average_over=num_time_slices_to_average_over,
+        )
+        pds[antenna, :] = pds_antenna
+        if _last_f_antenna_bin_edges is None:
+            _last_f_antenna_bin_edges = f_antenna_bin_edges
+        else:
+            np.testing.assert_array_almost_equal(
+                _last_f_antenna_bin_edges, f_antenna_bin_edges
+            )
+
+    antenna_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
+        electric_fields=ef
+    )
+
+    exposure_time = ef["time_slice_duration"] * ef["electric_fields"].shape[1]
+    sampling_frequency = 1.0 / ef["time_slice_duration"]
+
+    if vmin == None and vmax == None:
+        vmax = make_vmax_to_match_decades(v=pds)
+        vmin = vmax * vim_fraction_of_vmax
+
+    write_matrix(
+        path=path,
+        matrix=pds,
+        x_bin_edges=f_antenna_bin_edges * 1e-9,
+        y_bin_edges=antenna_bin_edges,
+        x_label="frequency / GHz",
+        y_label="channels / 1",
+        z_label="power spectrum density / V$^{2}$ m$^{-2}$ Hz$^{-1}$",
+        norm=norm,
+        cmap=cmap,
+        title="exposure time: {:.1f}ns, sampling frequency: {:.1f}GHz".format(
+            1e9 * exposure_time, 1e-9 * sampling_frequency
+        ),
+        figsize=figsize,
+        dpi=dpi,
+        vmin=vmin,
+        vmax=vmax,
+    )
+
+
+def write_figure_lnb_power(
+    path,
+    lnb_power,
+    antenna_bin_edges,
+    relative_time_bin_edges,
+    global_start_time,
+    expected_noise_power=None,
+    norm=None,
+    vmin=None,
+    vmax=None,
+    vim_fraction_of_vmax=1e-3,
+    dpi=200,
+):
+    lnb_power_pW = 1e12 * lnb_power
+
+    if norm == None:
+        norm = matplotlib.colors.LogNorm()
+
+    if vmin == None and vmax == None:
+        vmax = make_vmax_to_match_decades(v=lnb_power_pW)
+        vmin = vmax * vim_fraction_of_vmax
+
+    if expected_noise_power:
+        expected_noise_power_pW = 1e12 * expected_noise_power
+    else:
+        expected_noise_power_pW = None
+
+    write_matrix(
+        path=path,
+        matrix=lnb_power_pW,
+        x_bin_edges=1e9 * relative_time_bin_edges,
+        y_bin_edges=antenna_bin_edges,
+        x_label="relative time / ns",
+        y_label="channels / 1",
+        z_label="power / pW",
+        title="absolute time: {:.2f}ns".format(1e9 * global_start_time),
+        norm=norm,
+        vmax=vmax,
+        vmin=vmin,
+        dpi=dpi,
+        cmap_marker=expected_noise_power_pW,
+    )
 
 
 def write_figure_antenna_positions(
@@ -107,6 +282,32 @@ def write_figure_antenna_positions(
 
     ax.set_xlabel("x / m")
     ax.set_ylabel("y / m")
+    fig.savefig(path, dpi=dpi)
+    plt.close("all")
+
+
+def write_figure_gain(
+    path, frequency, gain, figsize=(16 / 2, 9 / 2), dpi=200,
+):
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_axes([0.15, 0.125, 0.8, 0.8])
+    frequency_GHz = frequency / 1e9
+
+    fmin = 10 ** np.floor(np.log10(np.min(frequency_GHz)))
+    fmax = 10 ** np.ceil(np.log10(np.max(frequency_GHz)))
+
+    gmin = 10 ** np.floor(np.log10(np.min(gain)))
+    gmax = 10 ** np.ceil(np.log10(np.max(gain)))
+
+    ax.plot(frequency_GHz, gain, "-k")
+    ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
+
+    ax.set_xlim([fmin, fmax])
+    ax.set_ylim([gmin, gmax])
+
+    ax.loglog()
+    ax.set_ylabel("gain / 1")
+    ax.set_xlabel("frequency / GHz")
     fig.savefig(path, dpi=dpi)
     plt.close("all")
 
@@ -197,47 +398,47 @@ def make_video_from_image_slices(
     subprocess.call(avconv_command)
 
 
+ELECTRON_VOLT_J = 1.602176634e-19
+
+
 def save_image_slices_energy_deposite(
-    total_power_sliding_integral,
-    integration_time,
-    time_slice_duration,
+    readout_energy,
+    readout_time_slice_duration,
     antenna_positions,
     path,
-    time_slice_region_of_interest=np.arange(70, 200),
+    global_start_time=0.0,
     dpi=160,
     figsize=(12, 4),
 ):
     os.makedirs(path, exist_ok=True)
 
-    ene = total_power_sliding_integral
-
-    enex = ene[:, :, 0] * 1.602e19  # in eV
-    eney = ene[:, :, 1] * 1.602e19  # in eV
+    enex = readout_energy[:, :, 0] / ELECTRON_VOLT_J  # in eV
+    eney = readout_energy[:, :, 1] / ELECTRON_VOLT_J  # in eV
     enes = enex + eney
-    power_max = enes[:, :].max()
+    energy_max = enes[:, :].max()
 
     pixel_directions_x = antenna_positions[:, 0]
     pixel_directions_y = antenna_positions[:, 1]
+    num_readout_time_slices = readout_energy.shape[1]
 
-    for idx, time_slice in enumerate(time_slice_region_of_interest):
+    for readout_time_slice in range(num_readout_time_slices):
         fig, axarr = plt.subplots(1, 3, figsize=figsize)
-        t = time_slice * time_slice_duration
+        relative_time = readout_time_slice_duration * readout_time_slice
         time_info = (
-            "time: "
-            + str(np.round(t * 1e9, 3))
-            + "ns, (simulated time-slice: {: 6d})".format(time_slice)
+            "absolute time: {: 6.3f}ns, ".format(1e9 * global_start_time)
+            + "relative time: {: 8.1f}ns, ".format(1e9 * relative_time)
+            + "readout-time-slice: {: 6d}".format(readout_time_slice)
         )
         fig.suptitle(
-            time_info + "\n" + "(north, west, sum) deposited energy / eV, "
-            "integration-time: {:.2f}ns".format(integration_time * 1e9)
+            time_info + "\n" + "(North, West, Sum) deposited energy / eV"
         )
         add2ax(
             ax=axarr[0],
-            pixel_amplitudes=enex[:, time_slice],
+            pixel_amplitudes=enex[:, readout_time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=0,
-            vmax=power_max,
+            vmax=energy_max,
             colormap="viridis",
         )
         axarr[0].set_xlabel("x/m")
@@ -247,11 +448,11 @@ def save_image_slices_energy_deposite(
 
         add2ax(
             ax=axarr[1],
-            pixel_amplitudes=eney[:, time_slice],
+            pixel_amplitudes=eney[:, readout_time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=0,
-            vmax=power_max,
+            vmax=energy_max,
             colormap="viridis",
         )
         axarr[1].set_xlabel("x/m")
@@ -261,11 +462,11 @@ def save_image_slices_energy_deposite(
 
         add2ax(
             ax=axarr[2],
-            pixel_amplitudes=enes[:, time_slice],
+            pixel_amplitudes=enes[:, readout_time_slice],
             pixel_directions_x=pixel_directions_x,
             pixel_directions_y=pixel_directions_y,
             vmin=0,
-            vmax=power_max,
+            vmax=energy_max,
             colormap="viridis",
         )
         axarr[2].set_xlabel("x/m")
@@ -274,6 +475,7 @@ def save_image_slices_energy_deposite(
         axarr[2].yaxis.set_visible(False)
 
         plt.savefig(
-            os.path.join(path, "image_{:06d}.jpg".format(idx)), dpi=dpi
+            os.path.join(path, "image_{:06d}.jpg".format(readout_time_slice)),
+            dpi=dpi,
         )
         plt.close("all")

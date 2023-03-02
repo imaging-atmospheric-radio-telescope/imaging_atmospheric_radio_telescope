@@ -1,6 +1,7 @@
 # Copyright 2017 Sebastian A. Mueller
 import numpy as np
 import scipy
+from scipy import spatial
 import scipy.spatial.distance
 import os
 from . import signal
@@ -230,6 +231,12 @@ def make_telescope(mirror, sensor, lnb, speed_of_light):
     tele["matrix"] = make_matrix(
         mirror=mirror, sensor=sensor, speed_of_light=speed_of_light,
     )
+    tele["trigger"] = {}
+    tele["trigger"]["pixel_summation"] = find_neighbors(
+        positions_xy=tele["sensor"]["antenna_positions"][:, 0:2],
+        max_num_neighbors=7,
+        integration_radius=tele["sensor"]["antenna_inner_radius"] * 2.1,
+    )
     return tele
 
 
@@ -274,4 +281,34 @@ def propagate_electric_field_from_mirror_to_sensor(
                     second=out["electric_fields"][ise, :, dim],
                     at=slice_delay,
                 )
+    return out
+
+
+def find_neighbors(positions_xy, max_num_neighbors, integration_radius):
+    assert integration_radius > 0.0
+    assert max_num_neighbors > 0
+    tree = scipy.spatial.cKDTree(data=positions_xy)
+    mask = []
+    for pos_xy in positions_xy:
+        dd, nn = tree.query(
+            x=pos_xy,
+            k=max_num_neighbors,
+            distance_upper_bound=integration_radius,
+        )
+        nn_out = []
+        for i in range(len(nn)):
+            if dd[i] < integration_radius:
+                nn_out.append(nn[i])
+        mask.append(nn_out)
+    return mask
+
+
+def apply_pixel_summation(signal, pixel_summation):
+    num_pixel_out = len(pixel_summation)
+    out_shape = list(signal.shape)
+    out_shape[0] = num_pixel_out
+    out = np.zeros(shape=out_shape)
+    for p in range(num_pixel_out):
+        for s in pixel_summation[p]:
+            out[p] += signal[s]
     return out

@@ -98,7 +98,7 @@ def butter_bench(
     """
     ratio = []
     for f in frequencies:
-        Ain = make_sin(
+        _t, Ain = make_sin(
             frequency=f,
             time_slice_duration=time_slice_duration,
             num_time_slices=num_time_slices,
@@ -183,3 +183,17 @@ def lnb_mixer(
             amplban[channel, :, dim] = ss
 
     return amplban
+
+
+def estimate_power_spectrum_density(
+    amplitudes, time_slice_duration, num_time_slices_to_average_over
+):
+    sampling_frequency = 1.0 / time_slice_duration
+    frequencies, power_density = scipy.signal.welch(
+        x=amplitudes,
+        fs=sampling_frequency,
+        nperseg=num_time_slices_to_average_over,
+        scaling="density",
+        average="mean",
+    )
+    return frequencies, power_density

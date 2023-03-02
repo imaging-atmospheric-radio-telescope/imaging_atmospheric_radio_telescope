@@ -123,3 +123,12 @@ def make_time_bin_edges(electric_fields, global_time=True):
 def make_antenna_bin_edges(electric_fields):
     N = electric_fields["num_antennas"]
     return np.linspace(0.0, N, N + 1) - 0.5
+
+
+def get_combined_norm_of_components(electric_fields, component_mask):
+    assert len(component_mask) == 3
+    for comp in component_mask:
+        assert comp in [0, 1]
+    return np.linalg.norm(
+        electric_fields["electric_fields"][:, :, component_mask], axis=2
+    )
