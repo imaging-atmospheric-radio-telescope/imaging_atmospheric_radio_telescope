@@ -12,7 +12,10 @@ def make_timing_from_lnb(
     assert lnb["local_oscillator_frequency"] > 0.0
     assert lnb["intermediate_frequency_start"] > 0.0
     assert lnb["intermediate_frequency_stop"] > 0.0
-    assert lnb["intermediate_frequency_start"] < lnb["intermediate_frequency_stop"]
+    assert (
+        lnb["intermediate_frequency_start"]
+        < lnb["intermediate_frequency_stop"]
+    )
     assert oversampling > 0
     assert readout_integrates_num_simulation_time_slices > 0
     assert np.mod(oversampling, 1.0) < 1e-9

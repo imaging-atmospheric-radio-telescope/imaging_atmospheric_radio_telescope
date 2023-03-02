@@ -8,7 +8,7 @@ import math
 with open("config.json", "rt") as f:
     config = json_numpy.loads(f.read())
 
-lnb = iaat.lownoiseblock.ASTRA_UNIVERSAL
+lnb = iaat.lownoiseblock.init(lnb_name=config["lnb_name"])
 timing = iaat.timing_and_sampling.make_timing_from_lnb(
     lnb=lnb, **config["timing"],
 )
