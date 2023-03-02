@@ -60,18 +60,18 @@ corsika_coreas_executable_path = os.path.join(
     "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 203
+event_id = 204
 prng = np.random.Generator(np.random.PCG64(event_id))
 
 event_path = "test{:06d}".format(event_id)
 
 primary_particle = {
     "type": "gamma",
-    "energy_GeV": 5000,
-    "zenith_distance_rad": np.deg2rad(1.2),
-    "azimuth_rad": 0.0,
-    "core_north_m": 20,
-    "core_west_m": 40,
+    "energy_GeV": 15000,
+    "zenith_distance_rad": np.deg2rad(1.1),
+    "azimuth_rad": 30.0,
+    "core_north_m": 50,
+    "core_west_m": 10,
 }
 
 feed_horn_gain = (
@@ -139,9 +139,13 @@ signal_efield_in_lnb = (
 signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
     amplitudes=signal_efield_in_lnb,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
-    local_oscillator_frequency=timing["lnb"]["local_oscillator_frequency"],
-    intermediate_frequency_start=timing["lnb"]["intermediate_frequency_start"],
-    intermediate_frequency_stop=timing["lnb"]["intermediate_frequency_stop"],
+    local_oscillator_frequency=telescope["lnb"]["local_oscillator_frequency"],
+    intermediate_frequency_start=telescope["lnb"][
+        "intermediate_frequency_start"
+    ],
+    intermediate_frequency_stop=telescope["lnb"][
+        "intermediate_frequency_stop"
+    ],
 )
 
 # plot lnb mixer gain
@@ -151,8 +155,8 @@ _lnb_bench_gain = iaat.signal.butter_bench(
     frequencies=_lnb_bench_frequency,
     bandpass=iaat.signal.butter_bandpass_filter,
     filter_config={
-        "frequency_start": timing["lnb"]["intermediate_frequency_start"],
-        "frequency_stop": timing["lnb"]["intermediate_frequency_stop"],
+        "frequency_start": telescope["lnb"]["intermediate_frequency_start"],
+        "frequency_stop": telescope["lnb"]["intermediate_frequency_stop"],
     },
     num_time_slices=10000,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
@@ -174,7 +178,7 @@ _signal_power = iaat.signal.calculate_antenna_power(
 
 electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_noise(
     antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=timing["lnb"]["bandwidth"],
+    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
 )
 
 noise_num_time_slices = int(sensor_electric_fields["num_time_slices"]) * int(2)
@@ -199,7 +203,7 @@ _noise_power = iaat.signal.calculate_antenna_power(
 
 _expected_noise_power = iaat.signal.electric_power_of_thermal_noise(
     antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=timing["lnb"]["bandwidth"],
+    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
 )
 
 assert 0.9 < (_expected_noise_power / np.mean(_noise_power)) < 1.1
@@ -283,31 +287,44 @@ for i in range(num_readout_frames):
     readout_energy[:, i, 0] = x_comp_energy
     readout_energy[:, i, 1] = y_comp_energy
 
-plot_sensor_dir = os.path.join(plot_dir, "sensor_noise")
-if not os.path.exists(plot_sensor_dir):
-    iaat_plot.save_image_slices_energy_deposite(
-        readout_energy=readout_energy,
-        readout_time_slice_duration=timing["readout"]["time_slice_duration"],
-        antenna_positions=telescope["sensor"]["antenna_positions"],
-        path=plot_sensor_dir,
-        global_start_time=readout_global_start_time,
-        dpi=80,
-        figsize=(12, 4),
-    )
+
+for units in ["electron_volt", "black_body_temperature", "jansky"]:
+    plot_sensor_dir = os.path.join(plot_dir, "readout", units)
+    if not os.path.exists(plot_sensor_dir):
+        iaat_plot.save_image_slices_energy_deposite(
+            readout_energy=readout_energy,
+            readout_time_slice_duration=timing["readout"][
+                "time_slice_duration"
+            ],
+            antenna_positions=telescope["sensor"]["antenna_positions"],
+            path=plot_sensor_dir,
+            global_start_time=readout_global_start_time,
+            dpi=80,
+            figsize=(12, 4),
+            units=units,
+            bandwidth=telescope["lnb"]["intermediate_bandwidth"],
+            mirror_area=telescope["mirror"]["area"],
+        )
 
 trigger_energy = iaat.telescope.apply_pixel_summation(
     signal=readout_energy,
     pixel_summation=telescope["trigger"]["pixel_summation"],
 )
 
-plot_trigger_dir = os.path.join(plot_dir, "trigger")
-if not os.path.exists(plot_trigger_dir):
-    iaat_plot.save_image_slices_energy_deposite(
-        readout_energy=trigger_energy,
-        readout_time_slice_duration=timing["readout"]["time_slice_duration"],
-        antenna_positions=telescope["sensor"]["antenna_positions"],
-        path=plot_trigger_dir,
-        global_start_time=readout_global_start_time,
-        dpi=80,
-        figsize=(12, 4),
-    )
+for units in ["electron_volt", "black_body_temperature", "jansky"]:
+    plot_trigger_dir = os.path.join(plot_dir, "trigger", units)
+    if not os.path.exists(plot_trigger_dir):
+        iaat_plot.save_image_slices_energy_deposite(
+            readout_energy=trigger_energy,
+            readout_time_slice_duration=timing["readout"][
+                "time_slice_duration"
+            ],
+            antenna_positions=telescope["sensor"]["antenna_positions"],
+            path=plot_trigger_dir,
+            global_start_time=readout_global_start_time,
+            dpi=80,
+            figsize=(12, 4),
+            units=units,
+            bandwidth=telescope["lnb"]["intermediate_bandwidth"],
+            mirror_area=telescope["mirror"]["area"],
+        )

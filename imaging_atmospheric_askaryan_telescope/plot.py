@@ -300,7 +300,7 @@ def write_figure_gain(
     gmax = 10 ** np.ceil(np.log10(np.max(gain)))
 
     ax.plot(frequency_GHz, gain, "-k")
-    ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
+    ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1, which="both")
 
     ax.set_xlim([fmin, fmax])
     ax.set_ylim([gmin, gmax])
@@ -409,11 +409,47 @@ def save_image_slices_energy_deposite(
     global_start_time=0.0,
     dpi=160,
     figsize=(12, 4),
+    units=None,
+    bandwidth=None,
+    mirror_area=None,
 ):
     os.makedirs(path, exist_ok=True)
 
-    enex = readout_energy[:, :, 0] / ELECTRON_VOLT_J  # in eV
-    eney = readout_energy[:, :, 1] / ELECTRON_VOLT_J  # in eV
+    if units == None:
+        enex = readout_energy[:, :, 0]
+        eney = readout_energy[:, :, 1]
+        estr = "deposited energy / J"
+    elif units == "electron_volt":
+        enex = readout_energy[:, :, 0] / ELECTRON_VOLT_J  # in eV
+        eney = readout_energy[:, :, 1] / ELECTRON_VOLT_J  # in eV
+        estr = "deposited energy / eV"
+    elif units == "black_body_temperature":
+        assert bandwidth != None
+        px_W = readout_energy[:, :, 0] / readout_time_slice_duration  # in W
+        py_W = readout_energy[:, :, 1] / readout_time_slice_duration  # in W
+        enex = iaat.signal.radiated_power_to_blackbody_temperature(
+            power_W=px_W, bandwidth_Hz=bandwidth,
+        )
+        eney = iaat.signal.radiated_power_to_blackbody_temperature(
+            power_W=py_W, bandwidth_Hz=bandwidth,
+        )
+        estr = "black body temperature / K"
+    elif units == "jansky":
+        assert bandwidth != None
+        assert mirror_area != None
+        px_W = readout_energy[:, :, 0] / readout_time_slice_duration  # in W
+        py_W = readout_energy[:, :, 1] / readout_time_slice_duration  # in W
+        _per_area_per_bandwidth = mirror_area ** (-1) * bandwidth ** (-1)
+        flux_density_x_W_per_m2_per_Hz = px_W * _per_area_per_bandwidth
+        flux_density_y_W_per_m2_per_Hz = py_W * _per_area_per_bandwidth
+        flux_density_x_Jy = 1e26 * flux_density_x_W_per_m2_per_Hz
+        flux_density_y_Jy = 1e26 * flux_density_y_W_per_m2_per_Hz
+        enex = flux_density_x_Jy
+        eney = flux_density_y_Jy
+        estr = "flux density / Jy"
+    else:
+        raise AttributeError("Units not known.")
+
     enes = enex + eney
     energy_max = enes[:, :].max()
 
@@ -429,9 +465,7 @@ def save_image_slices_energy_deposite(
             + "relative time: {: 8.1f}ns, ".format(1e9 * relative_time)
             + "readout-time-slice: {: 6d}".format(readout_time_slice)
         )
-        fig.suptitle(
-            time_info + "\n" + "(North, West, Sum) deposited energy / eV"
-        )
+        fig.suptitle(time_info + "\n" + "(North, West, Sum) " + estr)
         add2ax(
             ax=axarr[0],
             pixel_amplitudes=enex[:, readout_time_slice],

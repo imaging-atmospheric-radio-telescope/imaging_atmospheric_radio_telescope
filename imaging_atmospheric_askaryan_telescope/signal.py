@@ -140,6 +140,10 @@ def electric_power_of_thermal_noise(
     return antenna_temperature_K * BOLTZMANN_CONSTANT * antenna_bandwidth
 
 
+def radiated_power_to_blackbody_temperature(power_W, bandwidth_Hz):
+    return power_W / (BOLTZMANN_CONSTANT * bandwidth_Hz)
+
+
 def electric_field_of_thermal_noise(
     antenna_temperature_K=80, antenna_bandwidth=1e9,
 ):

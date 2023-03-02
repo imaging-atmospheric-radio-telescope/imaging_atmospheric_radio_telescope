@@ -13,10 +13,11 @@ ASTRA_UNIVERSAL["effective_area"] = signal.calculate_antenna_effective_area(
     ),
     gain=1.0,
 )
+ASTRA_UNIVERSAL["intermediate_bandwidth"] = (
+    ASTRA_UNIVERSAL["intermediate_frequency_stop"]
+    - ASTRA_UNIVERSAL["intermediate_frequency_start"]
+)
 ASTRA_UNIVERSAL["noise_power"] = signal.electric_power_of_thermal_noise(
     antenna_temperature_K=ASTRA_UNIVERSAL["noise_temperature"],
-    antenna_bandwidth=(
-        ASTRA_UNIVERSAL["intermediate_frequency_stop"]
-        - ASTRA_UNIVERSAL["intermediate_frequency_start"]
-    ),
+    antenna_bandwidth=ASTRA_UNIVERSAL["intermediate_bandwidth"],
 )
