@@ -60,18 +60,18 @@ corsika_coreas_executable_path = os.path.join(
     "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 204
+event_id = 205
 prng = np.random.Generator(np.random.PCG64(event_id))
 
 event_path = "test{:06d}".format(event_id)
 
 primary_particle = {
     "type": "gamma",
-    "energy_GeV": 15000,
-    "zenith_distance_rad": np.deg2rad(1.1),
+    "energy_GeV": 2000,
+    "zenith_distance_rad": np.deg2rad(0.5),
     "azimuth_rad": 30.0,
-    "core_north_m": 50,
-    "core_west_m": 10,
+    "core_north_m": 20,
+    "core_west_m": 5,
 }
 
 feed_horn_gain = (

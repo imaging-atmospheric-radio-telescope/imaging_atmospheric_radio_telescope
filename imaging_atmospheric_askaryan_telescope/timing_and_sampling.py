@@ -3,18 +3,16 @@ from . import lownoiseblock
 from . import signal
 
 
-def make_timing(
-    lnb_local_oscillator_frequency=9.75e9,
-    lnb_intermediate_frequency_start=950e6,
-    lnb_intermediate_frequency_stop=1950e6,
+def make_timing_from_lnb(
+    lnb,
     oversampling=6,
     readout_integrates_num_simulation_time_slices=234,
     time_window_duration=35e-9,
 ):
-    assert lnb_local_oscillator_frequency > 0.0
-    assert lnb_intermediate_frequency_start > 0.0
-    assert lnb_intermediate_frequency_stop > 0.0
-    assert lnb_intermediate_frequency_start < lnb_intermediate_frequency_stop
+    assert lnb["local_oscillator_frequency"] > 0.0
+    assert lnb["intermediate_frequency_start"] > 0.0
+    assert lnb["intermediate_frequency_stop"] > 0.0
+    assert lnb["intermediate_frequency_start"] < lnb["intermediate_frequency_stop"]
     assert oversampling > 0
     assert readout_integrates_num_simulation_time_slices > 0
     assert np.mod(oversampling, 1.0) < 1e-9
@@ -22,21 +20,10 @@ def make_timing(
     tt = {}
     tt["oversampling"] = oversampling
 
-    tt["lnb"] = {}
-    tt["lnb"]["local_oscillator_frequency"] = lnb_local_oscillator_frequency
-    tt["lnb"][
-        "intermediate_frequency_start"
-    ] = lnb_intermediate_frequency_start
-    tt["lnb"]["intermediate_frequency_stop"] = lnb_intermediate_frequency_stop
-    tt["lnb"]["bandwidth"] = (
-        tt["lnb"]["intermediate_frequency_stop"]
-        - tt["lnb"]["intermediate_frequency_start"]
-    )
-
     tt["electric_fields"] = {}
 
     tt["electric_fields"]["frequency"] = (
-        tt["lnb"]["local_oscillator_frequency"] * oversampling
+        lnb["local_oscillator_frequency"] * oversampling
     )
     tt["electric_fields"]["time_slice_duration"] = (
         1.0 / tt["electric_fields"]["frequency"]
@@ -90,22 +77,6 @@ def make_timing(
     tt["readout"]["frequency"] = 1.0 / tt["readout"]["time_slice_duration"]
 
     return tt
-
-
-def make_timing_from_lnb(
-    lnb,
-    oversampling=6,
-    time_window_duration=35e-9,
-    readout_integrates_num_simulation_time_slices=234,
-):
-    return make_timing(
-        lnb_local_oscillator_frequency=lnb["local_oscillator_frequency"],
-        lnb_intermediate_frequency_start=lnb["intermediate_frequency_start"],
-        lnb_intermediate_frequency_stop=lnb["intermediate_frequency_stop"],
-        oversampling=oversampling,
-        time_window_duration=time_window_duration,
-        readout_integrates_num_simulation_time_slices=readout_integrates_num_simulation_time_slices,
-    )
 
 
 def estimate_start_time_from_electric_fields(electric_fields):
