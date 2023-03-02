@@ -201,3 +201,12 @@ def estimate_power_spectrum_density(
         average="mean",
     )
     return frequencies, power_density
+
+
+def integrate_sliding_window(signal, time_slice_duration, window_num_slices):
+    T = window_num_slices
+    signal_num_slices = signal.shape[0]
+    out = np.zeros(signal_num_slices)
+    for t in range(signal_num_slices - T):
+        out[t] = np.sum(signal[t : t + T]) * time_slice_duration
+    return out

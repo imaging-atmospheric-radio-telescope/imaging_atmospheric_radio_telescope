@@ -287,19 +287,29 @@ def write_figure_antenna_positions(
 
 
 def write_figure_gain(
-    path, frequency, gain, figsize=(16 / 2, 9 / 2), dpi=200,
+    path, frequency, gain, scale="G", figsize=(16 / 2, 9 / 2), dpi=200,
 ):
+    if scale == None:
+        s = 1
+        s_str = ""
+    elif scale == "M":
+        s = 1e6
+        s_str = scale
+    elif scale == "G":
+        s = 1e9
+        s_str = scale
+
     fig = plt.figure(figsize=figsize)
     ax = fig.add_axes([0.15, 0.125, 0.8, 0.8])
-    frequency_GHz = frequency / 1e9
+    frequency_scale = frequency / s
 
-    fmin = 10 ** np.floor(np.log10(np.min(frequency_GHz)))
-    fmax = 10 ** np.ceil(np.log10(np.max(frequency_GHz)))
+    fmin = 10 ** np.floor(np.log10(np.min(frequency_scale)))
+    fmax = 10 ** np.ceil(np.log10(np.max(frequency_scale)))
 
     gmin = 10 ** np.floor(np.log10(np.min(gain)))
     gmax = 10 ** np.ceil(np.log10(np.max(gain)))
 
-    ax.plot(frequency_GHz, gain, "-k")
+    ax.plot(frequency_scale, gain, "-k")
     ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1, which="both")
 
     ax.set_xlim([fmin, fmax])
@@ -307,7 +317,7 @@ def write_figure_gain(
 
     ax.loglog()
     ax.set_ylabel("gain / 1")
-    ax.set_xlabel("frequency / GHz")
+    ax.set_xlabel("frequency / {:s}Hz".format(s_str))
     fig.savefig(path, dpi=dpi)
     plt.close("all")
 

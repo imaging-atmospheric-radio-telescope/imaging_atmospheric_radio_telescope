@@ -8,3 +8,23 @@ from . import signal
 from . import electric_fields
 from . import lownoiseblock
 from . import theory
+
+
+def init_telescope_and_timing(config):
+
+    lnb = lownoiseblock.init(lnb_name=config["lnb_name"])
+    mir = telescope.make_mirror(**config["mirror"])
+    sen = telescope.make_sensor(**config["sensor"])
+
+    tel = telescope.make_telescope(
+        sensor=sen, mirror=mir, lnb=lnb, speed_of_light=signal.SPEED_OF_LIGHT,
+    )
+    tel["transmission_from_air_into_feed_horn"] = config[
+        "transmission_from_air_into_feed_horn"
+    ]
+
+    tim = timing_and_sampling.make_timing_from_lnb(
+        lnb=tel["lnb"], **config["timing"],
+    )
+
+    return tel, tim

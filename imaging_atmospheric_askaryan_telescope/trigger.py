@@ -8,21 +8,7 @@ import math
 with open("config.json", "rt") as f:
     config = json_numpy.loads(f.read())
 
-lnb = iaat.lownoiseblock.init(lnb_name=config["lnb_name"])
-timing = iaat.timing_and_sampling.make_timing_from_lnb(
-    lnb=lnb, **config["timing"],
-)
-mirror = iaat.telescope.make_mirror(**config["mirror"])
-sensor = iaat.telescope.make_sensor(**config["sensor"])
-telescope = iaat.telescope.make_telescope(
-    sensor=sensor,
-    mirror=mirror,
-    lnb=lnb,
-    speed_of_light=iaat.signal.SPEED_OF_LIGHT,
-)
-telescope["transmission_from_air_into_feed_horn"] = config[
-    "transmission_from_air_into_feed_horn"
-]
+telescope, timing = iaat.init_telescope_and_timing(config=config)
 
 # start simulation
 # ----------------
@@ -30,15 +16,10 @@ prng = np.random.Generator(np.random.PCG64(42))
 
 electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_noise(
     antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=timing["lnb"]["bandwidth"],
+    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
 )
 
 noise_num_time_slices = 1000 * 1000
-
-_expected_noise_power = iaat.signal.electric_power_of_thermal_noise(
-    antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=timing["lnb"]["bandwidth"],
-)
 
 num_neighbor_pixels_in_trigger = 7
 
@@ -71,7 +52,9 @@ for block in range(10):
         electric_field=noise_efield_leaving_lnb,
     )
 
-    assert 0.9 < (_expected_noise_power / np.mean(_noise_power)) < 1.1
+    assert (
+        0.9 < (telescope["lnb"]["noise_power"] / np.mean(_noise_power)) < 1.1
+    )
 
     # integrate over time for readout
     # -------------------------------
@@ -90,7 +73,8 @@ for block in range(10):
         _readout_energy[i] = noise_energy[simulation_time_slice]
 
     expected_noise_energy_in_read_out_slice = (
-        _expected_noise_power * timing["readout"]["time_slice_duration"]
+        telescope["lnb"]["noise_power"]
+        * timing["readout"]["time_slice_duration"]
     )
 
     readout_energy_blocks.append(_readout_energy)
@@ -128,9 +112,16 @@ p = 1 - math.erf(sigma / np.sqrt(2))
 
 trigger_energy_threshold = trigger_energy_mean + sigma * trigger_energy_std
 trigger_energy_threshold_eV = trigger_energy_threshold / 1.602e-19
+trigger_energy_threshold_K = iaat.signal.radiated_power_to_blackbody_temperature(
+    power_W=trigger_energy_threshold
+    / timing["readout"]["time_slice_duration"],
+    bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth"],
+)
 
 print(
     "Trigger threshols: ",
     trigger_energy_threshold_eV,
-    "eV, sigma=8.1, 1 accidental in 1h.",
+    "eV, or ",
+    trigger_energy_threshold_K,
+    "K,  sigma=8.1, 1 accidental in 1h.",
 )

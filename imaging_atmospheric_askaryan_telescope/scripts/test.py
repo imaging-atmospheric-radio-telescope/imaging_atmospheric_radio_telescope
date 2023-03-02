@@ -5,6 +5,9 @@ import numpy as np
 import json_numpy
 import os
 
+# configure
+# ---------
+
 # 58 ->    1 GHz
 # 117 -> 500 MHz
 # 234 -> 250 MHz
@@ -38,30 +41,18 @@ with open("config.json", "wt") as f:
 with open("config.json", "rt") as f:
     config = json_numpy.loads(f.read())
 
-
-lnb = iaat.lownoiseblock.init(lnb_name=config["lnb_name"])
-timing = iaat.timing_and_sampling.make_timing_from_lnb(
-    lnb=lnb, **config["timing"],
-)
-mirror = iaat.telescope.make_mirror(**config["mirror"])
-sensor = iaat.telescope.make_sensor(**config["sensor"])
-telescope = iaat.telescope.make_telescope(
-    sensor=sensor,
-    mirror=mirror,
-    lnb=lnb,
-    speed_of_light=iaat.signal.SPEED_OF_LIGHT,
-)
-telescope["transmission_from_air_into_feed_horn"] = config[
-    "transmission_from_air_into_feed_horn"
-]
-
-# start simulation
-# ----------------
 corsika_coreas_executable_path = os.path.join(
     "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
 
-event_id = 205
+# init
+# ----
+
+telescope, timing = iaat.init_telescope_and_timing(config=config)
+
+# start simulation
+# ----------------
+event_id = 204
 prng = np.random.Generator(np.random.PCG64(event_id))
 
 event_path = "test{:06d}".format(event_id)
@@ -74,10 +65,6 @@ primary_particle = {
     "core_north_m": 20,
     "core_west_m": 5,
 }
-
-feed_horn_gain = (
-    telescope["sensor"]["antenna_area"] / telescope["lnb"]["effective_area"]
-)
 
 iaat.production.simulate_telescope_response(
     corsika_coreas_executable_path=corsika_coreas_executable_path,
@@ -126,19 +113,23 @@ for component in ["mirror", "sensor"]:
             positions=telescope[component]["antenna_positions"], path=fig_path
         )
 
+# simulate lnb
+# ------------
+feed_horn_geometric_gain = (
+    telescope["sensor"]["antenna_area"] / telescope["lnb"]["effective_area"]
+)
+feed_horn_gain = (
+    feed_horn_geometric_gain
+    * telescope["transmission_from_air_into_feed_horn"]
+)
 sensor_electric_fields = iaat.electric_fields.read_tar(
     path=os.path.join(event_path, "sensor", "electric_fields.tar")
 )
-signal_efield_in_lnb = (
-    feed_horn_gain
-    * telescope["transmission_from_air_into_feed_horn"]
-    * sensor_electric_fields["electric_fields"]
+signal_efield_entering_lnb = (
+    feed_horn_gain * sensor_electric_fields["electric_fields"]
 )
-
-# lnb mixer
-# ---------
 signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
-    amplitudes=signal_efield_in_lnb,
+    amplitudes=signal_efield_entering_lnb,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
     local_oscillator_frequency=telescope["lnb"]["local_oscillator_frequency"],
     intermediate_frequency_start=telescope["lnb"][
@@ -150,7 +141,6 @@ signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
 )
 
 # plot lnb mixer gain
-# -------------------
 _lnb_bench_frequency = np.geomspace(0.1e9, 10e9, 100)
 _lnb_bench_gain = iaat.signal.butter_bench(
     frequencies=_lnb_bench_frequency,
@@ -162,21 +152,16 @@ _lnb_bench_gain = iaat.signal.butter_bench(
     num_time_slices=10000,
     time_slice_duration=timing["electric_fields"]["time_slice_duration"],
 )
-fig_path_lnb_gain = os.path.join(plot_dir, "lnb_gain.jpg")
-if not os.path.exists(fig_path_lnb_gain):
+_fig_path_lnb_gain = os.path.join(plot_dir, "lnb_gain.jpg")
+if not os.path.exists(_fig_path_lnb_gain):
     iaat.plot.write_figure_gain(
-        path=fig_path_lnb_gain,
+        path=_fig_path_lnb_gain,
         frequency=_lnb_bench_frequency,
         gain=_lnb_bench_gain,
     )
 
-# power
-# -----
-_signal_power = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area"],
-    electric_field=signal_efield_leaving_lnb,
-)
-
+# thermal noise
+# -------------
 electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_noise(
     antenna_temperature_K=telescope["lnb"]["noise_temperature"],
     antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
@@ -202,17 +187,14 @@ _noise_power = iaat.signal.calculate_antenna_power(
     electric_field=noise_efield_leaving_lnb,
 )
 
-_expected_noise_power = iaat.signal.electric_power_of_thermal_noise(
-    antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
-)
+assert 0.9 < (telescope["lnb"]["noise_power"] / np.mean(_noise_power)) < 1.1
 
-assert 0.9 < (_expected_noise_power / np.mean(_noise_power)) < 1.1
-
+# adding signal and noise
 numS = sensor_electric_fields["num_time_slices"]
 total_efield_leaving_lnb = noise_efield_leaving_lnb
 total_efield_leaving_lnb[:, numS:, :] += signal_efield_leaving_lnb
 
+# efield to power
 total_power_leaving_lnb = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area"],
     electric_field=total_efield_leaving_lnb,
@@ -246,8 +228,8 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         expected_noise_power=_expected_noise_power,
     )
 
-# integrate over time for readout
-# -------------------------------
+# integrate power_leaving_lnb over time for readout
+# -------------------------------------------------
 total_power_sliding_integral = np.zeros(shape=total_power_leaving_lnb.shape)
 
 numT = timing["readout"]["integrates_num_simulation_time_slices"]
@@ -288,7 +270,39 @@ for i in range(num_readout_frames):
     readout_energy[:, i, 0] = x_comp_energy
     readout_energy[:, i, 1] = y_comp_energy
 
+# plot readout gain
+# -----------------
+_readout_bench_f_stop = 0.9 * (
+    timing["electric_fields"]["frequency"]
+    / timing["readout"]["integrates_num_simulation_time_slices"]
+)
+_readout_bench_f_start = 1e-2 * _readout_bench_f_stop
+_readout_bench_frequency = np.geomspace(
+    _readout_bench_f_start, _readout_bench_f_stop, 100
+)
+_readout_bench_gain = np.zeros(_readout_bench_frequency.shape)
+for _i, _ff in enumerate(_readout_bench_frequency):
+    _t, _Ain = iaat.signal.make_sin(
+        frequency=_ff,
+        time_slice_duration=timing["electric_fields"]["time_slice_duration"],
+        num_time_slices=1000 * 10,
+    )
+    _Aout = iaat.signal.integrate_sliding_window(
+        signal=_Ain, time_slice_duration=1 / numT, window_num_slices=numT,
+    )
+    _r = np.sum(_Aout ** 2) / np.sum(_Ain ** 2)
+    _readout_bench_gain[_i] = _r
+_fig_path_readout_gain = os.path.join(plot_dir, "readout_gain.jpg")
+if not os.path.exists(_fig_path_readout_gain):
+    iaat.plot.write_figure_gain(
+        path=_fig_path_readout_gain,
+        frequency=_readout_bench_frequency,
+        gain=_readout_bench_gain,
+        scale="M",
+    )
 
+# plot images seen by readout
+# ---------------------------
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_sensor_dir = os.path.join(plot_dir, "readout", units)
     if not os.path.exists(plot_sensor_dir):
@@ -307,6 +321,8 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
             mirror_area=telescope["mirror"]["area"],
         )
 
+# plot images seen by trigger
+# ---------------------------
 trigger_energy = iaat.telescope.apply_pixel_summation(
     signal=readout_energy,
     pixel_summation=telescope["trigger"]["pixel_summation"],
