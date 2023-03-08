@@ -53,7 +53,7 @@ config = {
 primary_particle = {
     "type": "gamma",
     "energy_GeV": 15e3,
-    "zenith_distance_rad": np.deg2rad(1.5),
+    "zenith_distance_rad": np.deg2rad(1.1),
     "azimuth_rad": np.deg2rad(30.0),
     "core_north_m": 32,
     "core_west_m": 56,
@@ -69,7 +69,7 @@ if os.path.exists(event_path):
     config = read_dict(
         path=os.path.join(event_path, "config.json"),
     )
-    primary_particle = read_back_dict(
+    primary_particle = read_dict(
         path=os.path.join(event_path, "primary.json"),
     )
 
@@ -251,10 +251,10 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         global_start_time=sensor_electric_fields["global_start_time"],
         vim_fraction_of_vmax=1e-3,
         vmax=pmax_pW,
-        vmin=0.5 * 1e12 * _expected_noise_power,
+        vmin=0.5 * 1e12 * telescope["lnb"]["noise_power"],
         norm=iaat_plot.matplotlib.colors.LogNorm(),
         dpi=400,
-        expected_noise_power=_expected_noise_power,
+        expected_noise_power=telescope["lnb"]["noise_power"],
     )
 
 # integrate power_leaving_lnb over time for readout
