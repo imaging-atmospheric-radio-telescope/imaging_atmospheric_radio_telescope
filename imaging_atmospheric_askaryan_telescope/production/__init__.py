@@ -85,10 +85,13 @@ def simulate_mirror_electric_fields_manual(
                 )
             )
 
+        mirror_antenna_positions_asl = mirror_antenna_positions.copy()
+        mirror_antenna_positions_asl[:, 2] += site["observation_level_altitude"]
+
         with open(tmp_coreas_antenna_list_path, "wt") as fout:
             fout.write(
                 corsika.coreas.make_antenna_list(
-                    positions=mirror_antenna_positions
+                    positions_asl=mirror_antenna_positions_asl
                 )
             )
 

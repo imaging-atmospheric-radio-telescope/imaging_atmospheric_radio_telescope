@@ -67,15 +67,21 @@ def make_steering_card(
     return sc
 
 
-def make_antenna_list(positions, prefix=""):
+def make_antenna_list(positions_asl, prefix=""):
+    """
+    Parameters
+    ----------
+    positions_asl : array
+        Positions of antennas above sea level (asl).
+    """
     template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
     template_line += "{prefix:s}{antenna_idx:06d}\n"
     antenna_list = ""
-    for i in range(positions.shape[0]):
+    for i in range(positions_asl.shape[0]):
         antenna_list += template_line.format(
-            x=positions[i, 0] * 1e2,
-            y=positions[i, 1] * 1e2,
-            z=positions[i, 2] * 1e2,
+            x=positions_asl[i, 0] * 1e2,
+            y=positions_asl[i, 1] * 1e2,
+            z=positions_asl[i, 2] * 1e2,
             prefix=prefix,
             antenna_idx=i,
         )
