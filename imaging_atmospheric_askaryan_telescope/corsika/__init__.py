@@ -24,16 +24,16 @@ def make_steering_card(
     sc += "SEED {:d} 0 0\n".format(event_id + 2)
     sc += "PRMPAR {:d}\n".format(primary_particle_id)
 
-    sc += "ERANGE {0:.3E} {0:.3E}\n".format(energy, energy)
+    sc += "ERANGE {:.3E} {:.3E}\n".format(energy, energy)
     sc += "ESLOPE 0\n"
-    sc += "THETAP {0:.3E} {0:.3E}\n".format(zd_deg, zd_deg)
-    sc += "PHIP {0:.3E} {0:.3E}\n".format(az_deg, az_deg)
+    sc += "THETAP {:.3E} {:.3E}\n".format(zd_deg, zd_deg)
+    sc += "PHIP {:.3E} {:.3E}\n".format(az_deg, az_deg)
 
     sc += "ECUTS 3.000E-01 3.000E-01 4.010E-04 4.010E-04\n"
     sc += "ELMFLG T T\n"
     sc += "NSHOW 1\n"
     sc += "DIRECT './'\n"
-    sc += "OBSLEV {0:.3E}\n".format(obs_level_cm)
+    sc += "OBSLEV {:.3E}\n".format(obs_level_cm)
 
     sc += "ECTMAP 1.000E+05\n"
     sc += "STEPFC 1.000E+00\n"
@@ -41,7 +41,7 @@ def make_steering_card(
     sc += "MUADDI T\n"
     sc += "PAROUT F  F\n"
     sc += "MAXPRT 1\n"
-    sc += "MAGNET {0:.3E} {0:.3E}\n".format(
+    sc += "MAGNET {:.3E} {:.3E}\n".format(
         earth_magnetic_field_x_muT, earth_magnetic_field_z_muT,
     )
     sc += "LONGI T   5.  T  T\n"
