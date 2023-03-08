@@ -5,6 +5,18 @@ import numpy as np
 import json_numpy
 import os
 
+def read_dict(path):
+    with open(path, "rt") as f:
+        config = json_numpy.loads(f.read())
+    return config
+
+
+def write_and_read_back_dict(path, config):
+    with open(path, "wt") as f:
+        f.write(json_numpy.dumps(config))
+    return read_dict(path)
+
+
 # configure
 # ---------
 
@@ -13,6 +25,8 @@ import os
 # 234 -> 250 MHz
 # 468 -> 125 MHz
 # 702 -> 83.33 MHz
+
+event_id = 301
 
 config = {
     "lnb_name": "astra_universal",
@@ -36,14 +50,39 @@ config = {
     "transmission_from_air_into_feed_horn": 0.5,
 }
 
-with open("config.json", "wt") as f:
-    f.write(json_numpy.dumps(config))
-with open("config.json", "rt") as f:
-    config = json_numpy.loads(f.read())
+primary_particle = {
+    "type": "gamma",
+    "energy_GeV": 15e3,
+    "zenith_distance_rad": np.deg2rad(1.5),
+    "azimuth_rad": np.deg2rad(30.0),
+    "core_north_m": 32,
+    "core_west_m": 56,
+}
 
 corsika_coreas_executable_path = os.path.join(
     "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
 )
+
+
+event_path = "{:06d}".format(event_id)
+if os.path.exists(event_path):
+    config = read_dict(
+        path=os.path.join(event_path, "config.json"),
+    )
+    primary_particle = read_back_dict(
+        path=os.path.join(event_path, "primary.json"),
+    )
+
+else:
+    os.makedirs(event_path, exist_ok=True)
+    config = write_and_read_back_dict(
+        path=os.path.join(event_path, "config.json"),
+        config=config,
+    )
+    primary_particle = write_and_read_back_dict(
+        path=os.path.join(event_path, "primary.json"),
+        config=primary_particle,
+    )
 
 # init
 # ----
@@ -52,19 +91,9 @@ telescope, timing = iaat.init_telescope_and_timing(config=config)
 
 # start simulation
 # ----------------
-event_id = 204
+
 prng = np.random.Generator(np.random.PCG64(event_id))
 
-event_path = "test{:06d}".format(event_id)
-
-primary_particle = {
-    "type": "gamma",
-    "energy_GeV": 2000,
-    "zenith_distance_rad": np.deg2rad(0.5),
-    "azimuth_rad": 30.0,
-    "core_north_m": 20,
-    "core_west_m": 5,
-}
 
 iaat.production.simulate_telescope_response(
     corsika_coreas_executable_path=corsika_coreas_executable_path,
