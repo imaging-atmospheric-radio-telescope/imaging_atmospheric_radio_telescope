@@ -3,14 +3,14 @@ import numpy as np
 
 
 def make_steering_card(
-    event_id=1,
-    primary_particle_type="proton",
-    energy=100,
-    zenith_distance=0.0,
-    azimuth=0.0,
-    observation_level_altitude=2200,
-    earth_magnetic_field_x_muT=12.5,
-    earth_magnetic_field_z_muT=-25.9,
+    event_id,
+    primary_particle_type,
+    energy,
+    zenith_distance,
+    azimuth,
+    observation_level_altitude,
+    earth_magnetic_field_x_muT,
+    earth_magnetic_field_z_muT,
 ):
     zd_deg = np.rad2deg(zenith_distance)
     az_deg = np.rad2deg(azimuth)
