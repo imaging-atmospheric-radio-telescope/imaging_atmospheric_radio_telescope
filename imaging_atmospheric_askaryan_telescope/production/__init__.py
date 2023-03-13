@@ -18,8 +18,8 @@ def simulate_mirror_electric_fields_manual(
     event_id,
     primary_particle,
     site,
-    time_slice_duration,
-    mirror_antenna_positions,
+    time_slice_duration_s,
+    antenna_positions_obslvl_m,
     coreas_time_boundaries=corsika.coreas.DEFAULT_TIME_BOUNDARIES,
 ):
     with tempfile.TemporaryDirectory(prefix="corsika_coreas_") as tmp_dir:
@@ -51,13 +51,13 @@ def simulate_mirror_electric_fields_manual(
         with open(tmp_corsika_steering_card_path, "wt") as fout:
             fout.write(
                 corsika.make_steering_card(
-                    event_id=event_id,
+                    unique_identifier=event_id,
                     primary_particle_type=primary_particle["type"],
-                    energy=primary_particle["energy_GeV"],
-                    zenith_distance=primary_particle["zenith_distance_rad"],
-                    azimuth=primary_particle["azimuth_rad"],
-                    observation_level_altitude=site[
-                        "observation_level_altitude"
+                    energy_GeV=primary_particle["energy_GeV"],
+                    zenith_distance_deg=primary_particle["zenith_distance_deg"],
+                    azimuth_deg=primary_particle["azimuth_deg"],
+                    observation_level_asl_m=site[
+                        "observation_level_asl_m"
                     ],
                     earth_magnetic_field_x_muT=site[
                         "earth_magnetic_field_x_muT"
@@ -71,29 +71,29 @@ def simulate_mirror_electric_fields_manual(
         with open(tmp_coreas_steering_card_path, "wt") as fout:
             fout.write(
                 corsika.coreas.make_steering_card(
-                    core_position_on_observation_level_north=primary_particle[
+                    core_position_on_observation_level_north_m=primary_particle[
                         "core_north_m"
                     ],
-                    core_position_on_observation_level_west=primary_particle[
+                    core_position_on_observation_level_west_m=primary_particle[
                         "core_west_m"
                     ],
-                    observation_level_altitude=site[
-                        "observation_level_altitude"
+                    core_position_on_observation_level_asl_m=site[
+                        "observation_level_asl_m"
                     ],
-                    time_slice_duration=time_slice_duration,
+                    time_slice_duration_s=time_slice_duration_s,
                     time_boundaries=coreas_time_boundaries,
                 )
             )
 
-        mirror_antenna_positions_asl = mirror_antenna_positions.copy()
-        mirror_antenna_positions_asl[:, 2] += site[
-            "observation_level_altitude"
+        antenna_positions_asl_m = antenna_positions_obslvl_m.copy()
+        antenna_positions_asl_m[:, 2] += site[
+            "observation_level_asl_m"
         ]
 
         with open(tmp_coreas_antenna_list_path, "wt") as fout:
             fout.write(
                 corsika.coreas.make_antenna_list(
-                    positions_asl=mirror_antenna_positions_asl
+                    positions_asl_m=antenna_positions_asl_m
                 )
             )
 
@@ -185,12 +185,12 @@ def simulate_telescope_response(
             event_id=event_id,
             primary_particle=primary_particle,
             site=site,
-            time_slice_duration=start_time_probe["time_slice_duration"],
-            mirror_antenna_positions=np.array([start_time_probe["position"]]),
+            time_slice_duration_s=start_time_probe["time_slice_duration_s"],
+            antenna_positions_obslvl_m=np.array([start_time_probe["position_m"]]),
             coreas_time_boundaries={
-                "automatic_time_boundaries": 0,
-                "time_lower_boundary": start_time_probe["time_lower_boundary"],
-                "time_upper_boundary": start_time_probe["time_upper_boundary"],
+                "automatic_time_boundaries_s": 0,
+                "time_lower_boundary_s": start_time_probe["time_lower_boundary_s"],
+                "time_upper_boundary_s": start_time_probe["time_upper_boundary_s"],
             },
         )
 
@@ -203,12 +203,12 @@ def simulate_telescope_response(
         )
 
         (
-            time_lower_boundary,
-            time_upper_boundary,
+            time_lower_boundary_s,
+            time_upper_boundary_s,
         ) = timing_and_sampling.make_time_window_bounds(
-            start_time=start_time_based_on_probe,
-            time_window_duration=timing["electric_fields"]["mirror"][
-                "time_window_duration"
+            start_time_s=start_time_based_on_probe,
+            time_window_duration_s=timing["electric_fields"]["mirror"][
+                "time_window_duration_s"
             ],
             fraction_of_time_window_to_be_warm_up_time=timing[
                 "electric_fields"
@@ -216,13 +216,13 @@ def simulate_telescope_response(
         )
 
         time_window = {
-            "start_time_based_on_probe": start_time_based_on_probe,
-            "time_lower_boundary": time_lower_boundary,
-            "time_upper_boundary": time_upper_boundary,
+            "start_time_based_on_probe_s": start_time_based_on_probe,
+            "time_lower_boundary_s": time_lower_boundary_s,
+            "time_upper_boundary_s": time_upper_boundary_s,
         }
 
         with open(os.path.join(out_dir, "time_window.json"), "wt") as fout:
-            fout.write(json.dumps(time_window))
+            fout.write(json.dumps(time_window, indent=4))
 
     mirror_dir = os.path.join(out_dir, "mirror")
     if not os.path.exists(mirror_dir):
@@ -236,14 +236,14 @@ def simulate_telescope_response(
             event_id=event_id,
             primary_particle=primary_particle,
             site=site,
-            time_slice_duration=timing["electric_fields"][
-                "time_slice_duration"
+            time_slice_duration_s=timing["electric_fields"][
+                "time_slice_duration_s"
             ],
-            mirror_antenna_positions=telescope["mirror"]["antenna_positions"],
+            antenna_positions_obslvl_m=telescope["mirror"]["scatter_center_positions_m"],
             coreas_time_boundaries={
-                "automatic_time_boundaries": 0,
-                "time_lower_boundary": time_window["time_lower_boundary"],
-                "time_upper_boundary": time_window["time_upper_boundary"],
+                "automatic_time_boundaries_s": 0,
+                "time_lower_boundary_s": time_window["time_lower_boundary_s"],
+                "time_upper_boundary_s": time_window["time_upper_boundary_s"],
             },
         )
 
@@ -272,7 +272,7 @@ def simulate_telescope_response(
     if not os.path.exists(lnb_dir):
 
         feed_horn_gain = (
-            telescope["sensor"]["antenna_area"]
+            telescope["sensor"]["feed_horn_area"]
             / telescope["lnb"]["effective_area"]
         )
 

@@ -7,28 +7,28 @@ import os
 from . import signal
 
 
-def parabola_surface_height(
-    distance_to_optical_axis, focal_length,
+def make_parabola_surface_height_m(
+    distance_to_optical_axis_m, focal_length_m,
 ):
     """
     Parameters
     ----------
-    distance_to_optical_axis : float
+    distance_to_optical_axis_m : float
         The distance to the parabola's optical axis for where the height of
         the parabola is estimated.
-    focal_length : float
+    focal_length_m : float
         The parabola's focal-length.
     """
-    z = 1 / (4.0 * focal_length) * distance_to_optical_axis ** 2
+    z = 1 / (4.0 * focal_length_m) * distance_to_optical_axis_m ** 2
     return z
 
 
 def make_probe_positions(
-    random_seed=0,
-    focal_length=75,
-    outer_radius=25,
-    inner_radius=10,
-    probe_areal_density=3,
+    random_seed,
+    focal_length_m,
+    outer_radius_m,
+    inner_radius_m,
+    scatter_centers_areal_density_per_m2,
 ):
     """
     Returns the randomly drawn positions of huygens probes on a parabolic
@@ -40,77 +40,78 @@ def make_probe_positions(
     ----------
     random_seed : int
         Seed for probe positions.
-    focal_length : float
+    focal_length_m : float
         Focal-length of imaging reflector.
-    outer_radius : float
+    outer_radius_m : float
         Outer radius of aperture's annulus.
-    inner_radius : float
+    inner_radius_m : float
         Inner radius of aperture's annulus.
-    probe_areal_density : float
+    scatter_centers_areal_density_per_m2 : float
         Density of probes per area in imaging reflector.
     """
-    assert focal_length > 0.0
-    assert outer_radius > 0.0
-    assert inner_radius > 0.0
-    assert outer_radius > inner_radius
-    assert probe_areal_density > 0.0
+    assert focal_length_m > 0.0
+    assert outer_radius_m > 0.0
+    assert inner_radius_m > 0.0
+    assert outer_radius_m > inner_radius_m
+    assert scatter_centers_areal_density_per_m2 > 0.0
 
     prng = np.random.Generator(np.random.PCG64(random_seed))
 
-    gs = 1.0 / np.sqrt(probe_areal_density)
-    sr = outer_radius + gs
-    x = []
-    y = []
-    for xp in np.linspace(-sr, sr, (2 * sr / gs)):
-        for yp in np.linspace(-sr, sr, (2 * sr / gs)):
-            xf = xp + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
-            yf = yp + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
-            x.append(xf)
-            y.append(yf)
-    x = np.array(x)
-    y = np.array(y)
+    gs = 1.0 / np.sqrt(scatter_centers_areal_density_per_m2)
+    sr = outer_radius_m + gs
+    x_m = []
+    y_m = []
+    for xp_m in np.linspace(-sr, sr, (2 * sr / gs)):
+        for yp_m in np.linspace(-sr, sr, (2 * sr / gs)):
+            xf_m = xp_m + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
+            yf_m = yp_m + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
+            x_m.append(xf_m)
+            y_m.append(yf_m)
+    x_m = np.array(x_m)
+    y_m = np.array(y_m)
 
-    r = np.sqrt(x ** 2 + y ** 2)
+    radius_m = np.sqrt(x_m ** 2 + y_m ** 2)
 
-    inside_outer = r <= outer_radius
-    outside_inner = r >= inner_radius
+    inside_outer = radius_m <= outer_radius_m
+    outside_inner = radius_m >= inner_radius_m
 
     in_annulus = np.logical_and(inside_outer, outside_inner)
 
     number_probes = in_annulus.sum()
 
     positions = np.zeros(shape=(number_probes, 3))
-    positions[:, 0] = x[in_annulus]
-    positions[:, 1] = y[in_annulus]
-    positions[:, 2] = parabola_surface_height(
-        distance_to_optical_axis=r[in_annulus], focal_length=focal_length
+    positions[:, 0] = x_m[in_annulus]
+    positions[:, 1] = y_m[in_annulus]
+    positions[:, 2] = make_parabola_surface_height_m(
+        distance_to_optical_axis_m=radius_m[in_annulus],
+        focal_length_m=focal_length_m
     )
     return positions
 
 
 def make_mirror(
-    random_seed=0,
-    focal_length=75,
-    outer_radius=25,
-    inner_radius=12,
-    probe_areal_density=3,
+    random_seed,
+    focal_length_m,
+    outer_radius_m,
+    inner_radius_m,
+    scatter_centers_areal_density_per_m2,
 ):
     imre = {}
     imre["random_seed"] = random_seed
-    imre["focal_length"] = focal_length
-    imre["outer_radius"] = outer_radius
-    imre["inner_radius"] = inner_radius
-    imre["diameter"] = 2.0 * outer_radius
-    imre["area"] = np.pi * (outer_radius ** 2 - inner_radius ** 2)
-    imre["antenna_areal_density"] = probe_areal_density
-    imre["antenna_positions"] = make_probe_positions(
+    imre["focal_length_m"] = focal_length_m
+    imre["outer_radius_m"] = outer_radius_m
+    imre["inner_radius_m"] = inner_radius_m
+    imre["diameter_m"] = 2.0 * outer_radius_m
+    imre["area_m2"] = np.pi * (outer_radius_m ** 2 - inner_radius_m ** 2)
+    imre["scatter_centers_areal_density_per_m2"] = scatter_centers_areal_density_per_m2
+    imre["scatter_center_positions_m"] = make_probe_positions(
         random_seed=random_seed,
-        focal_length=focal_length,
-        outer_radius=outer_radius,
-        inner_radius=inner_radius,
-        probe_areal_density=probe_areal_density,
+        focal_length_m=focal_length_m,
+        outer_radius_m=outer_radius_m,
+        inner_radius_m=inner_radius_m,
+        scatter_centers_areal_density_per_m2=scatter_centers_areal_density_per_m2,
     )
-    imre["num_antennas"] = imre["antenna_positions"].shape[0]
+    imre["num_scatter_centers"] = imre["scatter_center_positions_m"].shape[0]
     return imre
 
 
@@ -119,78 +120,80 @@ UNIT_HEX_V = np.array([0.5, np.sqrt(3) / 2, 0.0])
 
 
 def make_feed_horn_positions(
-    sensor_outer_radius, sensor_distance, feed_horn_inner_radius,
+    sensor_outer_radius_m, sensor_distance_m, feed_horn_inner_radius_m,
 ):
     """
     Returns the positions of feed-horns placed in a disk.
 
     Parameters
     ----------
-    sensor_outer_radius : float
+    sensor_outer_radius_m : float
         Outer radius of the plane of sensors.
-    sensor_distance : float
+    sensor_distance_m : float
         This sensor's distance from the mirror's principal plane (z-axis).
-    feed_horn_inner_radius : float
+    feed_horn_inner_radius_m : float
         The inner radius (hexagonal packing) of the feed-horn. This means
         the center of a neighboring feed-horn is 2 * inner radius away.
     """
-    assert sensor_outer_radius > 0
-    assert sensor_distance > 0
-    assert feed_horn_inner_radius > 0
+    assert sensor_outer_radius_m > 0
+    assert sensor_distance_m > 0
+    assert feed_horn_inner_radius_m > 0
 
-    hex_u = 2.0 * feed_horn_inner_radius * UNIT_HEX_U
-    hex_v = 2.0 * feed_horn_inner_radius * UNIT_HEX_V
+    hex_u_m = 2.0 * feed_horn_inner_radius_m * UNIT_HEX_U
+    hex_v_m = 2.0 * feed_horn_inner_radius_m * UNIT_HEX_V
 
-    feed_horn_outer_radius = feed_horn_inner_radius * (2.0 / np.sqrt(3.0))
+    feed_horn_outer_radius_m = feed_horn_inner_radius_m * (2.0 / np.sqrt(3.0))
 
-    num = int(np.ceil(sensor_outer_radius / feed_horn_inner_radius))
+    num = int(np.ceil(sensor_outer_radius_m / feed_horn_inner_radius_m))
 
-    positions = []
+    positions_m = []
     for u in np.arange(-num, num + 1):
         for v in np.arange(-num, num + 1):
-            pos_xy = u * hex_u + v * hex_v
-            r = np.linalg.norm(pos_xy)
-            if r + feed_horn_outer_radius < sensor_outer_radius:
-                positions.append(pos_xy + np.array([0, 0, sensor_distance]))
-    return np.array(positions)
+            pos_xy_m = u * hex_u_m + v * hex_v_m
+            radius_m = np.linalg.norm(pos_xy_m)
+            if radius_m + feed_horn_outer_radius_m < sensor_outer_radius_m:
+                positions_m.append(
+                    pos_xy_m + np.array([0, 0, sensor_distance_m])
+                )
+    return np.array(positions_m)
 
 
 def _area_of_hexagon(inner_radius):
     return 2.0 * np.sqrt(3.0) * inner_radius ** 2.0
 
 
-def feed_horn_areal_density(feed_horn_inner_radius):
+def make_feed_horn_areal_density_per_m2(feed_horn_inner_radius_m):
     """
     Compute how many feed-horns can be placed in a unit of area.
     """
-    feed_horn_area = _area_of_hexagon(inner_radius=feed_horn_inner_radius)
+    feed_horn_area = _area_of_hexagon(inner_radius=feed_horn_inner_radius_m)
     return 1.0 / feed_horn_area
 
 
 def make_sensor(
-    sensor_outer_radius, sensor_distance, feed_horn_inner_radius,
+    sensor_outer_radius_m, sensor_distance_m, feed_horn_inner_radius_m,
 ):
     imse = {}
-    imse["outer_radius"] = sensor_outer_radius
-    imse["outer_diameter"] = 2 * sensor_outer_radius
+    imse["outer_radius_m"] = sensor_outer_radius_m
+    imse["outer_diameter_m"] = 2 * sensor_outer_radius_m
 
-    imse["antenna_inner_radius"] = feed_horn_inner_radius
-    imse["antenna_positions"] = make_feed_horn_positions(
-        sensor_outer_radius=sensor_outer_radius,
-        sensor_distance=sensor_distance,
-        feed_horn_inner_radius=imse["antenna_inner_radius"],
+    imse["feed_horn_inner_radius_m"] = feed_horn_inner_radius_m
+    imse["feed_horn_positions_m"] = make_feed_horn_positions(
+        sensor_outer_radius_m=sensor_outer_radius_m,
+        sensor_distance_m=sensor_distance_m,
+        feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
     )
-    imse["antenna_areal_density"] = feed_horn_areal_density(
-        feed_horn_inner_radius=imse["antenna_inner_radius"],
+    imse["feed_horn_areal_density_per_m2"] = make_feed_horn_areal_density_per_m2(
+        feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
     )
-    imse["num_antennas"] = imse["antenna_positions"].shape[0]
-    imse["antenna_area"] = 1.0 / imse["antenna_areal_density"]
-    imse["area"] = imse["antenna_area"] * imse["num_antennas"]
+    imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
+    imse["feed_horn_area_m2"] = 1.0 / imse["feed_horn_areal_density_per_m2"]
+    imse["area"] = imse["feed_horn_area_m2"] * imse["num_feed_horns"]
     return imse
 
 
 def make_matrix(
-    mirror, sensor, speed_of_light,
+    mirror, sensor, speed_of_light_m_per_s,
 ):
     """
     Estimate the imaging matrix which propagates spherical waves from the
@@ -202,40 +205,40 @@ def make_matrix(
         Positions of the huygenes probes on the imaging mirror.
     sensor : dict
         Positions of the feed horns in the image-sensor.
-    speed_of_light : float
+    speed_of_light_m_per_s : float
         The speed of light between the imaging reflector and the image-sensor.
     """
-    assert speed_of_light > 0.0
+    assert speed_of_light_m_per_s > 0.0
 
-    distances = scipy.spatial.distance_matrix(
-        sensor["antenna_positions"], mirror["antenna_positions"],
+    distances_m = scipy.spatial.distance_matrix(
+        sensor["feed_horn_positions_m"], mirror["scatter_center_positions_m"],
     ).astype(np.float32)
 
-    absolute_time_delays = distances / speed_of_light
-    relative_time_delays = absolute_time_delays - np.min(absolute_time_delays)
-    relative_amplitudes = (1 / distances ** 2) / (1 / distances ** 2).mean()
+    absolute_time_delays_s = distances_m / speed_of_light_m_per_s
+    relative_time_delays_s = absolute_time_delays_s - np.min(absolute_time_delays_s)
+    relative_amplitudes = (1 / distances_m ** 2) / (1 / distances_m ** 2).mean()
 
     imma = {}
-    imma["distances"] = distances
-    imma["absolute_time_delays"] = absolute_time_delays
-    imma["relative_time_delays"] = relative_time_delays
+    imma["distances_m"] = distances_m
+    imma["absolute_time_delays_s"] = absolute_time_delays_s
+    imma["relative_time_delays_s"] = relative_time_delays_s
     imma["relative_amplitudes"] = relative_amplitudes
     return imma
 
 
-def make_telescope(mirror, sensor, lnb, speed_of_light):
+def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
     tele = {}
     tele["sensor"] = sensor
     tele["mirror"] = mirror
     tele["lnb"] = lnb
     tele["matrix"] = make_matrix(
-        mirror=mirror, sensor=sensor, speed_of_light=speed_of_light,
+        mirror=mirror, sensor=sensor, speed_of_light_m_per_s=speed_of_light_m_per_s,
     )
     tele["trigger"] = {}
     tele["trigger"]["pixel_summation"] = find_neighbors(
-        positions_xy=tele["sensor"]["antenna_positions"][:, 0:2],
+        positions_xy=tele["sensor"]["feed_horn_positions_m"][:, 0:2],
         max_num_neighbors=7,
-        integration_radius=tele["sensor"]["antenna_inner_radius"] * 2.1,
+        integration_radius=tele["sensor"]["feed_horn_inner_radius_m"] * 2.1,
     )
     return tele
 
@@ -246,14 +249,14 @@ def propagate_electric_field_from_mirror_to_sensor(
     mir = mirror_electric_fields
 
     out = {}
-    out["global_start_time"] = mir["global_start_time"] + np.mean(
+    out["global_start_time_s"] = mir["global_start_time_s"] + np.mean(
         telescope["matrix"]["absolute_time_delays"]
     )
-    out["time_slice_duration"] = mir["time_slice_duration"]
+    out["time_slice_duration_s"] = mir["time_slice_duration_s"]
     out["num_time_slices"] = num_time_slices
-    out["num_antennas"] = telescope["sensor"]["num_antennas"]
-    out["electric_fields"] = np.zeros(
-        shape=(out["num_antennas"], out["num_time_slices"], 3),
+    out["num_feed_horns"] = telescope["sensor"]["num_feed_horns"]
+    out["electric_fields_V_per_m"] = np.zeros(
+        shape=(out["num_feed_horns"], out["num_time_slices"], 3),
         dtype=np.float32,
     )
 
@@ -263,15 +266,15 @@ def propagate_electric_field_from_mirror_to_sensor(
     )
 
     for dim in range(3):
-        for ise in range(telescope["sensor"]["num_antennas"]):
+        for ise in range(telescope["sensor"]["num_feed_horns"]):
             print(dim, ise)
-            for imi in range(telescope["mirror"]["num_antennas"]):
+            for imi in range(telescope["mirror"]["num_scatter_centers"]):
                 time_delay = telescope["matrix"]["relative_time_delays"][
                     ise, imi
                 ]
 
                 slice_delay = int(
-                    np.round(time_delay / out["time_slice_duration"])
+                    np.round(time_delay / out["time_slice_duration_s"])
                 )
 
                 gain = 1.0
@@ -279,8 +282,8 @@ def propagate_electric_field_from_mirror_to_sensor(
                 gain *= mirror_gain
 
                 signal.add_first_to_second_at(
-                    first=mir["electric_fields"][imi, :, dim] * gain,
-                    second=out["electric_fields"][ise, :, dim],
+                    first=mir["electric_fields_V_per_m"][imi, :, dim] * gain,
+                    second=out["electric_fields_V_per_m"][ise, :, dim],
                     at=slice_delay,
                 )
     return out

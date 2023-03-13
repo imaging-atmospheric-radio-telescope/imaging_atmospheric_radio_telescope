@@ -4,22 +4,22 @@ import os
 from . import install
 
 DEFAULT_TIME_BOUNDARIES = {
-    "automatic_time_boundaries": 4e-07,
-    "time_lower_boundary": -1,
-    "time_upper_boundary": 1,
+    "automatic_time_boundaries_s": 4e-07,
+    "time_lower_boundary_s": -1,
+    "time_upper_boundary_s": 1,
 }
 
 
 def make_steering_card(
-    core_position_on_observation_level_north=0.0,
-    core_position_on_observation_level_west=0.0,
-    observation_level_altitude=2200,
-    time_slice_duration=2e-10,
+    core_position_on_observation_level_north_m,
+    core_position_on_observation_level_west_m,
+    core_position_on_observation_level_asl_m,
+    time_slice_duration_s,
     time_boundaries=DEFAULT_TIME_BOUNDARIES,
 ):
-    core_north_cm = core_position_on_observation_level_north * 1e2
-    core_west_cm = core_position_on_observation_level_west * 1e2
-    obs_level_cm = observation_level_altitude * 1e2
+    core_north_cm = core_position_on_observation_level_north_m * 1e2
+    core_west_cm = core_position_on_observation_level_west_m * 1e2
+    cors_asl_cm = core_position_on_observation_level_asl_m * 1e2
 
     sc = "# CoREAS V1.1 by Tim Huege <tim.huege@kit.edu> with contributions "
     sc += "by Marianne Ludwig and Clancy James - parameter file\n"
@@ -28,19 +28,19 @@ def make_steering_card(
     sc += "\n"
     sc += "CoreCoordinateNorth = {0:.6E} ; in cm\n".format(core_north_cm)
     sc += "CoreCoordinateWest = {0:.6E} ; in cm\n".format(core_west_cm)
-    sc += "CoreCoordinateVertical = {0:.6E} ; in cm\n".format(obs_level_cm)
+    sc += "CoreCoordinateVertical = {0:.6E} ; in cm\n".format(cors_asl_cm)
     sc += "\n"
     sc += "# parameters setting up the temporal observer configuration:\n"
     sc += "\n"
-    sc += "TimeResolution = {0:.6E} ; in s\n".format(time_slice_duration)
+    sc += "TimeResolution = {0:.6E} ; in s\n".format(time_slice_duration_s)
     tb = time_boundaries
     sc += "AutomaticTimeBoundaries = {0:.6E}; ".format(
-        tb["automatic_time_boundaries"]
+        tb["automatic_time_boundaries_s"]
     )
     sc += "0: off, x: automatic boundaries with width x in s\n"
-    sc += "TimeLowerBoundary = {0:.6E} ; ".format(tb["time_lower_boundary"])
+    sc += "TimeLowerBoundary = {0:.6E} ; ".format(tb["time_lower_boundary_s"])
     sc += "in s, only if AutomaticTimeBoundaries set to 0\n"
-    sc += "TimeUpperBoundary = {0:.6E} ; ".format(tb["time_upper_boundary"])
+    sc += "TimeUpperBoundary = {0:.6E} ; ".format(tb["time_upper_boundary_s"])
     sc += "in s, only if AutomaticTimeBoundaries set to 0\n"
     sc += "ResolutionReductionScale = 0 ; "
     sc += "0: off, x: decrease time resolution linearly every x cm in radius\n"
@@ -67,21 +67,21 @@ def make_steering_card(
     return sc
 
 
-def make_antenna_list(positions_asl, prefix=""):
+def make_antenna_list(positions_asl_m, prefix=""):
     """
     Parameters
     ----------
-    positions_asl : array
+    positions_asl_m : array
         Positions of antennas above sea level (asl).
     """
     template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
     template_line += "{prefix:s}{antenna_idx:06d}\n"
     antenna_list = ""
-    for i in range(positions_asl.shape[0]):
+    for i in range(positions_asl_m.shape[0]):
         antenna_list += template_line.format(
-            x=positions_asl[i, 0] * 1e2,
-            y=positions_asl[i, 1] * 1e2,
-            z=positions_asl[i, 2] * 1e2,
+            x=positions_asl_m[i, 0] * 1e2,
+            y=positions_asl_m[i, 1] * 1e2,
+            z=positions_asl_m[i, 2] * 1e2,
             prefix=prefix,
             antenna_idx=i,
         )
@@ -94,7 +94,7 @@ COREAS_WEST_COMPONENT = 2
 COREAS_VERTICAL_COMPONENT = 3
 
 
-def estimate_time_slice_duration(raw_antenna_time_series):
+def estimate_time_slice_duration_s(raw_antenna_time_series):
     return np.gradient(raw_antenna_time_series[0, :, 0]).mean()
 
 
@@ -153,21 +153,21 @@ def make_electric_fields(raw_electric_fields):
     field and timing information. Electric Field will be returned in SI units.
     """
     raw = raw_electric_fields
-    time_slice_duration = estimate_time_slice_duration(raw)
-    assert_same_time_slice_duration(raw, time_slice_duration)
+    time_slice_duration_s = estimate_time_slice_duration_s(raw)
+    assert_same_time_slice_duration(raw, time_slice_duration_s)
 
-    global_start_time = raw[:, :, COREAS_TIME].min()
+    global_start_time_s = raw[:, :, COREAS_TIME].min()
 
-    start_time_offsets = raw[:, 0, COREAS_TIME] - global_start_time
-    start_slice_offsets = np.round(
-        start_time_offsets / time_slice_duration
+    start_time_offsets_s = raw[:, 0, COREAS_TIME] - global_start_time_s
+    start_slice_offsets_s = np.round(
+        start_time_offsets_s / time_slice_duration_s
     ).astype(np.int64)
-    assert np.all(start_slice_offsets == 0)
+    assert np.all(start_slice_offsets_s == 0)
 
     return {
-        "time_slice_duration": time_slice_duration,
+        "time_slice_duration_s": time_slice_duration_s,
         "num_time_slices": raw.shape[1],
         "num_antennas": raw.shape[0],
-        "electric_fields": raw[:, :, 1:4].astype(np.float32),
-        "global_start_time": global_start_time,
+        "electric_fields_V_per_m": raw[:, :, 1:4].astype(np.float32),
+        "global_start_time_s": global_start_time_s,
     }

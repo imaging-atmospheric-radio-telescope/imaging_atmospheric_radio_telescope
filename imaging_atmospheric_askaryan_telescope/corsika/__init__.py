@@ -3,37 +3,37 @@ import numpy as np
 
 
 def make_steering_card(
-    event_id,
+    unique_identifier,
     primary_particle_type,
-    energy,
-    zenith_distance,
-    azimuth,
-    observation_level_altitude,
+    energy_GeV,
+    zenith_distance_deg,
+    azimuth_deg,
+    observation_level_asl_m,
     earth_magnetic_field_x_muT,
     earth_magnetic_field_z_muT,
 ):
-    zd_deg = np.rad2deg(zenith_distance)
-    az_deg = np.rad2deg(azimuth)
-    obs_level_cm = observation_level_altitude * 1e2
+    zd_deg = zenith_distance_deg
+    az_deg = azimuth_deg
+    obs_level_asl_cm = observation_level_asl_m * 1e2
     primary_particle_id = particle_id(particle_type=primary_particle_type)
 
-    sc = "RUNNR {:d}\n".format(event_id)
+    sc = "RUNNR {:d}\n".format(unique_identifier)
     sc += "EVTNR {:d}\n".format(1)
-    sc += "SEED {:d} 0 0\n".format(event_id + 0)
-    sc += "SEED {:d} 0 0\n".format(event_id + 1)
-    sc += "SEED {:d} 0 0\n".format(event_id + 2)
+    sc += "SEED {:d} 0 0\n".format(unique_identifier + 0)
+    sc += "SEED {:d} 0 0\n".format(unique_identifier + 1)
+    sc += "SEED {:d} 0 0\n".format(unique_identifier + 2)
     sc += "PRMPAR {:d}\n".format(primary_particle_id)
 
-    sc += "ERANGE {:.3E} {:.3E}\n".format(energy, energy)
+    sc += "ERANGE {:.3E} {:.3E}\n".format(energy_GeV, energy_GeV)
     sc += "ESLOPE 0\n"
-    sc += "THETAP {:.3E} {:.3E}\n".format(zd_deg, zd_deg)
+    sc += "THETAP {:.3E} {:.3E}\n".format(zenith_distance_deg, zd_deg)
     sc += "PHIP {:.3E} {:.3E}\n".format(az_deg, az_deg)
 
     sc += "ECUTS 3.000E-01 3.000E-01 4.010E-04 4.010E-04\n"
     sc += "ELMFLG T T\n"
     sc += "NSHOW 1\n"
     sc += "DIRECT './'\n"
-    sc += "OBSLEV {:.3E}\n".format(obs_level_cm)
+    sc += "OBSLEV {:.3E}\n".format(obs_level_asl_cm)
 
     sc += "ECTMAP 1.000E+05\n"
     sc += "STEPFC 1.000E+00\n"

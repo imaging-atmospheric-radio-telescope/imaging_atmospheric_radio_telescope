@@ -4,7 +4,7 @@ import os
 
 setuptools.setup(
     name="imaging_atmospheric_askaryan_telescope",
-    version="0.0.2",
+    version="0.0.3",
     description="Simulate and investigate the "
     + "Imaging Atmospheric Askarian Telescope for gamma-ray astronomy.",
     url="https://github.com/relleums/imaging_atmospheric_askaryan_telescope",

@@ -18,7 +18,7 @@ def init_telescope_and_timing(config):
     sen = telescope.make_sensor(**config["sensor"])
 
     tel = telescope.make_telescope(
-        sensor=sen, mirror=mir, lnb=lnb, speed_of_light=signal.SPEED_OF_LIGHT,
+        sensor=sen, mirror=mir, lnb=lnb, speed_of_light_m_per_s=signal.SPEED_OF_LIGHT,
     )
     tel["transmission_from_air_into_feed_horn"] = config[
         "transmission_from_air_into_feed_horn"

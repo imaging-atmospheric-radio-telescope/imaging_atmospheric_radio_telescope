@@ -3,22 +3,22 @@
     "lnb_name": "norsat_8215f_c_band",
     "timing": {
         "oversampling": 6,
-        "time_window_duration": 35e-9,
+        "time_window_duration_s": 35e-9,
         "readout_integrates_num_simulation_time_slices": 88,
         "comment": "88 = (oversampling * local-oscillator-freq.) / readout-bandwidths"
     },
     "mirror": {
         "random_seed": 0,
-        "focal_length": 1.191,
-        "outer_radius": 1.675,
-        "inner_radius": 0.193,
-        "probe_areal_density": 5,
+        "focal_length_m": 1.191,
+        "outer_radius_m": 1.675,
+        "inner_radius_m": 0.193,
+        "scatter_centers_areal_density_per_m2": 5,
         "comment": "From Felix's phd: Readout: 350MHz bandwidth and 1250Msps (Sec.5.1.1), LNB noise 42K-52K (p.52), mirror (Sec.5.1.6)."
     },
     "sensor": {
-        "sensor_outer_radius": 0.193,
-        "sensor_distance": 1.191,
-        "feed_horn_inner_radius": 33.3e-3,
+        "sensor_outer_radius_m": 0.193,
+        "sensor_distance_m": 1.191,
+        "feed_horn_inner_radius_m": 33.3e-3,
         "comment": "Felix's phd: (Fig.5.15) and (Sec.5.1.6)."
     },
     "transmission_from_air_into_feed_horn": 0.5

@@ -17,7 +17,7 @@ def read_dict(path):
 
 def write_and_read_back_dict(path, config):
     with open(path, "wt") as f:
-        f.write(json_numpy.dumps(config))
+        f.write(json_numpy.dumps(config, indent=4))
     return read_dict(path)
 
 
@@ -83,6 +83,7 @@ else:
 telescope, timing = iaat.init_telescope_and_timing(config=config)
 site = iaat.sites.init(site_name=config["site_name"])
 
+print(json_numpy.dumps(timing, indent=4))
 
 # start simulation
 # ----------------
