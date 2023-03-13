@@ -1,5 +1,6 @@
 import imaging_atmospheric_askaryan_telescope as iaat
 from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+from imaging_atmospheric_askaryan_telescope import plot2 as iaat_plot2
 
 import numpy as np
 import json_numpy
@@ -26,7 +27,7 @@ def write_and_read_back_dict(path, config):
 # 468 -> 125 MHz
 # 702 -> 83.33 MHz
 
-event_id = 301
+event_id = 303
 
 config = {
     "lnb_name": "astra_universal",
@@ -110,27 +111,39 @@ iaat.production.simulate_telescope_response(
 plot_dir = os.path.join(event_path, "plot")
 os.makedirs(plot_dir, exist_ok=True)
 for component in ["probe", "mirror", "sensor"]:
+    if component == "sensor":
+        channels_label = "pixels / 1"
+    elif component == "mirror":
+        channels_label = "scatter-centers / 1"
+    else:
+        channels_label = "channels / 1"
+
     fig_path = os.path.join(plot_dir, component + ".jpg")
     if not os.path.exists(fig_path):
         field_path = os.path.join(event_path, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
-        iaat_plot.write_figure_electric_fields_overview(
+        iaat_plot2.write_figure_electric_fields_overview(
             electric_fields=field, path=fig_path, component_mask=[1, 1, 0],
+            channels_label=channels_label,
+            figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
         )
 
     fig_spectrum_path = os.path.join(
         plot_dir, component + "_power_spectrum_density.jpg"
     )
-    if True:  # not os.path.exists(fig_spectrum_path):
+    if not os.path.exists(fig_spectrum_path):
         field_path = os.path.join(event_path, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
-        iaat_plot.write_figure_electric_fields_power_density_spectrum(
+
+        iaat_plot2.write_figure_electric_fields_power_density_spectrum(
             path=fig_spectrum_path,
             electric_fields=field,
             component_mask=[1, 1, 0],
             num_time_slices_to_average_over=(
                 field["electric_fields"].shape[1] // 20
             ),
+            channels_label=channels_label,
+            figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
         )
 
 # plot instrument
@@ -183,7 +196,7 @@ _lnb_bench_gain = iaat.signal.butter_bench(
 )
 _fig_path_lnb_gain = os.path.join(plot_dir, "lnb_gain.jpg")
 if not os.path.exists(_fig_path_lnb_gain):
-    iaat.plot.write_figure_gain(
+    iaat.plot2.write_figure_gain(
         path=_fig_path_lnb_gain,
         frequency=_lnb_bench_frequency,
         gain=_lnb_bench_gain,
@@ -243,7 +256,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         electric_fields=sensor_electric_fields, global_time=False,
     )
     pmax_pW = 1e12 * np.max(total_power_leaving_lnb_xy)
-    iaat_plot.write_figure_lnb_power(
+    iaat_plot2.write_figure_lnb_power(
         path=fig_path_power_leaving_lnb,
         lnb_power=total_power_leaving_lnb_xy,
         antenna_bin_edges=antenna_bin_edges,
@@ -253,8 +266,9 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         vmax=pmax_pW,
         vmin=0.5 * 1e12 * telescope["lnb"]["noise_power"],
         norm=iaat_plot.matplotlib.colors.LogNorm(),
-        dpi=400,
         expected_noise_power=telescope["lnb"]["noise_power"],
+        channels_label="pixels / 1",
+        figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
     )
 
 # integrate power_leaving_lnb over time for readout
@@ -323,7 +337,7 @@ for _i, _ff in enumerate(_readout_bench_frequency):
     _readout_bench_gain[_i] = _r
 _fig_path_readout_gain = os.path.join(plot_dir, "readout_gain.jpg")
 if not os.path.exists(_fig_path_readout_gain):
-    iaat.plot.write_figure_gain(
+    iaat.plot2.write_figure_gain(
         path=_fig_path_readout_gain,
         frequency=_readout_bench_frequency,
         gain=_readout_bench_gain,
@@ -335,19 +349,19 @@ if not os.path.exists(_fig_path_readout_gain):
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_sensor_dir = os.path.join(plot_dir, "readout", units)
     if not os.path.exists(plot_sensor_dir):
-        iaat_plot.save_image_slices_energy_deposite(
+        iaat_plot2.save_image_slices_energy_deposite(
             readout_energy=readout_energy,
             readout_time_slice_duration=timing["readout"][
                 "time_slice_duration"
             ],
-            antenna_positions=telescope["sensor"]["antenna_positions"],
+            antenna_positions=np.rad2deg(telescope["sensor"]["antenna_positions"] / telescope["mirror"]["focal_length"]),
             path=plot_sensor_dir,
             global_start_time=readout_global_start_time,
-            dpi=80,
-            figsize=(12, 4),
             units=units,
             bandwidth=telescope["lnb"]["intermediate_bandwidth"],
             mirror_area=telescope["mirror"]["area"],
+            image_x_label="$c_x$ / (1$^{\circ}$)",
+            image_y_label="$c_y$ / (1$^{\circ}$)",
         )
 
 # plot images seen by trigger
@@ -360,17 +374,17 @@ trigger_energy = iaat.telescope.apply_pixel_summation(
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_trigger_dir = os.path.join(plot_dir, "trigger", units)
     if not os.path.exists(plot_trigger_dir):
-        iaat_plot.save_image_slices_energy_deposite(
+        iaat_plot2.save_image_slices_energy_deposite(
             readout_energy=trigger_energy,
             readout_time_slice_duration=timing["readout"][
                 "time_slice_duration"
             ],
-            antenna_positions=telescope["sensor"]["antenna_positions"],
+            antenna_positions=np.rad2deg(telescope["sensor"]["antenna_positions"] / telescope["mirror"]["focal_length"]),
             path=plot_trigger_dir,
             global_start_time=readout_global_start_time,
-            dpi=80,
-            figsize=(12, 4),
             units=units,
             bandwidth=telescope["lnb"]["intermediate_bandwidth"],
             mirror_area=telescope["mirror"]["area"],
+            image_x_label="$c_x$ / (1$^{\circ}$)",
+            image_y_label="$c_y$ / (1$^{\circ}$)",
         )
