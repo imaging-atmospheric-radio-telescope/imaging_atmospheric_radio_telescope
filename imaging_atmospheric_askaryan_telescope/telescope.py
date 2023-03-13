@@ -246,7 +246,9 @@ def propagate_electric_field_from_mirror_to_sensor(
     mir = mirror_electric_fields
 
     out = {}
-    out["global_start_time"] = mir["global_start_time"]
+    out["global_start_time"] = mir["global_start_time"] + np.mean(
+        telescope["matrix"]["absolute_time_delays"]
+    )
     out["time_slice_duration"] = mir["time_slice_duration"]
     out["num_time_slices"] = num_time_slices
     out["num_antennas"] = telescope["sensor"]["num_antennas"]
