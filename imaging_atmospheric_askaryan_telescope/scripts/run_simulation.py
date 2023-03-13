@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 
 import imaging_atmospheric_askaryan_telescope as iaat
