@@ -151,7 +151,7 @@ for component in ["probe", "mirror", "sensor"]:
 for component in ["mirror", "sensor"]:
     fig_path = os.path.join(plot_dir, component + ".antenna_positions.jpg")
     if not os.path.exists(fig_path):
-        iaat_plot.write_figure_antenna_positions(
+        iaat_plot2.write_figure_antenna_positions(
             positions=telescope[component]["antenna_positions"], path=fig_path
         )
 
@@ -265,7 +265,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         vim_fraction_of_vmax=1e-3,
         vmax=pmax_pW,
         vmin=0.5 * 1e12 * telescope["lnb"]["noise_power"],
-        norm=iaat_plot.matplotlib.colors.LogNorm(),
+        norm=iaat_plot2.matplotlib.colors.LogNorm(),
         expected_noise_power=telescope["lnb"]["noise_power"],
         channels_label="pixels / 1",
         figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},

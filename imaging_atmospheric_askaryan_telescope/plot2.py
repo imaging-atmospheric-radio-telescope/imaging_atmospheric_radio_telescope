@@ -495,3 +495,23 @@ def write_figure_lnb_power(
         figsize=figsize,
         cmap_marker=expected_noise_power_pW,
     )
+
+
+def write_figure_antenna_positions(
+    positions, path, figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+):
+    fig = seb.figure(style=figsize)
+    ax = seb.add_axes(fig=fig, span=[0.15, 0.125, 0.8, 0.8])
+
+    r = np.hypot(positions[:, 0], positions[:, 1])
+    rmax = np.max(r) * 1.1
+    ax.plot(positions[:, 0], positions[:, 1], "xk")
+
+    ax.set_xlim([-rmax, rmax])
+    ax.set_ylim([-rmax, rmax])
+    ax.set_aspect("equal")
+
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("y / m")
+    fig.savefig(path)
+    seb.close(fig)
