@@ -1,5 +1,5 @@
 import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot2 as iaat_plot2
+from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
 
 import numpy as np
 import json_numpy
@@ -121,7 +121,7 @@ for component in ["probe", "mirror", "sensor"]:
     if not os.path.exists(fig_path):
         field_path = os.path.join(event_path, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
-        iaat_plot2.write_figure_electric_fields_overview(
+        iaat_plot.write_figure_electric_fields_overview(
             electric_fields=field, path=fig_path, component_mask=[1, 1, 0],
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
@@ -134,7 +134,7 @@ for component in ["probe", "mirror", "sensor"]:
         field_path = os.path.join(event_path, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
 
-        iaat_plot2.write_figure_electric_fields_power_density_spectrum(
+        iaat_plot.write_figure_electric_fields_power_density_spectrum(
             path=fig_spectrum_path,
             electric_fields=field,
             component_mask=[1, 1, 0],
@@ -150,7 +150,7 @@ for component in ["probe", "mirror", "sensor"]:
 for component in ["mirror", "sensor"]:
     fig_path = os.path.join(plot_dir, component + ".antenna_positions.jpg")
     if not os.path.exists(fig_path):
-        iaat_plot2.write_figure_antenna_positions(
+        iaat_plot.write_figure_antenna_positions(
             positions=telescope[component]["antenna_positions"], path=fig_path
         )
 
@@ -255,7 +255,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         electric_fields=sensor_electric_fields, global_time=False,
     )
     pmax_pW = 1e12 * np.max(total_power_leaving_lnb_xy)
-    iaat_plot2.write_figure_lnb_power(
+    iaat_plot.write_figure_lnb_power(
         path=fig_path_power_leaving_lnb,
         lnb_power=total_power_leaving_lnb_xy,
         antenna_bin_edges=antenna_bin_edges,
@@ -264,7 +264,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         vim_fraction_of_vmax=1e-3,
         vmax=pmax_pW,
         vmin=0.5 * 1e12 * telescope["lnb"]["noise_power"],
-        norm=iaat_plot2.matplotlib.colors.LogNorm(),
+        norm=iaat_plot.matplotlib.colors.LogNorm(),
         expected_noise_power=telescope["lnb"]["noise_power"],
         channels_label="pixels / 1",
         figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
@@ -348,7 +348,7 @@ if not os.path.exists(_fig_path_readout_gain):
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_sensor_dir = os.path.join(plot_dir, "readout", units)
     if not os.path.exists(plot_sensor_dir):
-        iaat_plot2.save_image_slices_energy_deposite(
+        iaat_plot.save_image_slices_energy_deposite(
             readout_energy=readout_energy,
             readout_time_slice_duration=timing["readout"][
                 "time_slice_duration"
@@ -373,7 +373,7 @@ trigger_energy = iaat.telescope.apply_pixel_summation(
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_trigger_dir = os.path.join(plot_dir, "trigger", units)
     if not os.path.exists(plot_trigger_dir):
-        iaat_plot2.save_image_slices_energy_deposite(
+        iaat_plot.save_image_slices_energy_deposite(
             readout_energy=trigger_energy,
             readout_time_slice_duration=timing["readout"][
                 "time_slice_duration"
