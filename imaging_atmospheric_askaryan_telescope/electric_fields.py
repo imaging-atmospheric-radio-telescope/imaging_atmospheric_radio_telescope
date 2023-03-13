@@ -21,7 +21,8 @@ def write(path, electric_fields):
 
     assert s["electric_fields_V_per_m"].dtype == np.float32
     with open(
-        os.path.join(path, "electric_fields_V_per_m.antenna.time.dim.float32"), "wb"
+        os.path.join(path, "electric_fields_V_per_m.antenna.time.dim.float32"),
+        "wb",
     ) as f:
         f.write(s["electric_fields_V_per_m"].tobytes(order="C"))
 
@@ -56,7 +57,9 @@ def write_tar(path, electric_fields):
 def read(path):
     o = {}
     with open(os.path.join(path, "time_slice_duration_s.float64"), "rb") as f:
-        o["time_slice_duration_s"] = np.frombuffer(f.read(), dtype="float64")[0]
+        o["time_slice_duration_s"] = np.frombuffer(f.read(), dtype="float64")[
+            0
+        ]
 
     with open(os.path.join(path, "num_time_slices.uint64"), "rb") as f:
         o["num_time_slices"] = np.frombuffer(f.read(), dtype="uint64")[0]
@@ -68,7 +71,8 @@ def read(path):
         o["global_start_time_s"] = np.frombuffer(f.read(), dtype="float64")[0]
 
     with open(
-        os.path.join(path, "electric_fields_V_per_m.antenna.time.dim.float32"), "rb"
+        os.path.join(path, "electric_fields_V_per_m.antenna.time.dim.float32"),
+        "rb",
     ) as f:
         arr = np.frombuffer(f.read(), dtype="float32")
         o["electric_fields_V_per_m"] = arr.reshape(
@@ -83,7 +87,9 @@ def read_tar(path):
     with tarstream.TarStream(path=path, mode="r") as t:
         filename, filebytes = t.read()
         assert filename == "time_slice_duration_s.float64"
-        o["time_slice_duration_s"] = np.frombuffer(filebytes, dtype="float64")[0]
+        o["time_slice_duration_s"] = np.frombuffer(filebytes, dtype="float64")[
+            0
+        ]
 
         filename, filebytes = t.read()
         assert filename == "num_time_slices.uint64"
@@ -130,5 +136,6 @@ def get_combined_norm_of_components(electric_fields, component_mask):
     for comp in component_mask:
         assert comp in [0, 1]
     return np.linalg.norm(
-        electric_fields["electric_fields_V_per_m"][:, :, component_mask], axis=2
+        electric_fields["electric_fields_V_per_m"][:, :, component_mask],
+        axis=2,
     )

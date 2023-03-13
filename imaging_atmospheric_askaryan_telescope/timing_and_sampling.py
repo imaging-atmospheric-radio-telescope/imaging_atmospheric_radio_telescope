@@ -43,7 +43,8 @@ def make_timing_from_lnb(
     tt["electric_fields"]["sensor"] = {}
     tt["electric_fields"]["sensor"]["num_time_slices"] = int(
         np.ceil(
-            time_window_duration_s / tt["electric_fields"]["time_slice_duration_s"]
+            time_window_duration_s
+            / tt["electric_fields"]["time_slice_duration_s"]
         )
     )
 
@@ -66,7 +67,9 @@ def make_timing_from_lnb(
         10 * oversampling * tt["electric_fields"]["time_slice_duration_s"]
     )
     tt["start_time_probe"]["position_m"] = [0.0, 0.0, 0.0]
-    tt["start_time_probe"]["time_lower_boundary_s"] = -TIME_TO_TRAVEL_OVERHEAD_S
+    tt["start_time_probe"][
+        "time_lower_boundary_s"
+    ] = -TIME_TO_TRAVEL_OVERHEAD_S
     tt["start_time_probe"]["time_upper_boundary_s"] = TIME_TO_TRAVEL_OVERHEAD_S
 
     tt["readout"] = {}
@@ -77,7 +80,9 @@ def make_timing_from_lnb(
         tt["electric_fields"]["time_slice_duration_s"]
         * tt["readout"]["integrates_num_simulation_time_slices"]
     )
-    tt["readout"]["sampling_frequency_Hz"] = 1.0 / tt["readout"]["time_slice_duration_s"]
+    tt["readout"]["sampling_frequency_Hz"] = (
+        1.0 / tt["readout"]["time_slice_duration_s"]
+    )
 
     return tt
 

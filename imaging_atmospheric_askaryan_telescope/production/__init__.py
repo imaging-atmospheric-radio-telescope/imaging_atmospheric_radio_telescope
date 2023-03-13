@@ -54,11 +54,11 @@ def simulate_mirror_electric_fields_manual(
                     unique_identifier=event_id,
                     primary_particle_type=primary_particle["type"],
                     energy_GeV=primary_particle["energy_GeV"],
-                    zenith_distance_deg=primary_particle["zenith_distance_deg"],
-                    azimuth_deg=primary_particle["azimuth_deg"],
-                    observation_level_asl_m=site[
-                        "observation_level_asl_m"
+                    zenith_distance_deg=primary_particle[
+                        "zenith_distance_deg"
                     ],
+                    azimuth_deg=primary_particle["azimuth_deg"],
+                    observation_level_asl_m=site["observation_level_asl_m"],
                     earth_magnetic_field_x_muT=site[
                         "earth_magnetic_field_x_muT"
                     ],
@@ -86,9 +86,7 @@ def simulate_mirror_electric_fields_manual(
             )
 
         antenna_positions_asl_m = antenna_positions_obslvl_m.copy()
-        antenna_positions_asl_m[:, 2] += site[
-            "observation_level_asl_m"
-        ]
+        antenna_positions_asl_m[:, 2] += site["observation_level_asl_m"]
 
         with open(tmp_coreas_antenna_list_path, "wt") as fout:
             fout.write(
@@ -186,11 +184,17 @@ def simulate_telescope_response(
             primary_particle=primary_particle,
             site=site,
             time_slice_duration_s=start_time_probe["time_slice_duration_s"],
-            antenna_positions_obslvl_m=np.array([start_time_probe["position_m"]]),
+            antenna_positions_obslvl_m=np.array(
+                [start_time_probe["position_m"]]
+            ),
             coreas_time_boundaries={
                 "automatic_time_boundaries_s": 0,
-                "time_lower_boundary_s": start_time_probe["time_lower_boundary_s"],
-                "time_upper_boundary_s": start_time_probe["time_upper_boundary_s"],
+                "time_lower_boundary_s": start_time_probe[
+                    "time_lower_boundary_s"
+                ],
+                "time_upper_boundary_s": start_time_probe[
+                    "time_upper_boundary_s"
+                ],
             },
         )
 
@@ -239,7 +243,9 @@ def simulate_telescope_response(
             time_slice_duration_s=timing["electric_fields"][
                 "time_slice_duration_s"
             ],
-            antenna_positions_obslvl_m=telescope["mirror"]["scatter_center_positions_m"],
+            antenna_positions_obslvl_m=telescope["mirror"][
+                "scatter_center_positions_m"
+            ],
             coreas_time_boundaries={
                 "automatic_time_boundaries_s": 0,
                 "time_lower_boundary_s": time_window["time_lower_boundary_s"],

@@ -84,7 +84,7 @@ def make_probe_positions(
     positions[:, 1] = y_m[in_annulus]
     positions[:, 2] = make_parabola_surface_height_m(
         distance_to_optical_axis_m=radius_m[in_annulus],
-        focal_length_m=focal_length_m
+        focal_length_m=focal_length_m,
     )
     return positions
 
@@ -103,7 +103,9 @@ def make_mirror(
     imre["inner_radius_m"] = inner_radius_m
     imre["diameter_m"] = 2.0 * outer_radius_m
     imre["area_m2"] = np.pi * (outer_radius_m ** 2 - inner_radius_m ** 2)
-    imre["scatter_centers_areal_density_per_m2"] = scatter_centers_areal_density_per_m2
+    imre[
+        "scatter_centers_areal_density_per_m2"
+    ] = scatter_centers_areal_density_per_m2
     imre["scatter_center_positions_m"] = make_probe_positions(
         random_seed=random_seed,
         focal_length_m=focal_length_m,
@@ -183,7 +185,9 @@ def make_sensor(
         sensor_distance_m=sensor_distance_m,
         feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
     )
-    imse["feed_horn_areal_density_per_m2"] = make_feed_horn_areal_density_per_m2(
+    imse[
+        "feed_horn_areal_density_per_m2"
+    ] = make_feed_horn_areal_density_per_m2(
         feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
     )
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
@@ -215,8 +219,12 @@ def make_matrix(
     ).astype(np.float32)
 
     absolute_time_delays_s = distances_m / speed_of_light_m_per_s
-    relative_time_delays_s = absolute_time_delays_s - np.min(absolute_time_delays_s)
-    relative_amplitudes = (1 / distances_m ** 2) / (1 / distances_m ** 2).mean()
+    relative_time_delays_s = absolute_time_delays_s - np.min(
+        absolute_time_delays_s
+    )
+    relative_amplitudes = (1 / distances_m ** 2) / (
+        1 / distances_m ** 2
+    ).mean()
 
     imma = {}
     imma["distances_m"] = distances_m
@@ -232,7 +240,9 @@ def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
     tele["mirror"] = mirror
     tele["lnb"] = lnb
     tele["matrix"] = make_matrix(
-        mirror=mirror, sensor=sensor, speed_of_light_m_per_s=speed_of_light_m_per_s,
+        mirror=mirror,
+        sensor=sensor,
+        speed_of_light_m_per_s=speed_of_light_m_per_s,
     )
     tele["trigger"] = {}
     tele["trigger"]["pixel_summation"] = find_neighbors(
