@@ -5,6 +5,7 @@ import numpy as np
 import json_numpy
 import os
 
+
 def read_dict(path):
     with open(path, "rt") as f:
         config = json_numpy.loads(f.read())
@@ -66,9 +67,7 @@ corsika_coreas_executable_path = os.path.join(
 
 event_path = "{:06d}".format(event_id)
 if os.path.exists(event_path):
-    config = read_dict(
-        path=os.path.join(event_path, "config.json"),
-    )
+    config = read_dict(path=os.path.join(event_path, "config.json"),)
     primary_particle = read_dict(
         path=os.path.join(event_path, "primary.json"),
     )
@@ -76,12 +75,10 @@ if os.path.exists(event_path):
 else:
     os.makedirs(event_path, exist_ok=True)
     config = write_and_read_back_dict(
-        path=os.path.join(event_path, "config.json"),
-        config=config,
+        path=os.path.join(event_path, "config.json"), config=config,
     )
     primary_particle = write_and_read_back_dict(
-        path=os.path.join(event_path, "primary.json"),
-        config=primary_particle,
+        path=os.path.join(event_path, "primary.json"), config=primary_particle,
     )
 
 # init
@@ -122,7 +119,9 @@ for component in ["probe", "mirror", "sensor"]:
         field_path = os.path.join(event_path, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
         iaat_plot.write_figure_electric_fields_overview(
-            electric_fields=field, path=fig_path, component_mask=[1, 1, 0],
+            electric_fields=field,
+            path=fig_path,
+            component_mask=[1, 1, 0],
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
         )
@@ -195,7 +194,7 @@ _lnb_bench_gain = iaat.signal.butter_bench(
 )
 _fig_path_lnb_gain = os.path.join(plot_dir, "lnb_gain.jpg")
 if not os.path.exists(_fig_path_lnb_gain):
-    iaat.plot2.write_figure_gain(
+    iaat_plot.write_figure_gain(
         path=_fig_path_lnb_gain,
         frequency=_lnb_bench_frequency,
         gain=_lnb_bench_gain,
@@ -264,7 +263,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         vim_fraction_of_vmax=1e-3,
         vmax=pmax_pW,
         vmin=0.5 * 1e12 * telescope["lnb"]["noise_power"],
-        norm=iaat_plot.matplotlib.colors.LogNorm(),
+        norm=iaat_plot.seb.matplotlib.colors.LogNorm(),
         expected_noise_power=telescope["lnb"]["noise_power"],
         channels_label="pixels / 1",
         figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
@@ -336,7 +335,7 @@ for _i, _ff in enumerate(_readout_bench_frequency):
     _readout_bench_gain[_i] = _r
 _fig_path_readout_gain = os.path.join(plot_dir, "readout_gain.jpg")
 if not os.path.exists(_fig_path_readout_gain):
-    iaat.plot2.write_figure_gain(
+    iaat_plot.write_figure_gain(
         path=_fig_path_readout_gain,
         frequency=_readout_bench_frequency,
         gain=_readout_bench_gain,
@@ -353,7 +352,10 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
             readout_time_slice_duration=timing["readout"][
                 "time_slice_duration"
             ],
-            antenna_positions=np.rad2deg(telescope["sensor"]["antenna_positions"] / telescope["mirror"]["focal_length"]),
+            antenna_positions=np.rad2deg(
+                telescope["sensor"]["antenna_positions"]
+                / telescope["mirror"]["focal_length"]
+            ),
             path=plot_sensor_dir,
             global_start_time=readout_global_start_time,
             units=units,
@@ -378,7 +380,10 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
             readout_time_slice_duration=timing["readout"][
                 "time_slice_duration"
             ],
-            antenna_positions=np.rad2deg(telescope["sensor"]["antenna_positions"] / telescope["mirror"]["focal_length"]),
+            antenna_positions=np.rad2deg(
+                telescope["sensor"]["antenna_positions"]
+                / telescope["mirror"]["focal_length"]
+            ),
             path=plot_trigger_dir,
             global_start_time=readout_global_start_time,
             units=units,

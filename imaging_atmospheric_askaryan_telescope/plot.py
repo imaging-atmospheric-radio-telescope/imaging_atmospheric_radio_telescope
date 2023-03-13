@@ -8,16 +8,13 @@ import json_numpy
 
 
 CONFIG = {
-    "matplotlib": {
-        "mathtext.fontset": "cm",
-        "font.family": "STIXGeneral"
-    },
+    "matplotlib": {"mathtext.fontset": "cm", "font.family": "STIXGeneral"},
     "particle_colors": {
         "gamma": "black",
         "electron": "blue",
         "proton": "red",
-        "helium": "orange"
-    }
+        "helium": "orange",
+    },
 }
 
 seb.matplotlib.rcParams.update(CONFIG["matplotlib"])
@@ -30,8 +27,8 @@ FIG_1920X1080F1P5 = {"rows": 1080, "cols": 1920, "fontsize": 1.5}
 FIG_3840X1080F1P5 = {"rows": 2160, "cols": 3840, "fontsize": 3.0}
 
 
-
 ELECTRON_VOLT_J = 1.602176634e-19
+
 
 def log10_limits(v, ratio=0):
     vmin = (1 - ratio) * 10 ** np.floor(np.log10(np.min(v)))
@@ -46,7 +43,11 @@ def make_vmax_to_match_decades(v):
 
 
 def write_figure_gain(
-    path, frequency, gain, scale="G", figsize={"rows": 1080, "cols": 1440, "fontsize": 1.5},
+    path,
+    frequency,
+    gain,
+    scale="G",
+    figsize={"rows": 1080, "cols": 1440, "fontsize": 1.5},
 ):
     if scale == None:
         s = 1
@@ -80,15 +81,7 @@ def write_figure_gain(
 
 
 def ax_add_hexagonal_pixels(
-    ax,
-    v,
-    x,
-    y,
-    cmap="viridis",
-    hexrotation=0,
-    vmin=None,
-    vmax=None,
-    alpha=1,
+    ax, v, x, y, cmap="viridis", hexrotation=0, vmin=None, vmax=None, alpha=1,
 ):
     num_pixels = v.shape[0]
 
@@ -183,7 +176,7 @@ def save_image_slices_energy_deposite(
     pixel_directions_y = antenna_positions[:, 1]
     num_readout_time_slices = readout_energy.shape[1]
 
-    CB = {"rows": rows, "cols": rows//2, "fontsize": 2.0}
+    CB = {"rows": rows, "cols": rows // 2, "fontsize": 2.0}
 
     fig = seb.figure(style=CB)
     ax_cb = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.3, 0.85])
@@ -204,7 +197,7 @@ def save_image_slices_energy_deposite(
         )
 
     IMG = {"rows": rows, "cols": rows, "fontsize": 1.0}
-    IMGS = {"rows": 2*rows, "cols": 2*rows, "fontsize": 1.0}
+    IMGS = {"rows": 2 * rows, "cols": 2 * rows, "fontsize": 1.0}
 
     for readout_time_slice in range(num_readout_time_slices):
         fig = seb.figure(style=IMG)
@@ -219,12 +212,13 @@ def save_image_slices_energy_deposite(
             cmap=cmap,
         )
         fig.savefig(
-            os.path.join(path, "{:06d}_horizontal.jpg".format(readout_time_slice)),
+            os.path.join(
+                path, "{:06d}_horizontal.jpg".format(readout_time_slice)
+            ),
         )
         ax.set_xlabel(image_x_label)
         ax.set_ylabel(image_y_label)
         seb.close(fig)
-
 
         fig = seb.figure(style=IMG)
         ax = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.85, 0.85])
@@ -238,12 +232,13 @@ def save_image_slices_energy_deposite(
             cmap=cmap,
         )
         fig.savefig(
-            os.path.join(path, "{:06d}_vertical.jpg".format(readout_time_slice)),
+            os.path.join(
+                path, "{:06d}_vertical.jpg".format(readout_time_slice)
+            ),
         )
         ax.set_xlabel(image_x_label)
         ax.set_ylabel(image_y_label)
         seb.close(fig)
-
 
         fig = seb.figure(style=IMGS)
         ax = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.85, 0.85])
@@ -443,7 +438,9 @@ def write_figure_electric_fields_overview(
         amplitude_scale=1e6,
     )
     gst_ns = 1e9 * electric_fields["global_start_time"]
-    ax.set_title("absolute time: {:.2f}ns".format(gst_ns), loc="right", fontsize="small")
+    ax.set_title(
+        "absolute time: {:.2f}ns".format(gst_ns), loc="right", fontsize="small"
+    )
     ax.set_xlabel("relative time / ns")
     ax.set_ylabel(channels_label)
     seb.plt.colorbar(im, cax=ax_cmap)
