@@ -1,5 +1,4 @@
 import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
 from imaging_atmospheric_askaryan_telescope import plot2 as iaat_plot2
 
 import numpy as np
