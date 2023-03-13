@@ -1,0 +1,8 @@
+{
+    "type": "gamma",
+    "energy_GeV": 15e3,
+    "zenith_distance_rad": 0.019198621771937627,
+    "azimuth_rad": 0.5235987755982988,
+    "core_north_m": 32,
+    "core_west_m": 56
+}

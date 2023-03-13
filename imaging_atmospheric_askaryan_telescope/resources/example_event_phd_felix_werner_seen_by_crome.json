@@ -1,0 +1,9 @@
+{
+    "type": "proton",
+    "energy_GeV": 3.4e7,
+    "zenith_distance_rad": 0.0715584993317675,
+    "azimuth_rad": 3.530801076784529,
+    "core_north_m": 112.0,
+    "core_west_m": 0.0,
+    "comment": "Felix's phd: (Appendix Fig.C.7), SNR1 = 9.9dB"
+}

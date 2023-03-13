@@ -1,0 +1,22 @@
+{
+    "site_name": "namibia",
+    "lnb_name": "astra_universal",
+    "timing": {
+        "oversampling": 6,
+        "time_window_duration": 35e-9,
+        "readout_integrates_num_simulation_time_slices": 234
+    },
+    "mirror": {
+        "random_seed": 0,
+        "focal_length": 18.9,
+        "outer_radius": 6.3,
+        "inner_radius": 3.15,
+        "probe_areal_density": 14
+    },
+    "sensor": {
+        "sensor_outer_radius": 1.07207,
+        "sensor_distance": 18.9,
+        "feed_horn_inner_radius": 0.0274
+    },
+    "transmission_from_air_into_feed_horn": 0.5
+}
