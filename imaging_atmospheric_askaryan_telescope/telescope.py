@@ -260,26 +260,26 @@ def propagate_electric_field_from_mirror_to_sensor(
 
     out = {}
     out["global_start_time_s"] = mir["global_start_time_s"] + np.mean(
-        telescope["matrix"]["absolute_time_delays"]
+        telescope["matrix"]["absolute_time_delays_s"]
     )
     out["time_slice_duration_s"] = mir["time_slice_duration_s"]
     out["num_time_slices"] = num_time_slices
-    out["num_feed_horns"] = telescope["sensor"]["num_feed_horns"]
+    out["num_antennas"] = telescope["sensor"]["num_feed_horns"]
     out["electric_fields_V_per_m"] = np.zeros(
-        shape=(out["num_feed_horns"], out["num_time_slices"], 3),
+        shape=(out["num_antennas"], out["num_time_slices"], 3),
         dtype=np.float32,
     )
 
     mirror_gain = (
-        telescope["sensor"]["antenna_areal_density"]
-        / telescope["mirror"]["antenna_areal_density"]
+        telescope["sensor"]["feed_horn_areal_density_per_m2"]
+        / telescope["mirror"]["scatter_centers_areal_density_per_m2"]
     )
 
     for dim in range(3):
         for ise in range(telescope["sensor"]["num_feed_horns"]):
             print(dim, ise)
             for imi in range(telescope["mirror"]["num_scatter_centers"]):
-                time_delay = telescope["matrix"]["relative_time_delays"][
+                time_delay = telescope["matrix"]["relative_time_delays_s"][
                     ise, imi
                 ]
 

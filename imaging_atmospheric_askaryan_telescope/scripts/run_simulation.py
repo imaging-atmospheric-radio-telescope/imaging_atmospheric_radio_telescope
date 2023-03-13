@@ -60,21 +60,19 @@ corsika_coreas_executable_path = args.c
 config = read_dict(path=args.i)
 primary_particle = read_dict(path=args.p)
 
-event_path = os.path.join(args.o, "{:06d}".format(event_id))
+out_dir = os.path.join(args.o, "{:06d}".format(event_id))
 
-if os.path.exists(event_path):
-    config = read_dict(path=os.path.join(event_path, "config.json"),)
-    primary_particle = read_dict(
-        path=os.path.join(event_path, "primary.json"),
-    )
+if os.path.exists(out_dir):
+    config = read_dict(path=os.path.join(out_dir, "config.json"),)
+    primary_particle = read_dict(path=os.path.join(out_dir, "primary.json"),)
 
 else:
-    os.makedirs(event_path, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     config = write_and_read_back_dict(
-        path=os.path.join(event_path, "config.json"), config=config,
+        path=os.path.join(out_dir, "config.json"), config=config,
     )
     primary_particle = write_and_read_back_dict(
-        path=os.path.join(event_path, "primary.json"), config=primary_particle,
+        path=os.path.join(out_dir, "primary.json"), config=primary_particle,
     )
 
 # init
@@ -93,7 +91,7 @@ prng = np.random.Generator(np.random.PCG64(event_id))
 
 iaat.production.simulate_telescope_response(
     corsika_coreas_executable_path=corsika_coreas_executable_path,
-    out_dir=event_path,
+    out_dir=out_dir,
     event_id=event_id,
     primary_particle=primary_particle,
     site=site,
@@ -103,7 +101,7 @@ iaat.production.simulate_telescope_response(
 
 # plot electic fields
 # -------------------
-plot_dir = os.path.join(event_path, "plot")
+plot_dir = os.path.join(out_dir, "plot")
 os.makedirs(plot_dir, exist_ok=True)
 for component in ["probe", "mirror", "sensor"]:
     if component == "sensor":
@@ -115,7 +113,7 @@ for component in ["probe", "mirror", "sensor"]:
 
     fig_path = os.path.join(plot_dir, component + ".jpg")
     if not os.path.exists(fig_path):
-        field_path = os.path.join(event_path, component, "electric_fields.tar")
+        field_path = os.path.join(out_dir, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
         iaat_plot.write_figure_electric_fields_overview(
             electric_fields=field,
@@ -129,7 +127,7 @@ for component in ["probe", "mirror", "sensor"]:
         plot_dir, component + "_power_spectrum_density.jpg"
     )
     if not os.path.exists(fig_spectrum_path):
-        field_path = os.path.join(event_path, component, "electric_fields.tar")
+        field_path = os.path.join(out_dir, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
 
         iaat_plot.write_figure_electric_fields_power_density_spectrum(
@@ -137,7 +135,7 @@ for component in ["probe", "mirror", "sensor"]:
             electric_fields=field,
             component_mask=[1, 1, 0],
             num_time_slices_to_average_over=(
-                field["electric_fields"].shape[1] // 20
+                field["electric_fields_V_per_m"].shape[1] // 20
             ),
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
@@ -145,88 +143,97 @@ for component in ["probe", "mirror", "sensor"]:
 
 # plot instrument
 # ---------------
+pos_keys = {
+    "mirror": "scatter_center_positions_m",
+    "sensor": "feed_horn_positions_m",
+}
 for component in ["mirror", "sensor"]:
     fig_path = os.path.join(plot_dir, component + ".antenna_positions.jpg")
     if not os.path.exists(fig_path):
         iaat_plot.write_figure_antenna_positions(
-            positions=telescope[component]["antenna_positions"], path=fig_path
+            positions=telescope[component][pos_keys[component]], path=fig_path
         )
 
 # simulate lnb
 # ------------
 feed_horn_geometric_gain = (
-    telescope["sensor"]["antenna_area"] / telescope["lnb"]["effective_area"]
+    telescope["sensor"]["feed_horn_area_m2"]
+    / telescope["lnb"]["effective_area_m2"]
 )
 feed_horn_gain = (
     feed_horn_geometric_gain
     * telescope["transmission_from_air_into_feed_horn"]
 )
 sensor_electric_fields = iaat.electric_fields.read_tar(
-    path=os.path.join(event_path, "sensor", "electric_fields.tar")
+    path=os.path.join(out_dir, "sensor", "electric_fields.tar")
 )
 signal_efield_entering_lnb = (
-    feed_horn_gain * sensor_electric_fields["electric_fields"]
+    feed_horn_gain * sensor_electric_fields["electric_fields_V_per_m"]
 )
 signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
     amplitudes=signal_efield_entering_lnb,
-    time_slice_duration=timing["electric_fields"]["time_slice_duration"],
-    local_oscillator_frequency=telescope["lnb"]["local_oscillator_frequency"],
+    time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
+    local_oscillator_frequency=telescope["lnb"][
+        "local_oscillator_frequency_Hz"
+    ],
     intermediate_frequency_start=telescope["lnb"][
-        "intermediate_frequency_start"
+        "intermediate_frequency_start_Hz"
     ],
     intermediate_frequency_stop=telescope["lnb"][
-        "intermediate_frequency_stop"
+        "intermediate_frequency_stop_Hz"
     ],
 )
 
 # plot lnb mixer gain
-_lnb_bench_frequency = np.geomspace(0.1e9, 10e9, 100)
+_lnb_bench_frequency_Hz = np.geomspace(0.1e9, 10e9, 100)
 _lnb_bench_gain = iaat.signal.butter_bench(
-    frequencies=_lnb_bench_frequency,
+    frequencies=_lnb_bench_frequency_Hz,
     bandpass=iaat.signal.butter_bandpass_filter,
     filter_config={
-        "frequency_start": telescope["lnb"]["intermediate_frequency_start"],
-        "frequency_stop": telescope["lnb"]["intermediate_frequency_stop"],
+        "frequency_start": telescope["lnb"]["intermediate_frequency_start_Hz"],
+        "frequency_stop": telescope["lnb"]["intermediate_frequency_stop_Hz"],
     },
     num_time_slices=10000,
-    time_slice_duration=timing["electric_fields"]["time_slice_duration"],
+    time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
 )
 _fig_path_lnb_gain = os.path.join(plot_dir, "lnb_gain.jpg")
 if not os.path.exists(_fig_path_lnb_gain):
     iaat_plot.write_figure_gain(
         path=_fig_path_lnb_gain,
-        frequency=_lnb_bench_frequency,
+        frequency=_lnb_bench_frequency_Hz,
         gain=_lnb_bench_gain,
     )
 
 # thermal noise
 # -------------
-electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_noise(
-    antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
+electric_field_thermal_noise_amplitude_V_per_m = iaat.signal.electric_field_of_thermal_noise(
+    antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
+    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth_Hz"],
 )
 
 noise_num_time_slices = int(sensor_electric_fields["num_time_slices"]) * int(2)
-lnb_simulation_global_start_time = (
-    sensor_electric_fields["global_start_time"]
+lnb_simulation_global_start_time_s = (
+    sensor_electric_fields["global_start_time_s"]
     - sensor_electric_fields["num_time_slices"]
-    * sensor_electric_fields["time_slice_duration"]
+    * sensor_electric_fields["time_slice_duration_s"]
 )
 
 noise_efield_leaving_lnb = np.sqrt(
-    1 / telescope["lnb"]["effective_area"]
+    1 / telescope["lnb"]["effective_area_m2"]
 ) * prng.normal(
     loc=0.0,
-    scale=electric_field_thermal_noise_amplitude,
+    scale=electric_field_thermal_noise_amplitude_V_per_m,
     size=(sensor_electric_fields["num_antennas"], noise_num_time_slices, 3,),
 )
 
-_noise_power = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area"],
+_noise_power_W = iaat.signal.calculate_antenna_power(
+    effective_area=telescope["lnb"]["effective_area_m2"],
     electric_field=noise_efield_leaving_lnb,
 )
 
-assert 0.9 < (telescope["lnb"]["noise_power"] / np.mean(_noise_power)) < 1.1
+assert (
+    0.9 < (telescope["lnb"]["noise_power_W"] / np.mean(_noise_power_W)) < 1.1
+)
 
 # adding signal and noise
 numS = sensor_electric_fields["num_time_slices"]
@@ -235,7 +242,7 @@ total_efield_leaving_lnb[:, numS:, :] += signal_efield_leaving_lnb
 
 # efield to power
 total_power_leaving_lnb = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area"],
+    effective_area=telescope["lnb"]["effective_area_m2"],
     electric_field=total_efield_leaving_lnb,
 )
 
@@ -246,24 +253,21 @@ if not os.path.exists(fig_path_power_leaving_lnb):
     total_power_leaving_lnb_xy = np.sum(
         total_power_leaving_lnb[:, numS:, 0:2], axis=2,
     )
-    antenna_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
+    pixel_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
         electric_fields=sensor_electric_fields,
     )
     time_bin_edges = iaat.electric_fields.make_time_bin_edges(
         electric_fields=sensor_electric_fields, global_time=False,
     )
-    pmax_pW = 1e12 * np.max(total_power_leaving_lnb_xy)
     iaat_plot.write_figure_lnb_power(
         path=fig_path_power_leaving_lnb,
-        lnb_power=total_power_leaving_lnb_xy,
-        antenna_bin_edges=antenna_bin_edges,
-        relative_time_bin_edges=time_bin_edges,
-        global_start_time=sensor_electric_fields["global_start_time"],
-        vim_fraction_of_vmax=1e-3,
-        vmax=pmax_pW,
-        vmin=0.5 * 1e12 * telescope["lnb"]["noise_power"],
+        lnb_power_W=total_power_leaving_lnb_xy,
+        channels_bin_edges=pixel_bin_edges,
+        relative_time_bin_edges_s=time_bin_edges,
+        global_start_time_s=sensor_electric_fields["global_start_time_s"],
+        lnb_power_min_fraction_of_max=1e-3,
         norm=iaat_plot.seb.matplotlib.colors.LogNorm(),
-        expected_noise_power=telescope["lnb"]["noise_power"],
+        expected_noise_power_W=telescope["lnb"]["noise_power_W"],
         channels_label="pixels / 1",
         figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
     )
@@ -274,7 +278,7 @@ total_power_sliding_integral = np.zeros(shape=total_power_leaving_lnb.shape)
 
 numT = timing["readout"]["integrates_num_simulation_time_slices"]
 simulation_time_slice_duration = timing["electric_fields"][
-    "time_slice_duration"
+    "time_slice_duration_s"
 ]
 
 for t in range(noise_num_time_slices - numT):
@@ -293,10 +297,10 @@ num_readout_frames = (
 readout_energy = np.zeros(
     shape=(sensor_electric_fields["num_antennas"], num_readout_frames, 2)
 )
-readout_global_start_time = (
+readout_global_start_time_s = (
     random_offset_or_readout_wrt_global_time_num_time_slices
-    * timing["electric_fields"]["time_slice_duration"]
-    + lnb_simulation_global_start_time
+    * timing["electric_fields"]["time_slice_duration_s"]
+    + lnb_simulation_global_start_time_s
 )
 for i in range(num_readout_frames):
     simulation_time_slice = simulation_time_slices_which_are_sampled_by_readout[
@@ -313,7 +317,7 @@ for i in range(num_readout_frames):
 # plot readout gain
 # -----------------
 _readout_bench_f_stop = 0.9 * (
-    timing["electric_fields"]["frequency"]
+    timing["electric_fields"]["sampling_frequency_Hz"]
     / timing["readout"]["integrates_num_simulation_time_slices"]
 )
 _readout_bench_f_start = 1e-2 * _readout_bench_f_stop
@@ -324,7 +328,7 @@ _readout_bench_gain = np.zeros(_readout_bench_frequency.shape)
 for _i, _ff in enumerate(_readout_bench_frequency):
     _t, _Ain = iaat.signal.make_sin(
         frequency=_ff,
-        time_slice_duration=timing["electric_fields"]["time_slice_duration"],
+        time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
         num_time_slices=1000 * 10,
     )
     _Aout = iaat.signal.integrate_sliding_window(
@@ -347,19 +351,19 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_sensor_dir = os.path.join(plot_dir, "readout", units)
     if not os.path.exists(plot_sensor_dir):
         iaat_plot.save_image_slices_energy_deposite(
-            readout_energy=readout_energy,
-            readout_time_slice_duration=timing["readout"][
-                "time_slice_duration"
+            readout_energy_J=readout_energy,
+            readout_time_slice_duration_s=timing["readout"][
+                "time_slice_duration_s"
             ],
             antenna_positions=np.rad2deg(
-                telescope["sensor"]["antenna_positions"]
-                / telescope["mirror"]["focal_length"]
+                telescope["sensor"]["feed_horn_positions_m"]
+                / telescope["mirror"]["focal_length_m"]
             ),
             path=plot_sensor_dir,
-            global_start_time=readout_global_start_time,
+            global_start_time_s=readout_global_start_time_s,
             units=units,
-            bandwidth=telescope["lnb"]["intermediate_bandwidth"],
-            mirror_area=telescope["mirror"]["area"],
+            bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
+            mirror_area_m2=telescope["mirror"]["area_m2"],
             image_x_label="$c_x$ / (1$^{\circ}$)",
             image_y_label="$c_y$ / (1$^{\circ}$)",
         )
@@ -375,19 +379,19 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
     plot_trigger_dir = os.path.join(plot_dir, "trigger", units)
     if not os.path.exists(plot_trigger_dir):
         iaat_plot.save_image_slices_energy_deposite(
-            readout_energy=trigger_energy,
-            readout_time_slice_duration=timing["readout"][
-                "time_slice_duration"
+            readout_energy_J=trigger_energy,
+            readout_time_slice_duration_s=timing["readout"][
+                "time_slice_duration_s"
             ],
             antenna_positions=np.rad2deg(
-                telescope["sensor"]["antenna_positions"]
-                / telescope["mirror"]["focal_length"]
+                telescope["sensor"]["feed_horn_positions_m"]
+                / telescope["mirror"]["focal_length_m"]
             ),
             path=plot_trigger_dir,
-            global_start_time=readout_global_start_time,
+            global_start_time_s=readout_global_start_time_s,
             units=units,
-            bandwidth=telescope["lnb"]["intermediate_bandwidth"],
-            mirror_area=telescope["mirror"]["area"],
+            bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
+            mirror_area_m2=telescope["mirror"]["area_m2"],
             image_x_label="$c_x$ / (1$^{\circ}$)",
             image_y_label="$c_y$ / (1$^{\circ}$)",
         )

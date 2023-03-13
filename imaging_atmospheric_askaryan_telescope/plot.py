@@ -119,14 +119,14 @@ def ax_add_hexagonal_pixels(
 
 
 def save_image_slices_energy_deposite(
-    readout_energy,
-    readout_time_slice_duration,
+    readout_energy_J,
+    readout_time_slice_duration_s,
     antenna_positions,
     path,
-    global_start_time=0.0,
+    global_start_time_s=0.0,
     units=None,
-    bandwidth=None,
-    mirror_area=None,
+    bandwidth_Hz=None,
+    mirror_area_m2=None,
     cmap="viridis",
     image_x_label="x",
     image_y_label="y",
@@ -135,30 +135,30 @@ def save_image_slices_energy_deposite(
     os.makedirs(path, exist_ok=True)
 
     if units == None:
-        enex = readout_energy[:, :, 0]
-        eney = readout_energy[:, :, 1]
+        enex = readout_energy_J[:, :, 0]
+        eney = readout_energy_J[:, :, 1]
         estr = "deposited energy / J"
     elif units == "electron_volt":
-        enex = readout_energy[:, :, 0] / ELECTRON_VOLT_J  # in eV
-        eney = readout_energy[:, :, 1] / ELECTRON_VOLT_J  # in eV
+        enex = readout_energy_J[:, :, 0] / ELECTRON_VOLT_J  # eV
+        eney = readout_energy_J[:, :, 1] / ELECTRON_VOLT_J  # eV
         estr = "deposited energy / eV"
     elif units == "black_body_temperature":
-        assert bandwidth != None
-        px_W = readout_energy[:, :, 0] / readout_time_slice_duration  # in W
-        py_W = readout_energy[:, :, 1] / readout_time_slice_duration  # in W
+        assert bandwidth_Hz != None
+        px_W = readout_energy_J[:, :, 0] / readout_time_slice_duration_s  # W
+        py_W = readout_energy_J[:, :, 1] / readout_time_slice_duration_s  # W
         enex = iaat.signal.radiated_power_to_blackbody_temperature(
-            power_W=px_W, bandwidth_Hz=bandwidth,
+            power_W=px_W, bandwidth_Hz=bandwidth_Hz,
         )
         eney = iaat.signal.radiated_power_to_blackbody_temperature(
-            power_W=py_W, bandwidth_Hz=bandwidth,
+            power_W=py_W, bandwidth_Hz=bandwidth_Hz,
         )
         estr = "black body temperature / K"
     elif units == "jansky":
-        assert bandwidth != None
-        assert mirror_area != None
-        px_W = readout_energy[:, :, 0] / readout_time_slice_duration  # in W
-        py_W = readout_energy[:, :, 1] / readout_time_slice_duration  # in W
-        _per_area_per_bandwidth = mirror_area ** (-1) * bandwidth ** (-1)
+        assert bandwidth_Hz != None
+        assert mirror_area_m2 != None
+        px_W = readout_energy_J[:, :, 0] / readout_time_slice_duration_s  # W
+        py_W = readout_energy_J[:, :, 1] / readout_time_slice_duration_s  # W
+        _per_area_per_bandwidth = mirror_area_m2 ** (-1) * bandwidth_Hz ** (-1)
         flux_density_x_W_per_m2_per_Hz = px_W * _per_area_per_bandwidth
         flux_density_y_W_per_m2_per_Hz = py_W * _per_area_per_bandwidth
         flux_density_x_Jy = 1e26 * flux_density_x_W_per_m2_per_Hz
@@ -174,7 +174,7 @@ def save_image_slices_energy_deposite(
 
     pixel_directions_x = antenna_positions[:, 0]
     pixel_directions_y = antenna_positions[:, 1]
-    num_readout_time_slices = readout_energy.shape[1]
+    num_readout_time_slices = readout_energy_J.shape[1]
 
     CB = {"rows": rows, "cols": rows // 2, "fontsize": 2.0}
 
@@ -190,8 +190,8 @@ def save_image_slices_energy_deposite(
         f.write(
             json_numpy.dumps(
                 {
-                    "global_start_time time": global_start_time,
-                    "readout_time_slice_duration": readout_time_slice_duration,
+                    "global_start_time_s": global_start_time_s,
+                    "readout_time_slice_duration_s": readout_time_slice_duration_s,
                 }
             )
         )
@@ -332,7 +332,7 @@ def write_figure_electric_fields_power_density_spectrum(
             pds_antenna,
         ) = iaat.signal.estimate_power_spectrum_density(
             amplitudes=E_amplitude[antenna, :],
-            time_slice_duration=ef["time_slice_duration"],
+            time_slice_duration=ef["time_slice_duration_s"],
             num_time_slices_to_average_over=num_time_slices_to_average_over,
         )
         pds[antenna, :] = pds_antenna
@@ -347,8 +347,10 @@ def write_figure_electric_fields_power_density_spectrum(
         electric_fields=ef
     )
 
-    exposure_time = ef["time_slice_duration"] * ef["electric_fields"].shape[1]
-    sampling_frequency = 1.0 / ef["time_slice_duration"]
+    exposure_time_s = (
+        ef["time_slice_duration_s"] * ef["electric_fields_V_per_m"].shape[1]
+    )
+    sampling_frequency_Hz = 1.0 / ef["time_slice_duration_s"]
 
     if vmin == None and vmax == None:
         vmax = make_vmax_to_match_decades(v=pds)
@@ -365,7 +367,7 @@ def write_figure_electric_fields_power_density_spectrum(
         norm=norm,
         cmap=cmap,
         title="exposure time: {:.1f}ns, sampling frequency: {:.1f}GHz".format(
-            1e9 * exposure_time, 1e-9 * sampling_frequency
+            1e9 * exposure_time_s, 1e-9 * sampling_frequency_Hz
         ),
         figsize=figsize,
         vmin=vmin,
@@ -437,7 +439,7 @@ def write_figure_electric_fields_overview(
         time_scale=1e9,
         amplitude_scale=1e6,
     )
-    gst_ns = 1e9 * electric_fields["global_start_time"]
+    gst_ns = 1e9 * electric_fields["global_start_time_s"]
     ax.set_title(
         "absolute time: {:.2f}ns".format(gst_ns), loc="right", fontsize="small"
     )
@@ -451,44 +453,42 @@ def write_figure_electric_fields_overview(
 
 def write_figure_lnb_power(
     path,
-    lnb_power,
-    antenna_bin_edges,
-    relative_time_bin_edges,
-    global_start_time,
-    expected_noise_power=None,
+    lnb_power_W,
+    channels_bin_edges,
+    relative_time_bin_edges_s,
+    global_start_time_s,
+    expected_noise_power_W=None,
     norm=None,
-    vmin=None,
-    vmax=None,
+    lnb_power_min_W=None,
+    lnb_power_max_W=None,
     channels_label="channels / 1",
     figsize=FIG_3840X1080F1P5,
-    vim_fraction_of_vmax=1e-3,
+    lnb_power_min_fraction_of_max=1e-3,
 ):
-    lnb_power_pW = 1e12 * lnb_power
-
     if norm == None:
         norm = matplotlib.colors.LogNorm()
 
-    if vmin == None and vmax == None:
-        vmax = make_vmax_to_match_decades(v=lnb_power_pW)
-        vmin = vmax * vim_fraction_of_vmax
+    if lnb_power_min_W == None and lnb_power_max_W == None:
+        lnb_power_max_W = make_vmax_to_match_decades(v=lnb_power_W)
+        lnb_power_min_W = lnb_power_max_W * lnb_power_min_fraction_of_max
 
-    if expected_noise_power:
-        expected_noise_power_pW = 1e12 * expected_noise_power
+    if expected_noise_power_W:
+        expected_noise_power_pW = 1e12 * expected_noise_power_W
     else:
         expected_noise_power_pW = None
 
     write_matrix(
         path=path,
-        matrix=lnb_power_pW,
-        x_bin_edges=1e9 * relative_time_bin_edges,
-        y_bin_edges=antenna_bin_edges,
+        matrix=1e12 * lnb_power_W,
+        x_bin_edges=1e9 * relative_time_bin_edges_s,
+        y_bin_edges=channels_bin_edges,
         x_label="relative time / ns",
         y_label=channels_label,
         z_label="power / pW",
-        title="absolute time: {:.2f}ns".format(1e9 * global_start_time),
+        title="absolute time: {:.2f}ns".format(1e9 * global_start_time_s),
         norm=norm,
-        vmax=vmax,
-        vmin=vmin,
+        vmax=1e12 * lnb_power_max_W,
+        vmin=1e12 * lnb_power_min_W,
         figsize=figsize,
         cmap_marker=expected_noise_power_pW,
     )
