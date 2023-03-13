@@ -11,6 +11,7 @@ from . import theory
 
 
 def init_telescope_and_timing(config):
+    config = _strip_dict(config, "comment")
 
     lnb = lownoiseblock.init(lnb_name=config["lnb_name"])
     mir = telescope.make_mirror(**config["mirror"])
@@ -28,3 +29,15 @@ def init_telescope_and_timing(config):
     )
 
     return tel, tim
+
+
+def _strip_dict(obj, strip):
+    out = {}
+    for key in obj:
+        if key != strip:
+            item = obj[key]
+            if isinstance(item, dict):
+                out[key] = _strip_dict(obj=item, strip=strip)
+            else:
+                out[key] = item
+    return out
