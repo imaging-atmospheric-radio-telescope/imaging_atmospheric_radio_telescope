@@ -4,11 +4,19 @@ from . import signal
 def init(lnb_name):
     if lnb_name == "astra_universal":
         lnb = {
-            "name": "astra_universal",
+            "name": lnb_name,
             "local_oscillator_frequency": 9.75e9,
             "intermediate_frequency_start": 950e6,
             "intermediate_frequency_stop": 1950e6,
             "noise_temperature": 100,
+        }
+    elif lnb_name == "norsat_8215f_c_band":
+        lnb = {
+            "name": lnb_name,
+            "local_oscillator_frequency": 5.15e9,
+            "intermediate_frequency_start": 950e6,
+            "intermediate_frequency_stop": 1750e6,
+            "noise_temperature": 45,
         }
     else:
         raise AttributeError("lnb_name is not known.")

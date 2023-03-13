@@ -1,3 +1,5 @@
+import argparse
+
 import imaging_atmospheric_askaryan_telescope as iaat
 from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
 
@@ -18,54 +20,47 @@ def write_and_read_back_dict(path, config):
     return read_dict(path)
 
 
-# configure
-# ---------
+parser = argparse.ArgumentParser(description="Simulate Askaryan-telescope")
 
-# 58 ->    1 GHz
-# 117 -> 500 MHz
-# 234 -> 250 MHz
-# 468 -> 125 MHz
-# 702 -> 83.33 MHz
-
-event_id = 303
-
-config = {
-    "lnb_name": "astra_universal",
-    "timing": {
-        "oversampling": 6,
-        "time_window_duration": 35e-9,
-        "readout_integrates_num_simulation_time_slices": 234,
-    },
-    "mirror": {
-        "random_seed": 0,
-        "focal_length": 18.9,
-        "outer_radius": 6.3,
-        "inner_radius": 3.15,
-        "probe_areal_density": 14,
-    },
-    "sensor": {
-        "sensor_outer_radius": 18.9 * np.deg2rad(3.25),
-        "sensor_distance": 18.9,
-        "feed_horn_inner_radius": 0.0274,
-    },
-    "transmission_from_air_into_feed_horn": 0.5,
-}
-
-primary_particle = {
-    "type": "gamma",
-    "energy_GeV": 15e3,
-    "zenith_distance_rad": np.deg2rad(1.1),
-    "azimuth_rad": np.deg2rad(30.0),
-    "core_north_m": 32,
-    "core_west_m": 56,
-}
-
-corsika_coreas_executable_path = os.path.join(
-    "build", "corsika-77100", "run", "corsika77100Linux_QGSII_urqmd_coreas",
+parser.add_argument(
+    "-o", help="Path to output directory", required=True, metavar="OUT_DIR"
+)
+parser.add_argument(
+    "-n", type=int, help="unique identifier", required=True, metavar="ID"
+)
+parser.add_argument(
+    "-p",
+    help="Path to particle config-file (json).",
+    required=True,
+    metavar="PARTICLE_PATH",
+)
+parser.add_argument(
+    "-i",
+    help="Path to instrument config-file (json).",
+    required=True,
+    metavar="INSTRUMENT_PATH",
+)
+parser.add_argument(
+    "-c",
+    help="Path to CORSIKA executable",
+    required=False,
+    metavar="CORSIKA_PATH",
+    default=os.path.join(
+        "build",
+        "corsika-77100",
+        "run",
+        "corsika77100Linux_QGSII_urqmd_coreas",
+    ),
 )
 
+args = parser.parse_args()
+event_id = args.n
+corsika_coreas_executable_path = args.c
+config = read_dict(path=args.i)
+primary_particle = read_dict(path=args.p)
 
-event_path = "{:06d}".format(event_id)
+event_path = os.path.join(args.o, "{:06d}".format(event_id))
+
 if os.path.exists(event_path):
     config = read_dict(path=os.path.join(event_path, "config.json"),)
     primary_particle = read_dict(
@@ -85,6 +80,8 @@ else:
 # ----
 
 telescope, timing = iaat.init_telescope_and_timing(config=config)
+site = iaat.sites.init(site_name=config["site_name"])
+
 
 # start simulation
 # ----------------
@@ -97,7 +94,7 @@ iaat.production.simulate_telescope_response(
     out_dir=event_path,
     event_id=event_id,
     primary_particle=primary_particle,
-    site=iaat.sites.NAMIBIA,
+    site=site,
     telescope=telescope,
     timing=timing,
 )
