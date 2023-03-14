@@ -502,7 +502,7 @@ def write_figure_antenna_positions(
 
     r = np.hypot(positions[:, 0], positions[:, 1])
     rmax = np.max(r) * 1.1
-    ax.plot(positions[:, 0], positions[:, 1], "xk")
+    ax.plot(positions[:, 0], positions[:, 1], ".k")
 
     ax.set_xlim([-rmax, rmax])
     ax.set_ylim([-rmax, rmax])

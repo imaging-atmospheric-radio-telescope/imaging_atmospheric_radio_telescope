@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from . import tarstream
+from .utils import tarstream
 
 
 def write(path, electric_fields):
