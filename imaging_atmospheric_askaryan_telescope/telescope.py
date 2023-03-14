@@ -28,10 +28,10 @@ def make_probe_positions(
     focal_length_m,
     outer_radius_m,
     inner_radius_m,
-    scatter_centers_areal_density_per_m2,
+    scatter_center_areal_density_per_m2,
 ):
     """
-    Returns the randomly drawn positions of huygens probes on a parabolic
+    Returns the randomly drawn positions of scatter-centers on a parabolic
     imaging reflector. The x-, y-positions can be limited in an anulus with
     an innner, and outer radius. The z-position is computed from the
     focal-lenght.
@@ -46,18 +46,18 @@ def make_probe_positions(
         Outer radius of aperture's annulus.
     inner_radius_m : float
         Inner radius of aperture's annulus.
-    scatter_centers_areal_density_per_m2 : float
-        Density of probes per area in imaging reflector.
+    scatter_center_areal_density_per_m2 : float
+        Areal density of scatter-centers on imaging reflector.
     """
     assert focal_length_m > 0.0
     assert outer_radius_m > 0.0
     assert inner_radius_m > 0.0
     assert outer_radius_m > inner_radius_m
-    assert scatter_centers_areal_density_per_m2 > 0.0
+    assert scatter_center_areal_density_per_m2 > 0.0
 
     prng = np.random.Generator(np.random.PCG64(random_seed))
 
-    gs = 1.0 / np.sqrt(scatter_centers_areal_density_per_m2)
+    gs = 1.0 / np.sqrt(scatter_center_areal_density_per_m2)
     sr = outer_radius_m + gs
     x_m = []
     y_m = []
@@ -94,7 +94,7 @@ def make_mirror(
     focal_length_m,
     outer_radius_m,
     inner_radius_m,
-    scatter_centers_areal_density_per_m2,
+    scatter_center_areal_density_per_m2,
 ):
     imre = {}
     imre["random_seed"] = random_seed
@@ -104,14 +104,14 @@ def make_mirror(
     imre["diameter_m"] = 2.0 * outer_radius_m
     imre["area_m2"] = np.pi * (outer_radius_m ** 2 - inner_radius_m ** 2)
     imre[
-        "scatter_centers_areal_density_per_m2"
-    ] = scatter_centers_areal_density_per_m2
+        "scatter_center_areal_density_per_m2"
+    ] = scatter_center_areal_density_per_m2
     imre["scatter_center_positions_m"] = make_probe_positions(
         random_seed=random_seed,
         focal_length_m=focal_length_m,
         outer_radius_m=outer_radius_m,
         inner_radius_m=inner_radius_m,
-        scatter_centers_areal_density_per_m2=scatter_centers_areal_density_per_m2,
+        scatter_center_areal_density_per_m2=scatter_center_areal_density_per_m2,
     )
     imre["num_scatter_centers"] = imre["scatter_center_positions_m"].shape[0]
     return imre
@@ -192,7 +192,6 @@ def make_sensor(
     )
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
     imse["feed_horn_area_m2"] = 1.0 / imse["feed_horn_areal_density_per_m2"]
-    imse["area"] = imse["feed_horn_area_m2"] * imse["num_feed_horns"]
     return imse
 
 
@@ -272,7 +271,7 @@ def propagate_electric_field_from_mirror_to_sensor(
 
     mirror_gain = (
         telescope["sensor"]["feed_horn_areal_density_per_m2"]
-        / telescope["mirror"]["scatter_centers_areal_density_per_m2"]
+        / telescope["mirror"]["scatter_center_areal_density_per_m2"]
     )
 
     for dim in range(3):
