@@ -276,8 +276,8 @@ def write_matrix(
     title=None,
 ):
     fig = seb.figure(style=figsize)
-    ax = seb.add_axes(fig=fig, span=[0.125, 0.15, 0.7, 0.75])
-    ax_cmap = seb.add_axes(fig=fig, span=[0.855, 0.15, 0.025, 0.75])
+    ax = seb.add_axes(fig=fig, span=[0.125, 0.15, 0.68, 0.75])
+    ax_cmap = seb.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.75])
     ax.set_title(title, fontsize="small")
     im = ax.pcolormesh(
         x_bin_edges,
@@ -309,8 +309,9 @@ def write_figure_electric_fields_power_density_spectrum(
     norm=None,
     vmin=None,
     vmax=None,
-    vim_fraction_of_vmax=1e-4,
+    vim_fraction_of_vmax=1e-3,
     figsize=FIG_1920X1080F1P5,
+    roi_frequency=None,
 ):
     if norm == None:
         norm = seb.matplotlib.colors.LogNorm()
@@ -356,10 +357,20 @@ def write_figure_electric_fields_power_density_spectrum(
         vmax = make_vmax_to_match_decades(v=pds)
         vmin = vmax * vim_fraction_of_vmax
 
+    print(roi_frequency)
+
+    if roi_frequency == None:
+        roi_frequency = [f_antenna_bin_edges[0], f_antenna_bin_edges[-1]]
+
+    start_f_slice = np.argmin(np.abs(f_antenna_bin_edges - roi_frequency[0]))
+    stop_f_slice = np.argmin(np.abs(f_antenna_bin_edges - roi_frequency[1]))
+
+    print(start_f_slice, stop_f_slice)
+
     write_matrix(
         path=path,
-        matrix=pds,
-        x_bin_edges=f_antenna_bin_edges * 1e-9,
+        matrix=pds[:, start_f_slice:stop_f_slice-1],
+        x_bin_edges=f_antenna_bin_edges[start_f_slice:stop_f_slice] * 1e-9,
         y_bin_edges=antenna_bin_edges,
         x_label="frequency / GHz",
         y_label=channels_label,
@@ -385,6 +396,7 @@ def ax_add_electric_field(
     vmax=None,
     time_scale=1,
     amplitude_scale=1,
+    roi_time=None,
 ):
     time_bin_edges = iaat.electric_fields.make_time_bin_edges(
         electric_fields=electric_fields, global_time=False,
@@ -396,20 +408,30 @@ def ax_add_electric_field(
     E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
         electric_fields=electric_fields, component_mask=component_mask,
     )
-    E_amplitude *= amplitude_scale
 
     if vmin == None and vmax == None:
         vmax = make_vmax_to_match_decades(v=E_amplitude)
         vmin = vmax * 1e-3
 
+    if roi_time == None:
+        start_time = 0.0
+        stop_time = (
+            electric_fields["num_time_slices"] *
+            electric_fields["time_slice_duration_s"]
+        )
+        roi_time = [start_time, stop_time]
+
+    start_time_slice = int(roi_time[0] / electric_fields["time_slice_duration_s"])
+    stop_time_slice = int(roi_time[1] / electric_fields["time_slice_duration_s"])
+
     im = ax.pcolormesh(
-        time_bin_edges * time_scale,
+        time_bin_edges[start_time_slice:stop_time_slice+1] * time_scale,
         antenna_bin_edges,
-        E_amplitude,
+        E_amplitude[:, start_time_slice:stop_time_slice] * amplitude_scale,
         cmap=cmap,
         norm=norm,
-        vmin=vmin,
-        vmax=vmax,
+        vmin=vmin * amplitude_scale,
+        vmax=vmax * amplitude_scale,
     )
     return im
 
@@ -424,10 +446,11 @@ def write_figure_electric_fields_overview(
     vmax=None,
     component_mask=[1, 1, 0],
     channels_label="channels / 1",
+    roi_time=None,
 ):
     fig = seb.figure(style=figsize)
-    ax = seb.add_axes(fig=fig, span=[0.125, 0.15, 0.7, 0.75])
-    ax_cmap = seb.add_axes(fig=fig, span=[0.855, 0.15, 0.025, 0.75])
+    ax = seb.add_axes(fig=fig, span=[0.125, 0.15, 0.68, 0.75])
+    ax_cmap = seb.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.75])
     im = ax_add_electric_field(
         ax=ax,
         electric_fields=electric_fields,
@@ -438,12 +461,10 @@ def write_figure_electric_fields_overview(
         vmax=vmax,
         time_scale=1e9,
         amplitude_scale=1e6,
+        roi_time=roi_time,
     )
     gst_ns = 1e9 * electric_fields["global_start_time_s"]
-    ax.set_title(
-        "absolute time: {:.2f}ns".format(gst_ns), loc="right", fontsize="small"
-    )
-    ax.set_xlabel("relative time / ns")
+    ax.set_xlabel("relative time / ns (absolute: {:.2f}ns)".format(gst_ns))
     ax.set_ylabel(channels_label)
     seb.plt.colorbar(im, cax=ax_cmap)
     ax_cmap.set_ylabel(r"$\vert$ electric field $\vert_2$ / $\mu$ V m$^{-1}$")
@@ -464,10 +485,8 @@ def write_figure_lnb_power(
     channels_label="channels / 1",
     figsize=FIG_3840X1080F1P5,
     lnb_power_min_fraction_of_max=1e-3,
+    roi_time=None,
 ):
-    if norm == None:
-        norm = matplotlib.colors.LogNorm()
-
     if lnb_power_min_W == None and lnb_power_max_W == None:
         lnb_power_max_W = make_vmax_to_match_decades(v=lnb_power_W)
         lnb_power_min_W = lnb_power_max_W * lnb_power_min_fraction_of_max
@@ -477,15 +496,22 @@ def write_figure_lnb_power(
     else:
         expected_noise_power_pW = None
 
+    if roi_time == None:
+        start_time = relative_time_bin_edges_s[0]
+        stop_time = relative_time_bin_edges_s[-1]
+        roi_time = [start_time, stop_time]
+
+    start_time_slice = np.argmin(np.abs(relative_time_bin_edges_s - roi_time[0]))
+    stop_time_slice = np.argmin(np.abs(relative_time_bin_edges_s - roi_time[1]))
+
     write_matrix(
         path=path,
-        matrix=1e12 * lnb_power_W,
-        x_bin_edges=1e9 * relative_time_bin_edges_s,
+        matrix=1e12 * lnb_power_W[:, start_time_slice:stop_time_slice-1],
+        x_bin_edges=1e9 * relative_time_bin_edges_s[start_time_slice:stop_time_slice],
         y_bin_edges=channels_bin_edges,
-        x_label="relative time / ns",
+        x_label="relative time / ns (absolute: {:.2f}ns)".format(1e9 * global_start_time_s),
         y_label=channels_label,
         z_label="power / pW",
-        title="absolute time: {:.2f}ns".format(1e9 * global_start_time_s),
         norm=norm,
         vmax=1e12 * lnb_power_max_W,
         vmin=1e12 * lnb_power_min_W,
