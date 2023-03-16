@@ -11,12 +11,12 @@
         "focal_length_m": 18.9,
         "outer_radius_m": 6.3,
         "inner_radius_m": 3.15,
-        "scatter_centers_areal_density_per_m2": 14
+        "scatter_center_areal_density_per_m2": 14
     },
     "sensor": {
         "sensor_outer_radius_m": 1.07207,
         "sensor_distance_m": 18.9,
         "feed_horn_inner_radius_m": 0.0274,
-        "feed_horn_transmission": 0.5,
-    },
+        "feed_horn_transmission": 0.5
+    }
 }
