@@ -366,7 +366,7 @@ def write_figure_electric_fields_power_density_spectrum(
         z_label="power spectrum density / V$^{2}$ m$^{-2}$ Hz$^{-1}$",
         norm=norm,
         cmap=cmap,
-        title="exposure time: {:.1f}ns, sampling frequency: {:.1f}GHz".format(
+        title="exposure time: {:.1f}ns, sampling rate: {:.1f}Gsps".format(
             1e9 * exposure_time_s, 1e-9 * sampling_frequency_Hz
         ),
         figsize=figsize,
