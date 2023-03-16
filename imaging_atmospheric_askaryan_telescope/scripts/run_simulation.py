@@ -123,6 +123,10 @@ for component in ["probe", "mirror", "sensor"]:
             component_mask=[1, 1, 0],
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+            norm=None,
+            vmin=0.0,
+            vmax=np.max(field["electric_fields_V_per_m"]),
+            roi_time=[2.5e-9, 7.5e-9],
         )
 
     fig_spectrum_path = os.path.join(
@@ -141,7 +145,46 @@ for component in ["probe", "mirror", "sensor"]:
             ),
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+            roi_frequency=[2.5e9, 25e9],
         )
+
+
+# check energy conservation
+# -------------------------
+if True:
+    E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
+    E_mirror = iaat.electric_fields.read_tar(E_mirror_path)
+
+    E_sensor_path = os.path.join(out_dir, "sensor", "electric_fields.tar")
+    E_sensor = iaat.electric_fields.read_tar(E_sensor_path)
+
+    A_eff_mirror_scatter_center_m2 = 1.0 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
+    A_eff_sensor_feed_horn_m2 = 1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
+
+    scatter_gain = A_eff_mirror_scatter_center_m2 / A_eff_sensor_feed_horn_m2
+
+    P_mirror_W = np.zeros(shape=(E_mirror["num_antennas"], E_mirror["num_time_slices"]))
+    P_sensor_W = np.zeros(shape=(E_sensor["num_antennas"], E_sensor["num_time_slices"]))
+
+    for dim in [0, 1]:
+        P_mirror_W_dim = iaat.signal.calculate_antenna_power(
+            effective_area=A_eff_mirror_scatter_center_m2,
+            electric_field=E_mirror["electric_fields_V_per_m"][:, :, dim]
+        )
+        P_mirror_W += P_mirror_W_dim
+
+        P_sensor_W_dim = iaat.signal.calculate_antenna_power(
+            effective_area=A_eff_sensor_feed_horn_m2,
+            electric_field=E_sensor["electric_fields_V_per_m"][:, :, dim]
+        )
+        P_sensor_W += P_sensor_W_dim
+
+    En_mirror_J = np.sum(P_mirror_W) * E_mirror["time_slice_duration_s"]
+    En_sensor_J = np.sum(P_sensor_W) * E_sensor["time_slice_duration_s"]
+
+    print("Energy on mirror", En_mirror_J/iaat_plot.ELECTRON_VOLT_J, "eV")
+    print("Energy on sensor", En_sensor_J/iaat_plot.ELECTRON_VOLT_J, "eV")
+
 
 # plot instrument
 # ---------------
@@ -268,10 +311,13 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         relative_time_bin_edges_s=time_bin_edges,
         global_start_time_s=sensor_electric_fields["global_start_time_s"],
         lnb_power_min_fraction_of_max=1e-3,
-        norm=iaat_plot.seb.matplotlib.colors.LogNorm(),
+        norm=None,
+        lnb_power_min_W=0.0,
+        lnb_power_max_W=np.max(total_power_leaving_lnb_xy),
         expected_noise_power_W=telescope["lnb"]["noise_power_W"],
         channels_label="pixels / 1",
         figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+        roi_time=[5e-9, 10e-9],
     )
 
 # integrate power_leaving_lnb over time for readout
