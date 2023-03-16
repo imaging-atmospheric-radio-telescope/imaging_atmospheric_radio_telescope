@@ -55,17 +55,17 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-event_id = args.n
+random_seed = args.n
 corsika_coreas_executable_path = args.c
 config = read_dict(path=args.i)
 primary_particle = read_dict(path=args.p)
 
-out_dir = os.path.join(args.o, "{:06d}".format(event_id))
+out_dir = os.path.join(args.o, "{:06d}".format(random_seed))
 
 if os.path.exists(out_dir):
     config = read_dict(path=os.path.join(out_dir, "config.json"),)
     primary_particle = read_dict(path=os.path.join(out_dir, "primary.json"),)
-
+    random_seed = read_dict(path=os.path.join(out_dir, "random_seed.json"))["random_seed"]
 else:
     os.makedirs(out_dir, exist_ok=True)
     config = write_and_read_back_dict(
@@ -74,6 +74,9 @@ else:
     primary_particle = write_and_read_back_dict(
         path=os.path.join(out_dir, "primary.json"), config=primary_particle,
     )
+    random_seed = write_and_read_back_dict(
+        path=os.path.join(out_dir, "random_seed.json"), config={"random_seed": random_seed},
+    )["random_seed"]
 
 # init
 # ----
@@ -81,18 +84,17 @@ else:
 telescope, timing = iaat.init_telescope_and_timing(config=config)
 site = iaat.sites.init(site_name=config["site_name"])
 
-print(json_numpy.dumps(timing, indent=4))
 
 # start simulation
 # ----------------
 
-prng = np.random.Generator(np.random.PCG64(event_id))
+prng = np.random.Generator(np.random.PCG64(random_seed))
 
 
 iaat.production.simulate_telescope_response(
     corsika_coreas_executable_path=corsika_coreas_executable_path,
     out_dir=out_dir,
-    event_id=event_id,
+    event_id=random_seed,
     primary_particle=primary_particle,
     site=site,
     telescope=telescope,
