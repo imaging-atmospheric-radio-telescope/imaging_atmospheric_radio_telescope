@@ -173,7 +173,7 @@ def make_feed_horn_areal_density_per_m2(feed_horn_inner_radius_m):
 
 
 def make_sensor(
-    sensor_outer_radius_m, sensor_distance_m, feed_horn_inner_radius_m,
+    sensor_outer_radius_m, sensor_distance_m, feed_horn_inner_radius_m, feed_horn_transmission,
 ):
     imse = {}
     imse["outer_radius_m"] = sensor_outer_radius_m
@@ -190,6 +190,7 @@ def make_sensor(
     ] = make_feed_horn_areal_density_per_m2(
         feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
     )
+    imse["feed_horn_transmission"] = feed_horn_transmission
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
     imse["feed_horn_area_m2"] = 1.0 / imse["feed_horn_areal_density_per_m2"]
     return imse

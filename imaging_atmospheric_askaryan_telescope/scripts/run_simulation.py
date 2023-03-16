@@ -162,7 +162,7 @@ feed_horn_geometric_gain = (
 )
 feed_horn_gain = (
     feed_horn_geometric_gain
-    * telescope["transmission_from_air_into_feed_horn"]
+    * telescope["sensor"]["feed_horn_transmission"]
 )
 sensor_electric_fields = iaat.electric_fields.read_tar(
     path=os.path.join(out_dir, "sensor", "electric_fields.tar")

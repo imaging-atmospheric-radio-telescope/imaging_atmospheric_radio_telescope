@@ -24,9 +24,6 @@ def init_telescope_and_timing(config):
         lnb=lnb,
         speed_of_light_m_per_s=signal.SPEED_OF_LIGHT,
     )
-    tel["transmission_from_air_into_feed_horn"] = config[
-        "transmission_from_air_into_feed_horn"
-    ]
 
     tim = timing_and_sampling.make_timing_from_lnb(
         lnb=tel["lnb"], **config["timing"],
