@@ -3,6 +3,27 @@ import os
 from .utils import tarstream
 
 
+def init(
+    time_slice_duration_s,
+    num_time_slices,
+    num_antennas,
+    global_start_time_s,
+):
+    assert time_slice_duration_s > 0.0
+    assert num_time_slices >= 0
+    assert num_antennas >= 0
+    out = {}
+    out["global_start_time_s"] = global_start_time_s
+    out["time_slice_duration_s"] =time_slice_duration_s
+    out["num_time_slices"] = num_time_slices
+    out["num_antennas"] = num_antennas
+    out["electric_fields_V_per_m"] = np.zeros(
+        shape=(out["num_antennas"], out["num_time_slices"], 3),
+        dtype=np.float32,
+    )
+    return out
+
+
 def write(path, electric_fields):
     s = electric_fields
     os.makedirs(path, exist_ok=True)
