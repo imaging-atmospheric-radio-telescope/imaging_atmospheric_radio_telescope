@@ -108,10 +108,16 @@ os.makedirs(plot_dir, exist_ok=True)
 for component in ["probe", "mirror", "sensor"]:
     if component == "sensor":
         channels_label = "pixels / 1"
+        roi_time = [2.5e-9, 7.5e-9]
+        roi_frequency = [2.5e9, 25e9]
     elif component == "mirror":
         channels_label = "scatter-centers / 1"
+        roi_time = [2.5e-9, 7.5e-9]
+        roi_frequency = [2.5e9, 25e9]
     else:
         channels_label = "channels / 1"
+        roi_time = None
+        roi_frequency = None
 
     fig_path = os.path.join(plot_dir, component + ".jpg")
     if not os.path.exists(fig_path):
@@ -126,7 +132,7 @@ for component in ["probe", "mirror", "sensor"]:
             norm=None,
             vmin=0.0,
             vmax=np.max(field["electric_fields_V_per_m"]),
-            roi_time=[2.5e-9, 7.5e-9],
+            roi_time=roi_time,
         )
 
     fig_spectrum_path = os.path.join(
@@ -145,12 +151,13 @@ for component in ["probe", "mirror", "sensor"]:
             ),
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
-            roi_frequency=[2.5e9, 25e9],
+            roi_frequency=roi_frequency,
         )
 
 
 # check energy conservation
 # -------------------------
+COOLING = 1e-2
 if True:
     E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
     E_mirror = iaat.electric_fields.read_tar(E_mirror_path)
@@ -182,8 +189,8 @@ if True:
     En_mirror_J = np.sum(P_mirror_W) * E_mirror["time_slice_duration_s"]
     En_sensor_J = np.sum(P_sensor_W) * E_sensor["time_slice_duration_s"]
 
-    print("Energy on mirror", En_mirror_J/iaat_plot.ELECTRON_VOLT_J, "eV")
-    print("Energy on sensor", En_sensor_J/iaat_plot.ELECTRON_VOLT_J, "eV")
+    print("Energy on mirror", 1e6 * En_mirror_J/iaat_plot.ELECTRON_VOLT_J, "ueV")
+    print("Energy on sensor", 1e6 * En_sensor_J/iaat_plot.ELECTRON_VOLT_J, "ueV")
 
 
 # plot instrument
@@ -212,8 +219,9 @@ feed_horn_gain = (
 sensor_electric_fields = iaat.electric_fields.read_tar(
     path=os.path.join(out_dir, "sensor", "electric_fields.tar")
 )
+
 signal_efield_entering_lnb = (
-    feed_horn_gain * sensor_electric_fields["electric_fields_V_per_m"]
+    np.sqrt(feed_horn_gain) * sensor_electric_fields["electric_fields_V_per_m"]
 )
 signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
     amplitudes=signal_efield_entering_lnb,
@@ -252,7 +260,7 @@ if not os.path.exists(_fig_path_lnb_gain):
 # thermal noise
 # -------------
 electric_field_thermal_noise_amplitude_V_per_m = iaat.signal.electric_field_of_thermal_noise(
-    antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
+    antenna_temperature_K=telescope["lnb"]["noise_temperature_K"]*COOLING,
     antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth_Hz"],
 )
 
@@ -277,7 +285,7 @@ _noise_power_W = iaat.signal.calculate_antenna_power(
 )
 
 assert (
-    0.9 < (telescope["lnb"]["noise_power_W"] / np.mean(_noise_power_W)) < 1.1
+    0.9 < (telescope["lnb"]["noise_power_W"]*COOLING / np.mean(_noise_power_W)) < 1.1
 )
 
 # adding signal and noise
