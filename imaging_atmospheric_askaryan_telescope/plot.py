@@ -357,15 +357,11 @@ def write_figure_electric_fields_power_density_spectrum(
         vmax = make_vmax_to_match_decades(v=pds)
         vmin = vmax * vim_fraction_of_vmax
 
-    print(roi_frequency)
-
     if roi_frequency == None:
         roi_frequency = [f_antenna_bin_edges[0], f_antenna_bin_edges[-1]]
 
     start_f_slice = np.argmin(np.abs(f_antenna_bin_edges - roi_frequency[0]))
     stop_f_slice = np.argmin(np.abs(f_antenna_bin_edges - roi_frequency[1]))
-
-    print(start_f_slice, stop_f_slice)
 
     write_matrix(
         path=path,
