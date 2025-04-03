@@ -139,9 +139,9 @@ def save_image_slices_energy_deposite(
         eney = readout_energy_J[:, :, 1]
         estr = "deposited energy / J"
     elif units == "electron_volt":
-        enex = readout_energy_J[:, :, 0] / ELECTRON_VOLT_J  # eV
-        eney = readout_energy_J[:, :, 1] / ELECTRON_VOLT_J  # eV
-        estr = "deposited energy / eV"
+        enex = readout_energy_J[:, :, 0] / ELECTRON_VOLT_J * 1e6  # ueV
+        eney = readout_energy_J[:, :, 1] / ELECTRON_VOLT_J * 1e6  # ueV
+        estr = r"deposited energy / $\mu$eV"
     elif units == "black_body_temperature":
         assert bandwidth_Hz != None
         px_W = readout_energy_J[:, :, 0] / readout_time_slice_duration_s  # W

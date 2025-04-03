@@ -157,7 +157,7 @@ for component in ["probe", "mirror", "sensor"]:
 
 # check energy conservation
 # -------------------------
-COOLING = 1e-2
+COOLING = 1e-6
 if True:
     E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
     E_mirror = iaat.electric_fields.read_tar(E_mirror_path)
