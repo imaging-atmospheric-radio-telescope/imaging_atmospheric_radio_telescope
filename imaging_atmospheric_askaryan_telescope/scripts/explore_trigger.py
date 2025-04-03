@@ -14,9 +14,11 @@ telescope, timing = iaat.init_telescope_and_timing(config=config)
 # ----------------
 prng = np.random.Generator(np.random.PCG64(42))
 
-electric_field_thermal_noise_amplitude = iaat.signal.electric_field_of_thermal_noise(
-    antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-    antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
+electric_field_thermal_noise_amplitude = (
+    iaat.signal.electric_field_of_thermal_noise(
+        antenna_temperature_K=telescope["lnb"]["noise_temperature"],
+        antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
+    )
 )
 
 noise_num_time_slices = 1000 * 1000
@@ -29,7 +31,9 @@ simulation_time_slice_duration = timing["electric_fields"][
 ]
 
 simulation_time_slices_which_are_sampled_by_readout = np.arange(
-    0, noise_num_time_slices, numT,
+    0,
+    noise_num_time_slices,
+    numT,
 )
 num_readout_frames = (
     len(simulation_time_slices_which_are_sampled_by_readout) - 1
@@ -67,9 +71,9 @@ for block in range(10):
     _readout_energy = np.zeros(num_readout_frames)
 
     for i in range(num_readout_frames):
-        simulation_time_slice = simulation_time_slices_which_are_sampled_by_readout[
-            i
-        ]
+        simulation_time_slice = (
+            simulation_time_slices_which_are_sampled_by_readout[i]
+        )
         _readout_energy[i] = noise_energy[simulation_time_slice]
 
     expected_noise_energy_in_read_out_slice = (
@@ -112,10 +116,12 @@ p = 1 - math.erf(sigma / np.sqrt(2))
 
 trigger_energy_threshold = trigger_energy_mean + sigma * trigger_energy_std
 trigger_energy_threshold_eV = trigger_energy_threshold / 1.602e-19
-trigger_energy_threshold_K = iaat.signal.radiated_power_to_blackbody_temperature(
-    power_W=trigger_energy_threshold
-    / timing["readout"]["time_slice_duration"],
-    bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth"],
+trigger_energy_threshold_K = (
+    iaat.signal.radiated_power_to_blackbody_temperature(
+        power_W=trigger_energy_threshold
+        / timing["readout"]["time_slice_duration"],
+        bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth"],
+    )
 )
 
 print(

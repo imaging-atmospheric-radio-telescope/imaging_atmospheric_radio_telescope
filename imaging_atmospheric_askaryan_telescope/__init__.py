@@ -26,7 +26,8 @@ def init_telescope_and_timing(config):
     )
 
     tim = timing_and_sampling.make_timing_from_lnb(
-        lnb=tel["lnb"], **config["timing"],
+        lnb=tel["lnb"],
+        **config["timing"],
     )
 
     return tel, tim

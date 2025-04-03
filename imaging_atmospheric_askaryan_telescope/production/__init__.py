@@ -124,19 +124,22 @@ def simulate_mirror_electric_fields_manual(
         shutil.move(
             tmp_coreas_antenna_list_path,
             os.path.join(
-                cor_dir, os.path.basename(tmp_coreas_antenna_list_path),
+                cor_dir,
+                os.path.basename(tmp_coreas_antenna_list_path),
             ),
         )
         shutil.move(
             tmp_coreas_steering_card_path,
             os.path.join(
-                cor_dir, os.path.basename(tmp_coreas_steering_card_path),
+                cor_dir,
+                os.path.basename(tmp_coreas_steering_card_path),
             ),
         )
         shutil.move(
             tmp_corsika_steering_card_path,
             os.path.join(
-                cor_dir, os.path.basename(tmp_corsika_steering_card_path),
+                cor_dir,
+                os.path.basename(tmp_corsika_steering_card_path),
             ),
         )
 
@@ -151,7 +154,8 @@ def simulate_mirror_electric_fields_manual(
             raw_electric_fields=raw_electric_fields
         )
         electric_fields.write_tar(
-            path=antenna_path, electric_fields=unified_electric_field,
+            path=antenna_path,
+            electric_fields=unified_electric_field,
         )
 
         # input('wait to inspect the tmp directory')
@@ -202,8 +206,10 @@ def simulate_telescope_response(
             path=os.path.join(probe_dir, "electric_fields.tar")
         )
 
-        start_time_based_on_probe = timing_and_sampling.estimate_start_time_from_electric_fields(
-            electric_fields=probe_electric_fields
+        start_time_based_on_probe = (
+            timing_and_sampling.estimate_start_time_from_electric_fields(
+                electric_fields=probe_electric_fields
+            )
         )
 
         (
@@ -261,12 +267,14 @@ def simulate_telescope_response(
             path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
         )
 
-        sensor_electric_fields = simtelescope.propagate_electric_field_from_mirror_to_sensor(
-            telescope=telescope,
-            mirror_electric_fields=mirror_electric_fields,
-            num_time_slices=timing["electric_fields"]["sensor"][
-                "num_time_slices"
-            ],
+        sensor_electric_fields = (
+            simtelescope.propagate_electric_field_from_mirror_to_sensor(
+                telescope=telescope,
+                mirror_electric_fields=mirror_electric_fields,
+                num_time_slices=timing["electric_fields"]["sensor"][
+                    "num_time_slices"
+                ],
+            )
         )
 
         electric_fields.write_tar(

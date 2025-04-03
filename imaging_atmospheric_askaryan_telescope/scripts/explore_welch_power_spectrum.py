@@ -21,10 +21,18 @@ nperseg = int(fs_Hz / f_low)
 print(nperseg)
 
 f, Pxx_den = scipy.signal.welch(
-    x=x_V, fs=fs_Hz, nperseg=nperseg, scaling="density", average="mean",
+    x=x_V,
+    fs=fs_Hz,
+    nperseg=nperseg,
+    scaling="density",
+    average="mean",
 )
 f_med, Pxx_den_med = scipy.signal.welch(
-    x=x_V, fs=fs_Hz, nperseg=nperseg, scaling="density", average="median",
+    x=x_V,
+    fs=fs_Hz,
+    nperseg=nperseg,
+    scaling="density",
+    average="median",
 )
 
 

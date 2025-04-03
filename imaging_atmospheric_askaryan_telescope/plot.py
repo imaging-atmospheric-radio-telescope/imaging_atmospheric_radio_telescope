@@ -81,7 +81,15 @@ def write_figure_gain(
 
 
 def ax_add_hexagonal_pixels(
-    ax, v, x, y, cmap="viridis", hexrotation=0, vmin=None, vmax=None, alpha=1,
+    ax,
+    v,
+    x,
+    y,
+    cmap="viridis",
+    hexrotation=0,
+    vmin=None,
+    vmax=None,
+    alpha=1,
 ):
     num_pixels = v.shape[0]
 
@@ -109,7 +117,10 @@ def ax_add_hexagonal_pixels(
             )
         )
     p = seb.matplotlib.collections.PatchCollection(
-        patches, cmap=cmap, alpha=alpha, edgecolor="none",
+        patches,
+        cmap=cmap,
+        alpha=alpha,
+        edgecolor="none",
     )
     p.set_array(v)
     p.set_clim([vmin, vmax])
@@ -147,10 +158,12 @@ def save_image_slices_energy_deposite(
         px_W = readout_energy_J[:, :, 0] / readout_time_slice_duration_s  # W
         py_W = readout_energy_J[:, :, 1] / readout_time_slice_duration_s  # W
         enex = iaat.signal.radiated_power_to_blackbody_temperature(
-            power_W=px_W, bandwidth_Hz=bandwidth_Hz,
+            power_W=px_W,
+            bandwidth_Hz=bandwidth_Hz,
         )
         eney = iaat.signal.radiated_power_to_blackbody_temperature(
-            power_W=py_W, bandwidth_Hz=bandwidth_Hz,
+            power_W=py_W,
+            bandwidth_Hz=bandwidth_Hz,
         )
         estr = "black body temperature / K"
     elif units == "jansky":
@@ -183,7 +196,9 @@ def save_image_slices_energy_deposite(
     _m = seb.plt.cm.ScalarMappable(norm=None, cmap=cmap)
     _m.set_clim([0.0, energy_max])
     seb.plt.colorbar(_m, cax=ax_cb, label=estr)
-    fig.savefig(os.path.join(path, "colormap.jpg"),)
+    fig.savefig(
+        os.path.join(path, "colormap.jpg"),
+    )
     seb.close(fig)
 
     with open(os.path.join(path, "time.json"), "wt") as f:
@@ -323,7 +338,8 @@ def write_figure_electric_fields_power_density_spectrum(
     )
 
     E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
-        electric_fields=electric_fields, component_mask=component_mask,
+        electric_fields=electric_fields,
+        component_mask=component_mask,
     )
 
     _last_f_antenna_bin_edges = None
@@ -365,7 +381,7 @@ def write_figure_electric_fields_power_density_spectrum(
 
     write_matrix(
         path=path,
-        matrix=pds[:, start_f_slice:stop_f_slice-1],
+        matrix=pds[:, start_f_slice : stop_f_slice - 1],
         x_bin_edges=f_antenna_bin_edges[start_f_slice:stop_f_slice] * 1e-9,
         y_bin_edges=antenna_bin_edges,
         x_label="frequency / GHz",
@@ -395,14 +411,16 @@ def ax_add_electric_field(
     roi_time=None,
 ):
     time_bin_edges = iaat.electric_fields.make_time_bin_edges(
-        electric_fields=electric_fields, global_time=False,
+        electric_fields=electric_fields,
+        global_time=False,
     )
     antenna_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
         electric_fields=electric_fields
     )
 
     E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
-        electric_fields=electric_fields, component_mask=component_mask,
+        electric_fields=electric_fields,
+        component_mask=component_mask,
     )
 
     if vmin == None and vmax == None:
@@ -412,16 +430,20 @@ def ax_add_electric_field(
     if roi_time == None:
         start_time = 0.0
         stop_time = (
-            electric_fields["num_time_slices"] *
-            electric_fields["time_slice_duration_s"]
+            electric_fields["num_time_slices"]
+            * electric_fields["time_slice_duration_s"]
         )
         roi_time = [start_time, stop_time]
 
-    start_time_slice = int(roi_time[0] / electric_fields["time_slice_duration_s"])
-    stop_time_slice = int(roi_time[1] / electric_fields["time_slice_duration_s"])
+    start_time_slice = int(
+        roi_time[0] / electric_fields["time_slice_duration_s"]
+    )
+    stop_time_slice = int(
+        roi_time[1] / electric_fields["time_slice_duration_s"]
+    )
 
     im = ax.pcolormesh(
-        time_bin_edges[start_time_slice:stop_time_slice+1] * time_scale,
+        time_bin_edges[start_time_slice : stop_time_slice + 1] * time_scale,
         antenna_bin_edges,
         E_amplitude[:, start_time_slice:stop_time_slice] * amplitude_scale,
         cmap=cmap,
@@ -497,15 +519,22 @@ def write_figure_lnb_power(
         stop_time = relative_time_bin_edges_s[-1]
         roi_time = [start_time, stop_time]
 
-    start_time_slice = np.argmin(np.abs(relative_time_bin_edges_s - roi_time[0]))
-    stop_time_slice = np.argmin(np.abs(relative_time_bin_edges_s - roi_time[1]))
+    start_time_slice = np.argmin(
+        np.abs(relative_time_bin_edges_s - roi_time[0])
+    )
+    stop_time_slice = np.argmin(
+        np.abs(relative_time_bin_edges_s - roi_time[1])
+    )
 
     write_matrix(
         path=path,
-        matrix=1e12 * lnb_power_W[:, start_time_slice:stop_time_slice-1],
-        x_bin_edges=1e9 * relative_time_bin_edges_s[start_time_slice:stop_time_slice],
+        matrix=1e12 * lnb_power_W[:, start_time_slice : stop_time_slice - 1],
+        x_bin_edges=1e9
+        * relative_time_bin_edges_s[start_time_slice:stop_time_slice],
         y_bin_edges=channels_bin_edges,
-        x_label="relative time / ns (absolute: {:.2f}ns)".format(1e9 * global_start_time_s),
+        x_label="relative time / ns (absolute: {:.2f}ns)".format(
+            1e9 * global_start_time_s
+        ),
         y_label=channels_label,
         z_label="power / pW",
         norm=norm,
@@ -517,7 +546,9 @@ def write_figure_lnb_power(
 
 
 def write_figure_antenna_positions(
-    positions, path, figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+    positions,
+    path,
+    figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
 ):
     fig = seb.figure(style=figsize)
     ax = seb.add_axes(fig=fig, span=[0.15, 0.125, 0.8, 0.8])

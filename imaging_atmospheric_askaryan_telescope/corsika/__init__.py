@@ -42,7 +42,8 @@ def make_steering_card(
     sc += "PAROUT F  F\n"
     sc += "MAXPRT 1\n"
     sc += "MAGNET {:.3E} {:.3E}\n".format(
-        earth_magnetic_field_x_muT, earth_magnetic_field_z_muT,
+        earth_magnetic_field_x_muT,
+        earth_magnetic_field_z_muT,
     )
     sc += "LONGI T   5.  T  T\n"
     sc += "RADNKG 5.000E+05\n"

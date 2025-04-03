@@ -69,7 +69,10 @@ def butter_bandpass_filter(
     """
     fs = 1.0 / time_slice_duration
     b, a = _butter_bandpass(
-        lowcut=frequency_start, highcut=frequency_stop, fs=fs, order=order,
+        lowcut=frequency_start,
+        highcut=frequency_stop,
+        fs=fs,
+        order=order,
     )
     y = scipy.signal.lfilter(b, a, amplitudes, axis=axis)
     return y
@@ -107,10 +110,10 @@ def butter_bench(
         Aout = bandpass(
             amplitudes=Ain,
             **filter_config,
-            time_slice_duration=time_slice_duration
+            time_slice_duration=time_slice_duration,
         )
 
-        r = np.sum(Aout ** 2) / np.sum(Ain ** 2)
+        r = np.sum(Aout**2) / np.sum(Ain**2)
         ratio.append(r)
     return ratio
 
@@ -125,17 +128,18 @@ def frequency_to_wavelength(frequency, speed_of_light=SPEED_OF_LIGHT):
 
 
 def calculate_antenna_effective_area(wavelength, gain):
-    return gain * ((wavelength ** 2) / (4.0 * np.pi))
+    return gain * ((wavelength**2) / (4.0 * np.pi))
 
 
 def calculate_antenna_power(effective_area, electric_field):
-    S = (electric_field ** 2) / VACUUM_IMPEDANCE
+    S = (electric_field**2) / VACUUM_IMPEDANCE
     Pr = effective_area * S
     return Pr
 
 
 def electric_power_of_thermal_noise(
-    antenna_temperature_K=80, antenna_bandwidth=1e9,
+    antenna_temperature_K=80,
+    antenna_bandwidth=1e9,
 ):
     return antenna_temperature_K * BOLTZMANN_CONSTANT * antenna_bandwidth
 
@@ -145,7 +149,8 @@ def radiated_power_to_blackbody_temperature(power_W, bandwidth_Hz):
 
 
 def electric_field_of_thermal_noise(
-    antenna_temperature_K=80, antenna_bandwidth=1e9,
+    antenna_temperature_K=80,
+    antenna_bandwidth=1e9,
 ):
     P = electric_power_of_thermal_noise(
         antenna_temperature_K=antenna_temperature_K,

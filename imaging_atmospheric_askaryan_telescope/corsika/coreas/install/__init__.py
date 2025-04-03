@@ -143,7 +143,8 @@ def is_expected_version(corsika_tar_gz_path):
         msg = ""
         msg += "Expected '{:s}' ".format(corsika_tar_gz_path)
         msg += "to have md5sum: '{:s}' of '{:s}', ".format(
-            CORSIKA_77100_TAR_GZ_MD5SUM, CORSIKA_TAR_FILENAME,
+            CORSIKA_77100_TAR_GZ_MD5SUM,
+            CORSIKA_TAR_FILENAME,
         )
         msg += "but it actually has md5sum: {:s}.".format(actual_md5sum)
         print(msg)

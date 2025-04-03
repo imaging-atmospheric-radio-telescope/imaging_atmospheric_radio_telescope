@@ -11,7 +11,7 @@ astra2e_local_oscillator_frequency_Hz = 9.75e9
 astra2e_wavelength_m = (
     speed_of_light_m_per_s / astra2e_local_oscillator_frequency_Hz
 )
-astra2e_antenna_effective_area_m2 = (astra2e_wavelength_m ** 2) / (4.0 * np.pi)
+astra2e_antenna_effective_area_m2 = (astra2e_wavelength_m**2) / (4.0 * np.pi)
 
 astra2e_spots_m2 = {}
 astra2e_spots_m2["kaband"] = (
@@ -32,7 +32,7 @@ astra2e_power_density_on_surface_of_earth_W_per_m2 = (
     astra2e_max_power_W / astrea2e_area_m2
 )
 
-typical_satellite_dish_area_m2 = 0.4 ** 2 * np.pi
+typical_satellite_dish_area_m2 = 0.4**2 * np.pi
 feedhorn_transmission = 1.0  # <- unrealistic, more typical value is 0.5.
 
 power_arriving_in_lnb_W = (

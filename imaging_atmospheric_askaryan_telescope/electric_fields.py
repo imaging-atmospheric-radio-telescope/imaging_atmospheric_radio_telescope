@@ -14,7 +14,7 @@ def init(
     assert num_antennas >= 0
     out = {}
     out["global_start_time_s"] = global_start_time_s
-    out["time_slice_duration_s"] =time_slice_duration_s
+    out["time_slice_duration_s"] = time_slice_duration_s
     out["num_time_slices"] = num_time_slices
     out["num_antennas"] = num_antennas
     out["electric_fields_V_per_m"] = np.zeros(
@@ -97,7 +97,9 @@ def read(path):
     ) as f:
         arr = np.frombuffer(f.read(), dtype="float32")
         o["electric_fields_V_per_m"] = arr.reshape(
-            o["num_antennas"], o["num_time_slices"], 3,
+            o["num_antennas"],
+            o["num_time_slices"],
+            3,
         )
 
     return o
@@ -128,7 +130,9 @@ def read_tar(path):
         assert filename == "electric_fields_V_per_m.antenna.time.dim.float32"
         tmp = np.frombuffer(filebytes, dtype="float32")
         o["electric_fields_V_per_m"] = tmp.reshape(
-            o["num_antennas"], o["num_time_slices"], 3,
+            o["num_antennas"],
+            o["num_time_slices"],
+            3,
         )
 
     return o

@@ -1,4 +1,4 @@
-
+"""
 def simulate_mirror_electric_fields_calibration_source(
     out_dir,
     event_id,
@@ -41,3 +41,4 @@ def simulate_mirror_electric_fields_calibration_source(
     electric_fields.write_tar(
         path=antenna_path, electric_fields=E_field,
     )
+"""

@@ -11,7 +11,9 @@ setuptools.setup(
     author="Sebastian Achim Mueller",
     author_email="sebmuell@phys.ethz.ch",
     license="GPLv3",
-    packages=["imaging_atmospheric_askaryan_telescope",],
+    packages=[
+        "imaging_atmospheric_askaryan_telescope",
+    ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
             os.path.join(
@@ -19,7 +21,11 @@ setuptools.setup(
             )
         ]
     },
-    install_requires=["docopt", "scipy", "matplotlib",],
+    install_requires=[
+        "docopt",
+        "scipy",
+        "matplotlib",
+    ],
     entry_points={"console_scripts": []},
     zip_safe=False,
 )

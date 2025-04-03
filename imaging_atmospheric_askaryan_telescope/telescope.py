@@ -9,7 +9,8 @@ from . import electric_fields
 
 
 def make_parabola_surface_height_m(
-    distance_to_optical_axis_m, focal_length_m,
+    distance_to_optical_axis_m,
+    focal_length_m,
 ):
     """
     Parameters
@@ -20,7 +21,7 @@ def make_parabola_surface_height_m(
     focal_length_m : float
         The parabola's focal-length.
     """
-    z = 1 / (4.0 * focal_length_m) * distance_to_optical_axis_m ** 2
+    z = 1 / (4.0 * focal_length_m) * distance_to_optical_axis_m**2
     return z
 
 
@@ -71,7 +72,7 @@ def make_probe_positions(
     x_m = np.array(x_m)
     y_m = np.array(y_m)
 
-    radius_m = np.sqrt(x_m ** 2 + y_m ** 2)
+    radius_m = np.sqrt(x_m**2 + y_m**2)
 
     inside_outer = radius_m <= outer_radius_m
     outside_inner = radius_m >= inner_radius_m
@@ -103,10 +104,10 @@ def make_mirror(
     imre["outer_radius_m"] = outer_radius_m
     imre["inner_radius_m"] = inner_radius_m
     imre["diameter_m"] = 2.0 * outer_radius_m
-    imre["area_m2"] = np.pi * (outer_radius_m ** 2 - inner_radius_m ** 2)
-    imre[
-        "scatter_center_areal_density_per_m2"
-    ] = scatter_center_areal_density_per_m2
+    imre["area_m2"] = np.pi * (outer_radius_m**2 - inner_radius_m**2)
+    imre["scatter_center_areal_density_per_m2"] = (
+        scatter_center_areal_density_per_m2
+    )
     imre["scatter_center_positions_m"] = make_probe_positions(
         random_seed=random_seed,
         focal_length_m=focal_length_m,
@@ -123,7 +124,9 @@ UNIT_HEX_V = np.array([0.5, np.sqrt(3) / 2, 0.0])
 
 
 def make_feed_horn_positions(
-    sensor_outer_radius_m, sensor_distance_m, feed_horn_inner_radius_m,
+    sensor_outer_radius_m,
+    sensor_distance_m,
+    feed_horn_inner_radius_m,
 ):
     """
     Returns the positions of feed-horns placed in a disk.
@@ -162,7 +165,7 @@ def make_feed_horn_positions(
 
 
 def _area_of_hexagon(inner_radius):
-    return 2.0 * np.sqrt(3.0) * inner_radius ** 2.0
+    return 2.0 * np.sqrt(3.0) * inner_radius**2.0
 
 
 def make_feed_horn_areal_density_per_m2(feed_horn_inner_radius_m):
@@ -174,7 +177,10 @@ def make_feed_horn_areal_density_per_m2(feed_horn_inner_radius_m):
 
 
 def make_sensor(
-    sensor_outer_radius_m, sensor_distance_m, feed_horn_inner_radius_m, feed_horn_transmission,
+    sensor_outer_radius_m,
+    sensor_distance_m,
+    feed_horn_inner_radius_m,
+    feed_horn_transmission,
 ):
     imse = {}
     imse["outer_radius_m"] = sensor_outer_radius_m
@@ -186,10 +192,10 @@ def make_sensor(
         sensor_distance_m=sensor_distance_m,
         feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
     )
-    imse[
-        "feed_horn_areal_density_per_m2"
-    ] = make_feed_horn_areal_density_per_m2(
-        feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
+    imse["feed_horn_areal_density_per_m2"] = (
+        make_feed_horn_areal_density_per_m2(
+            feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
+        )
     )
     imse["feed_horn_transmission"] = feed_horn_transmission
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
@@ -198,7 +204,9 @@ def make_sensor(
 
 
 def make_matrix(
-    mirror, sensor, speed_of_light_m_per_s,
+    mirror,
+    sensor,
+    speed_of_light_m_per_s,
 ):
     """
     Estimate the imaging matrix which propagates spherical waves from the
@@ -216,16 +224,15 @@ def make_matrix(
     assert speed_of_light_m_per_s > 0.0
 
     distances_m = scipy.spatial.distance_matrix(
-        sensor["feed_horn_positions_m"], mirror["scatter_center_positions_m"],
+        sensor["feed_horn_positions_m"],
+        mirror["scatter_center_positions_m"],
     ).astype(np.float32)
 
     absolute_time_delays_s = distances_m / speed_of_light_m_per_s
     relative_time_delays_s = absolute_time_delays_s - np.min(
         absolute_time_delays_s
     )
-    relative_amplitudes = (1 / distances_m ** 2) / (
-        1 / distances_m ** 2
-    ).mean()
+    relative_amplitudes = (1 / distances_m**2) / (1 / distances_m**2).mean()
 
     imma = {}
     imma["distances_m"] = distances_m
@@ -255,7 +262,7 @@ def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
 
 
 def square_but_keep_sign(v):
-    return (v ** 2) * np.sign(v)
+    return (v**2) * np.sign(v)
 
 
 def sqrt_but_keep_sign(v):
@@ -263,7 +270,9 @@ def sqrt_but_keep_sign(v):
 
 
 def propagate_electric_field_from_mirror_to_sensor(
-    telescope, mirror_electric_fields, num_time_slices,
+    telescope,
+    mirror_electric_fields,
+    num_time_slices,
 ):
     """
     # How to add up the electric fields ?
@@ -369,12 +378,13 @@ def propagate_electric_field_from_mirror_to_sensor(
         time_slice_duration_s=mir["time_slice_duration_s"],
         num_time_slices=num_time_slices,
         num_antennas=telescope["sensor"]["num_feed_horns"],
-        global_start_time_s=mir["global_start_time_s"] + np.mean(
-            telescope["matrix"]["absolute_time_delays_s"]
-        )
+        global_start_time_s=mir["global_start_time_s"]
+        + np.mean(telescope["matrix"]["absolute_time_delays_s"]),
     )
 
-    feed_horn_area_m2 = 1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
+    feed_horn_area_m2 = (
+        1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
+    )
     mirror_area_m2 = telescope["mirror"]["area_m2"]
 
     e_field_scaling = np.sqrt(mirror_area_m2 / feed_horn_area_m2)
@@ -395,9 +405,7 @@ def propagate_electric_field_from_mirror_to_sensor(
 
                 # amplitude
                 # ---------
-                first = (
-                    mir["electric_fields_V_per_m"][imi, :, dim]
-                )
+                first = mir["electric_fields_V_per_m"][imi, :, dim]
 
                 signal.add_first_to_second_at(
                     first=square_but_keep_sign(first),
