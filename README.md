@@ -1,26 +1,29 @@
 # Imaging Atmospheric Askaryan Telescope
 ![img](readme/example_event.gif)
-Exploring the detection of cosmic gamma-rays from ground using the radio-emission of showers.
+Exploring the detection of cosmic gamma rays from ground using the radio
+emission of air showers.
 
 ## Abstract
-The detection of cosmic gamma-rays with the atmospheric Cherenkov-method is limited to ~1000h of observation-time per year.
-An atmospheric method based on the radio-emission of showers might nine-fold this time because it can observe during the day.
-Here I investigate an imaging-radio-telescope that senses the radio-emission of showers.
-Its images look similar to those of Cherenkov-telescopes.
-I simulate the optics, not using ray-tracing, but wave-mechanics.
-Such an "Askaryan-telescope" can adopt electronics from Cherenkov-telescopes.
-Its mirrors can be made out of wire-mesh.
-The goal of this package is to explore the capabilities and practicality of such an Askaryan-telescope.
+The detection of cosmic gamma-rays with the atmospheric Cherenkov-method is
+limited to ~1000 hours of observation time per year. An atmospheric method based
+on the radio emission of air showers might nine-fold this time because it can
+observe during the day. Here I investigate an imaging radio telescope that
+senses the radio emission of air showers. Its images look similar to those of
+Cherenkov telescopes. I simulate the optics, not using ray tracing, but
+wave mechanics. Such an 'Askaryan telescope' can adopt electronics from
+Cherenkov telescopes. Its mirrors can be made out of wire mesh. The goal of this
+package is to explore the capabilities and practicality of such an
+Askaryan telescope.
 
 ## Install
 
-The python-package.
+The python package.
 
 ```bash
 pip install -e imaging_atmospheric_askaryan_telescope/
 ```
 
-Enter the python-package directory.
+Enter the python package directory.
 ```bash
 cd imaging_atmospheric_askaryan_telescope
 ```
