@@ -42,7 +42,7 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        #"sebastians_matplotlib_addons>=0.0.17",
+        # "sebastians_matplotlib_addons>=0.0.17",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
