@@ -1,6 +1,6 @@
 {
-    "site_name": "karlsruhe",
-    "lnb_name": "norsat_8215f_c_band",
+    "site_key": "karlsruhe",
+    "lnb_key": "norsat_8215f_c_band",
     "timing": {
         "oversampling": 6,
         "time_window_duration_s": 35e-9,

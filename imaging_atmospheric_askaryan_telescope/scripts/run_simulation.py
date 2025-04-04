@@ -91,7 +91,7 @@ else:
 # ----
 
 telescope, timing = iaat.init_telescope_and_timing(config=config)
-site = iaat.sites.init(site_name=config["site_name"])
+site = iaat.sites.init(key=config["site_key"])
 
 
 # start simulation

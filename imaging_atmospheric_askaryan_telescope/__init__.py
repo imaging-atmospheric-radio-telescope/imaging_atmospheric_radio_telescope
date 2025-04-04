@@ -14,7 +14,7 @@ from . import utils
 def init_telescope_and_timing(config):
     config = utils.strip_dict(config, "comment")
 
-    lnb = lownoiseblock.init(lnb_name=config["lnb_name"])
+    lnb = lownoiseblock.init(key=config["lnb_key"])
     mir = telescope.make_mirror(**config["mirror"])
     sen = telescope.make_sensor(**config["sensor"])
 

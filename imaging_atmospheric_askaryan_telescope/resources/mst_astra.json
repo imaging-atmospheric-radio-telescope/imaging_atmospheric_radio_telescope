@@ -1,6 +1,6 @@
 {
-    "site_name": "namibia",
-    "lnb_name": "astra_universal",
+    "site_key": "namibia",
+    "lnb_key": "astra_universal",
     "timing": {
         "oversampling": 6,
         "time_window_duration_s": 35e-9,

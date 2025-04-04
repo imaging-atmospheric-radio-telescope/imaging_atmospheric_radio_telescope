@@ -1,19 +1,21 @@
-def init(site_name):
-    if site_name == "namibia":
+def init(key):
+    if key == "namibia":
         site = {
-            "name": site_name,
+            "key": key,
             "observation_level_asl_m": 1800,
             "earth_magnetic_field_x_muT": 12.5,
             "earth_magnetic_field_z_muT": -25.9,
+            "name": "Khoma Highlands, H.E.S.S. site, Namibia",
         }
-    elif site_name == "karlsruhe":
+    elif key == "karlsruhe":
         site = {
-            "name": site_name,
+            "key": key,
             "observation_level_asl_m": 110,
             "earth_magnetic_field_x_muT": 20.4,
             "earth_magnetic_field_z_muT": 43.23,
+            "name": "Campus of the Karlsruhe Institute of Technology, Germany",
         }
     else:
-        raise AttributeError(f"site_name '{site_name:s}' is not known.")
+        raise AttributeError(f"Site key '{key:s}' is not known.")
 
     return site

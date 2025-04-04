@@ -1,25 +1,25 @@
 from . import signal
 
 
-def init(lnb_name):
-    if lnb_name == "astra_universal":
+def init(key):
+    if key == "astra_universal":
         lnb = {
-            "name": lnb_name,
+            "key": key,
             "local_oscillator_frequency_Hz": 9.75e9,
             "intermediate_frequency_start_Hz": 950e6,
             "intermediate_frequency_stop_Hz": 1950e6,
             "noise_temperature_K": 100,
         }
-    elif lnb_name == "norsat_8215f_c_band":
+    elif key == "norsat_8215f_c_band":
         lnb = {
-            "name": lnb_name,
+            "key": key,
             "local_oscillator_frequency_Hz": 5.15e9,
             "intermediate_frequency_start_Hz": 950e6,
             "intermediate_frequency_stop_Hz": 1750e6,
             "noise_temperature_K": 45,
         }
     else:
-        raise AttributeError("lnb_name is not known.")
+        raise AttributeError(f"Lnb key '{key:s}' is not known.")
 
     lnb["effective_area_m2"] = signal.calculate_antenna_effective_area(
         wavelength=signal.frequency_to_wavelength(
