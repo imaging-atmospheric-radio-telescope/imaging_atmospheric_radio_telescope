@@ -14,6 +14,6 @@ def init(site_name):
             "earth_magnetic_field_z_muT": 43.23,
         }
     else:
-        raise AttributeError("lnb_name is not known.")
+        raise AttributeError(f"site_name '{site_name:s}' is not known.")
 
     return site
