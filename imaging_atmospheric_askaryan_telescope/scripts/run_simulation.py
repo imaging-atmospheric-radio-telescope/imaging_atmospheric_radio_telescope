@@ -5,19 +5,16 @@ import imaging_atmospheric_askaryan_telescope as iaat
 from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
 
 import numpy as np
-import json_numpy
+import json_utils
 import os
 
 
 def read_dict(path):
-    with open(path, "rt") as f:
-        config = json_numpy.loads(f.read())
-    return config
+    return json_utils.read(path)
 
 
 def write_and_read_back_dict(path, config):
-    with open(path, "wt") as f:
-        f.write(json_numpy.dumps(config, indent=4))
+    json_utils.write(path, config)
     return read_dict(path)
 
 
