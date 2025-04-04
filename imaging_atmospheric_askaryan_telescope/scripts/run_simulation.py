@@ -38,22 +38,9 @@ parser.add_argument(
     required=True,
     metavar="INSTRUMENT_PATH",
 )
-parser.add_argument(
-    "-c",
-    help="Path to CORSIKA executable",
-    required=False,
-    metavar="CORSIKA_PATH",
-    default=os.path.join(
-        "build",
-        "corsika-77100",
-        "run",
-        "corsika77100Linux_QGSII_urqmd_coreas",
-    ),
-)
 
 args = parser.parse_args()
 random_seed = args.n
-corsika_coreas_executable_path = args.c
 config = read_dict(path=args.i)
 primary_particle = read_dict(path=args.p)
 
@@ -98,7 +85,6 @@ prng = np.random.Generator(np.random.PCG64(random_seed))
 
 
 iaat.production.simulate_telescope_response(
-    corsika_coreas_executable_path=corsika_coreas_executable_path,
     out_dir=out_dir,
     event_id=random_seed,
     primary_particle=primary_particle,

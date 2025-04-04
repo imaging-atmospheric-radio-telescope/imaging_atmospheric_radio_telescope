@@ -1,4 +1,4 @@
-`import setuptools
+import setuptools
 import os
 
 with open("README.rst", "r", encoding="utf-8") as f:

@@ -13,7 +13,6 @@ from .. import corsika
 
 
 def simulate_mirror_electric_fields_manual(
-    corsika_coreas_executable_path,
     out_dir,
     event_id,
     primary_particle,
@@ -21,7 +20,11 @@ def simulate_mirror_electric_fields_manual(
     time_slice_duration_s,
     antenna_positions_obslvl_m,
     coreas_time_boundaries=corsika.coreas.DEFAULT_TIME_BOUNDARIES,
+    corsika_coreas_executable_path=None,
 ):
+    if corsika_coreas_executable_path is None:
+        corsika_coreas_executable_path = corsika.configfile.read()["vanilla"]
+
     with tempfile.TemporaryDirectory(prefix="corsika_coreas_") as tmp_dir:
         tmp_run_dir = os.path.join(tmp_dir, "run")
 
@@ -162,13 +165,13 @@ def simulate_mirror_electric_fields_manual(
 
 
 def simulate_telescope_response(
-    corsika_coreas_executable_path,
     out_dir,
     event_id,
     primary_particle,
     site,
     telescope,
     timing,
+    corsika_coreas_executable_path=None,
 ):
     """
     Does a full simulation of a single event from the shower to the sensor

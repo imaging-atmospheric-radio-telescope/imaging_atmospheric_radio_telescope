@@ -1,4 +1,5 @@
 from . import coreas
+from . import configfile
 import numpy as np
 
 
