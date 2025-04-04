@@ -1,4 +1,4 @@
-import setuptools
+`import setuptools
 import os
 
 with open("README.rst", "r", encoding="utf-8") as f:
@@ -43,6 +43,8 @@ setuptools.setup(
     },
     install_requires=[
         # "sebastians_matplotlib_addons>=0.0.17",
+        "json_utils_sebastian-achim-mueller",
+        "rename_after_writing",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
