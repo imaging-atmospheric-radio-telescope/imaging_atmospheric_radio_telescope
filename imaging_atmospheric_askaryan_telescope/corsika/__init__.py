@@ -1,5 +1,5 @@
 from . import coreas
-from . import configfile
+from . import install
 import numpy as np
 
 

@@ -1,7 +1,6 @@
 import numpy as np
 import glob
 import os
-from . import install
 
 DEFAULT_TIME_BOUNDARIES = {
     "automatic_time_boundaries_s": 4e-07,

@@ -7,21 +7,47 @@ import pkg_resources
 from . import utils
 
 
-CORSIKA_BUILD_DIR = pkg_resources.resource_filename(
-    "imaging_atmospheric_askaryan_telescope",
-    os.path.join("corsika", "__build__"),
-)
-CORSIKA_CONFIG_PATH = pkg_resources.resource_filename(
-    "imaging_atmospheric_askaryan_telescope",
-    os.path.join("corsika", "install", "resources", "config.h"),
-)
 CORSIKA_77100_TAR_GZ_MD5SUM = "bc67b14c957a024baf7f2893ab246d34"
 CORSIKA_DOWNLOAD_URL = "https://web.ikp.kit.edu/corsika/download/old/v771/"
 CORSIKA_NAME = "corsika-77100"
 CORSIKA_TAR_FILENAME = CORSIKA_NAME + ".tar.gz"
 
 
+def get_corsika_executable_path():
+    build_dir = get_corsika_build_path()
+    return os.path.join(
+        build_dir, CORSIKA_NAME, "run", "corsika77100Linux_QGSII_urqmd_coreas"
+    )
+
+
+def get_corsika_build_path():
+    """
+    Returns the default build directory path for CORSIKA CoREAS used by this
+    python package.
+    """
+    return pkg_resources.resource_filename(
+        "imaging_atmospheric_askaryan_telescope",
+        os.path.join("corsika", "__build__"),
+    )
+
+
+def get_corsika_config_path():
+    """
+    Returns the path to the config.h header file used by CORSIKA to controll
+    what features of CORSIKA will be build.
+    The header is used by CORSIKA's 'coconut' build script.
+    """
+    return pkg_resources.resource_filename(
+        "imaging_atmospheric_askaryan_telescope",
+        os.path.join("corsika", "install", "resources", "config.h"),
+    )
+
+
 def md5sum(path):
+    """
+    Returns the md5 checksum of the file in 'path'.
+    Computation is done block, by block to reduce memory load.
+    """
     hash_md5 = hashlib.md5()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -79,24 +105,49 @@ def download(
     )
 
 
-def build(
-    corsika_tar_gz_path, build_dir, corsika_config_path=CORSIKA_CONFIG_PATH
-):
+def build(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
     """
-    Install corsika-coreas.
+    Install CORSIKA CoREAS for the
+    'imaging atmospheric askaryan telescope' package.
 
     Parameters
     ----------
-    corsika_tar_gz_path : str
-        Path to the corsika.tar which you downloaded from KIT.
-    corsika_config_path : str
+    build_dir : str (default: None)
+        Directory to build in. If None, 'buikd_dir' will be in this pyhton
+        package's install path.
+    corsika_tar_gz_path : str (default: None)
+        Path to the corsika.tar which you downloaded from KIT. If None, the
+        corsika.tar is expected to be in the 'build_dir'.
+    corsika_config_path : str (default: None)
         Path to the config.h header-file which exactly defines how
-        to build this flavor of corsika.
-    build_dir : str
-        Directory to install in.
+        to build this flavor of corsika. If None, the path to the default config
+        of this pyhton package is used.
     """
-    build_dir = os.path.abspath(build_dir)
+    print("Building CORSIKA CoREAS ...")
+
+    if corsika_config_path is None:
+        corsika_config_path = get_corsika_config_path()
     corsika_config_path = os.path.abspath(corsika_config_path)
+    print(f"corsika_config_path: '{corsika_config_path:s}'")
+
+    if build_dir is None:
+        build_dir = get_corsika_build_path()
+    build_dir = os.path.abspath(build_dir)
+    print(f"build_dir: '{build_dir:s}'")
+
+    if corsika_tar_gz_path is None:
+        corsika_tar_gz_path = os.path.join(build_dir, CORSIKA_TAR_FILENAME)
+    corsika_tar_gz_path = os.path.abspath(corsika_tar_gz_path)
+    print(f"corsika_tar_gz_path: '{corsika_tar_gz_path:s}'")
+
+    version_good = is_expected_version(corsika_tar_gz_path=corsika_tar_gz_path)
+    if version_good:
+        print("corsika_tar_gz md5sum: OK.")
+    else:
+        print(
+            f"corsika_tar_gz md5sum: BAD. "
+            f"Expected '{CORSIKA_77100_TAR_GZ_MD5SUM:s}'."
+        )
 
     os.makedirs(build_dir, exist_ok=True)
 
@@ -133,6 +184,8 @@ def build(
     # Copy std ATMPROFS to the CORSIKA run directory
     for atmprof in glob.glob("bernlohr/atmprof*"):
         shutil.copy(atmprof, "run")
+
+    print("Building CORSIKA CoREAS ... Done.")
 
 
 def is_expected_version(corsika_tar_gz_path):
