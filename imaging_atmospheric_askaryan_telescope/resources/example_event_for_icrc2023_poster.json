@@ -1,5 +1,5 @@
 {
-    "type": "gamma",
+    "key": "gamma",
     "energy_GeV": 15e3,
     "zenith_distance_deg": 1.1,
     "azimuth_deg": 30.0,

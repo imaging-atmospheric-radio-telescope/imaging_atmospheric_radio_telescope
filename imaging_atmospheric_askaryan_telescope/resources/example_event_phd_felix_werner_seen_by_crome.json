@@ -1,5 +1,5 @@
 {
-    "type": "proton",
+    "key": "proton",
     "energy_GeV": 3.4e7,
     "zenith_distance_deg": 4.1,
     "azimuth_deg": 202.3,
