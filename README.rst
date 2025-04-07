@@ -93,6 +93,60 @@ Finally, uninstall the python package.
     pip uninstall imaging_atmospheric_askaryan_telescope
 
 
+
+***********
+Basic usage
+***********
+
+Initialize a working directory for a specific telescope and a specific site.
+
+.. code-block:: python
+
+    import imaging_atmospheric_askaryan_telescope as iaat
+
+    iaat.init(work_dir="/path/to/my/workdir")
+
+
+In the ``work_dir`` is a ``config`` directory which contains all the config
+which is constant for all events. It's content can be loaded and compiled via:
+
+.. code-block:: python
+
+    resources = iaat.from_config(work_dir="/path/to/my/workdir")
+
+
+One can simulate an air shower and the telescope's response via:
+
+.. code-block:: python
+
+    simulate_event(
+        work_dir="/path/to/my/workdir",
+        primary_particle=primary_particle,
+        event_id=100
+    )
+
+
+and
+
+.. code-block:: python
+
+    primary_particle = {
+        "key": "gamma",
+        "energy_GeV": 10e4,
+        "zenith_distance_deg": 1.3,
+        "azimuth_deg": 202.3,
+        "core_north_m": 112.0,
+        "core_west_m": 0.0,
+    }
+
+
+This response is written to ``work_dir/events/gamma/000100``. In there is the
+electric field vs. time of the ``probe`` antenna, the scatter centers on the
+``mirror``, and feed horn ``sensor``s in the camera. The probe antenna is only
+used to estimate the time window for the electric field output of the mirror's
+scatter centers.
+
+
 ****
 Test
 ****
@@ -102,7 +156,7 @@ Test
     pytest imaging_atmospheric_askaryan_telescope/
 
 
-For a minimal example run:
+An depricated example of a single event and some plots.
 
 .. code-block:: bash
 

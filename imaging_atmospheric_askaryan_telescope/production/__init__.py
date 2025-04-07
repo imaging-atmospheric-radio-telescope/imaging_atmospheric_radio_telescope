@@ -24,7 +24,7 @@ def simulate_mirror_electric_fields_manual(
 ):
     if corsika_coreas_executable_path is None:
         corsika_coreas_executable_path = (
-            corsika.install.get_corsika_executable_path()
+            corsika.build.get_corsika_executable_path()
         )
 
     with tempfile.TemporaryDirectory(prefix="corsika_coreas_") as tmp_dir:
