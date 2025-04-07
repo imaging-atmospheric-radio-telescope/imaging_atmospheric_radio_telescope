@@ -39,6 +39,7 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope": [
             os.path.join("corsika", "build", "resources", "config.h"),
             os.path.join("telescopes", "resources", "*.json"),
+            os.path.join("sites", "resources", "*.json"),
         ]
     },
     install_requires=[
