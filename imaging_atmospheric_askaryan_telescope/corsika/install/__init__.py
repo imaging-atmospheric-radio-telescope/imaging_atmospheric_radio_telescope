@@ -7,9 +7,13 @@ import pkg_resources
 from . import utils
 
 
+CORSIKA_BUILD_DIR = pkg_resources.resource_filename(
+    "imaging_atmospheric_askaryan_telescope",
+    os.path.join("corsika", "__build__"),
+)
 CORSIKA_CONFIG_PATH = pkg_resources.resource_filename(
     "imaging_atmospheric_askaryan_telescope",
-    os.path.join("corsika", "coreas", "install", "resources", "config.h"),
+    os.path.join("corsika", "install", "resources", "config.h"),
 )
 CORSIKA_77100_TAR_GZ_MD5SUM = "bc67b14c957a024baf7f2893ab246d34"
 CORSIKA_DOWNLOAD_URL = "https://web.ikp.kit.edu/corsika/download/old/v771/"

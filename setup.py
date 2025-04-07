@@ -30,15 +30,15 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope",
         "imaging_atmospheric_askaryan_telescope.utils",
         "imaging_atmospheric_askaryan_telescope.corsika",
+        "imaging_atmospheric_askaryan_telescope.corsika.install",
         "imaging_atmospheric_askaryan_telescope.corsika.coreas",
-        "imaging_atmospheric_askaryan_telescope.corsika.coreas.install",
         "imaging_atmospheric_askaryan_telescope.production",
     ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
             os.path.join(
-                "corsika", "coreas", "install", "resources", "config.h"
-            )
+                "corsika", "install", "resources", "config.h"
+            ),
         ]
     },
     install_requires=[
