@@ -44,9 +44,9 @@ setuptools.setup(
         "json_utils_sebastian-achim-mueller",
         "rename_after_writing",
     ],
+    license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT",
         "Operating System :: OS Independent",
         "Natural Language :: English",
     ],
