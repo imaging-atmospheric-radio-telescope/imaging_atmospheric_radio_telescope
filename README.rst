@@ -54,6 +54,8 @@ Download ``corsika-77100.tar.gz`` from KIT and save it in:
     imaging_atmospheric_askaryan_telescope/corsika/__build__/corsika-77100.tar.gz
 
 
+To build ``CORSIKA``, it is required to have a ``C`` and ``FORTRAN77`` compiler
+installed. From experience, the Linux package ``build-essential`` is sufficient.
 Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_askaryan_telescope`` by
 calling:
 
