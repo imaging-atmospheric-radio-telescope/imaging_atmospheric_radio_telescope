@@ -50,7 +50,7 @@ Download ``corsika-77100.tar.gz`` from KIT and save it in:
 
 .. code-block:: bash
 
-    cd imaging_atmospheric_askaryan_telescope/corsika/__build__/corsika-77100.tar.gz
+    imaging_atmospheric_askaryan_telescope/corsika/__build__/corsika-77100.tar.gz
 
 
 You need to ask the developers of ``CORSIKA`` for the ``username`` and
