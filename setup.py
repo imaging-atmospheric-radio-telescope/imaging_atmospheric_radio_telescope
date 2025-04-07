@@ -36,9 +36,7 @@ setuptools.setup(
     ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
-            os.path.join(
-                "corsika", "install", "resources", "config.h"
-            ),
+            os.path.join("corsika", "install", "resources", "config.h"),
         ]
     },
     install_requires=[
@@ -48,7 +46,7 @@ setuptools.setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: MIT",
         "Operating System :: OS Independent",
         "Natural Language :: English",
     ],
