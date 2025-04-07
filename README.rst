@@ -58,6 +58,7 @@ Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_askaryan_telescope`` by
 calling:
 
 .. code-block:: python
+
     import imaging_atmospheric_askaryan_telescope
 
     imaging_atmospheric_askaryan_telescope.corsika.build.install()
@@ -77,6 +78,7 @@ Uninstall
 First uninstall the ``CORSIKA`` build.
 
 .. code-block:: python
+
     import imaging_atmospheric_askaryan_telescope
 
     imaging_atmospheric_askaryan_telescope.corsika.build.uninstall()
