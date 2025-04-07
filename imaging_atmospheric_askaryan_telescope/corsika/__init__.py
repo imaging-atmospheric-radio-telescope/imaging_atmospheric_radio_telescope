@@ -4,7 +4,7 @@ from . import build
 
 def make_steering_card(
     unique_identifier,
-    primary_particle_type,
+    primary_particle_key,
     energy_GeV,
     zenith_distance_deg,
     azimuth_deg,
@@ -15,7 +15,9 @@ def make_steering_card(
     zd_deg = zenith_distance_deg
     az_deg = azimuth_deg
     obs_level_asl_cm = observation_level_asl_m * 1e2
-    primary_particle_id = particle_id(particle_type=primary_particle_type)
+    primary_particle_id = particle_key_to_corsika_id(
+        particle_key=primary_particle_key
+    )
 
     sc = "RUNNR {:d}\n".format(unique_identifier)
     sc += "EVTNR {:d}\n".format(1)
@@ -53,10 +55,11 @@ def make_steering_card(
     return sc
 
 
-def particle_id(particle_type):
+def particle_key_to_corsika_id(particle_key):
     m = {
         "gamma": 1,
+        "electron": 3,
         "proton": 14,
         "helium": 402,
     }
-    return m[particle_type]
+    return m[particle_key]

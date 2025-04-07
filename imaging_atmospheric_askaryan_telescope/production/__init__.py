@@ -57,7 +57,7 @@ def simulate_mirror_electric_fields_manual(
             fout.write(
                 corsika.make_steering_card(
                     unique_identifier=event_id,
-                    primary_particle_type=primary_particle["type"],
+                    primary_particle_key=primary_particle["key"],
                     energy_GeV=primary_particle["energy_GeV"],
                     zenith_distance_deg=primary_particle[
                         "zenith_distance_deg"
