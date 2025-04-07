@@ -39,7 +39,7 @@ def get_corsika_config_path():
     """
     return pkg_resources.resource_filename(
         "imaging_atmospheric_askaryan_telescope",
-        os.path.join("corsika", "install", "resources", "config.h"),
+        os.path.join("corsika", "build", "resources", "config.h"),
     )
 
 
@@ -105,7 +105,30 @@ def download(
     )
 
 
-def build(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
+def uninstall(build_dir=None):
+    """
+    Uninstall and removes the CORSIKA CoREAS build.
+    """
+    join = os.path.join
+    print("Uninstall CORSIKA CoREAS ...")
+
+    if build_dir is None:
+        build_dir = get_corsika_build_path()
+    build_dir = os.path.abspath(build_dir)
+    print(f"build_dir: '{build_dir:s}'")
+
+    os.remove(join(build_dir, "coconut_configure.o"))
+    os.remove(join(build_dir, "coconut_configure.e"))
+
+    os.remove(join(build_dir, "coconut_make.o"))
+    os.remove(join(build_dir, "coconut_make.e"))
+
+    if os.path.isdir(join(build_dir, CORSIKA_NAME)):
+        shutil.rmtree(join(build_dir, CORSIKA_NAME))
+    print("Uninstall CORSIKA CoREAS ... Done")
+
+
+def install(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
     """
     Install CORSIKA CoREAS for the
     'imaging atmospheric askaryan telescope' package.
@@ -151,7 +174,7 @@ def build(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
 
     os.makedirs(build_dir, exist_ok=True)
 
-    # untar, unzip the CORSIKA download
+    print("untar, unzip the corsika_tar_gz.")
     tar = tarfile.open(corsika_tar_gz_path)
     tar.extractall(path=build_dir)
     tar.close()
@@ -163,10 +186,10 @@ def build(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
     corsika_path = os.path.join(build_dir, corsika_basename)
     os.chdir(corsika_path)
 
-    # Provide the coconut config.h
+    print("Provide the coconut config.h")
     shutil.copyfile(corsika_config_path, os.path.join("include", "config.h"))
 
-    # coconut configure
+    print("Calling 'coconut configure'")
     utils.call_and_save_std(
         target=["./coconut"],
         o_path="../coconut_configure.o",
@@ -174,19 +197,22 @@ def build(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
         stdin=open("/dev/null", "r"),
     )
 
-    # coconut build
+    print("Calling 'coconut -i' to compile")
     utils.call_and_save_std(
         target=["./coconut", "-i"],
         o_path="../coconut_make.o",
         e_path="../coconut_make.e",
     )
 
-    # Copy std ATMPROFS to the CORSIKA run directory
+    print("Copy ATMPROFS to the CORSIKA run directory")
     for atmprof in glob.glob("bernlohr/atmprof*"):
         shutil.copy(atmprof, "run")
 
-    print("Building CORSIKA CoREAS ... Done.")
 
+    if os.path.exists(get_corsika_executable_path()):
+        print("Building CORSIKA CoREAS ... SUCCESS.")
+    else:
+        print("Building CORSIKA CoREAS ... FAIL.")
 
 def is_expected_version(corsika_tar_gz_path):
     """

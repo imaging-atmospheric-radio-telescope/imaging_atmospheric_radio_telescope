@@ -1,6 +1,5 @@
 from . import coreas
-from . import install
-import numpy as np
+from . import build
 
 
 def make_steering_card(

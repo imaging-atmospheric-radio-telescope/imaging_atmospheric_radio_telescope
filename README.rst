@@ -45,34 +45,62 @@ Enter the python package directory.
 
     cd imaging_atmospheric_askaryan_telescope
 
-Make a ``build`` directory and download ``corsika-77100.tar.gz`` from KIT into
-it. You need to ask the developers of ``CORSIKA`` for the ``username`` and
+Download ``corsika-77100.tar.gz`` from KIT and save it in:
+
+.. code-block:: bash
+
+    cd imaging_atmospheric_askaryan_telescope/corsika/__build__/corsika-77100.tar.gz
+
+
+You need to ask the developers of ``CORSIKA`` for the ``username`` and
 ``password``.
 
-Check the version of your download.
+
+Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_askaryan_telescope`` by
+calling:
 
 .. code-block:: python
+    import imaging_atmospheric_askaryan_telescope
 
-    iaat.corsika.coreas.install.is_expected_version(
-        corsika_tar_gz_path="build/corsika-77100.tar.gz",
-    )
+    imaging_atmospheric_askaryan_telescope.corsika.build.install()
 
 
-Build ``CORSIKA-CoREAS`` in the ``build`` directory.
+If all works out as expected, you should see:
+
+.. code-block::
+
+    Building CORSIKA CoREAS ... SUCCESS.
+
+
+*********
+Uninstall
+*********
+
+First uninstall the ``CORSIKA`` build.
 
 .. code-block:: python
+    import imaging_atmospheric_askaryan_telescope
 
-    iaat.corsika.coreas.install.build(
-        corsika_tar_gz_path="build/corsika-77100.tar.gz",
-        build_dir="build",
-    )
+    imaging_atmospheric_askaryan_telescope.corsika.build.uninstall()
+
+
+Finally, uninstall the python package.
+
+.. code-block:: bash
+
+    pip uninstall imaging_atmospheric_askaryan_telescope
 
 
 ****
 Test
 ****
 
-This is not a unit-test. It is more like a minimal example.
+.. code-block:: bash
+
+    pytest imaging_atmospheric_askaryan_telescope/
+
+
+For a minimal example run:
 
 .. code-block:: bash
 
