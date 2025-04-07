@@ -30,7 +30,7 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope",
         "imaging_atmospheric_askaryan_telescope.utils",
         "imaging_atmospheric_askaryan_telescope.corsika",
-        "imaging_atmospheric_askaryan_telescope.corsika.install",
+        "imaging_atmospheric_askaryan_telescope.corsika.build",
         "imaging_atmospheric_askaryan_telescope.corsika.coreas",
         "imaging_atmospheric_askaryan_telescope.production",
     ],
