@@ -10,16 +10,17 @@ emission of air showers.
 |example_event|
 
 
-The detection of cosmic gamma-rays with the atmospheric Cherenkov-method is
-limited to ~1000 hours of observation time per year. An atmospheric method based
-on the radio emission of air showers might nine-fold this time because it can
-observe during the day. Here I investigate an imaging radio telescope that
-senses the radio emission of air showers. Its images look similar to those of
-Cherenkov telescopes. I simulate the optics, not using ray tracing, but
-wave mechanics. Such an 'Askaryan telescope' can adopt electronics from
-Cherenkov telescopes. Its mirrors can be made out of wire mesh. The goal of this
-package is to explore the capabilities and practicality of such an
-Askaryan telescope.
+The detection of cosmic gamma rays with the atmospheric Cherenkov method is
+limited to about 1000 hours of dark and clear observation time per year. An
+atmospheric method based on the radio emission of air showers might nine-fold
+this time because it can observe during the bright day. Here we investigate an
+imaging radio telescope that senses the radio emission of air showers to record
+pictures. First simulations indicate that its images look similar to those of
+Cherenkov telescopes. We simulate the optics, not using ray tracing, but wave
+mechanics. Such an 'Askaryan telescope' can adopt electronics from Cherenkov
+telescopes. Its mirrors can be made out of wire mesh. The goal of this package
+is to estimate the response function of such an Askaryan telescope to cosmic
+rays and cosmic gamma rays.
 
 *******
 Install
