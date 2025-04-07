@@ -3,6 +3,17 @@ from . import lownoiseblock
 from . import signal
 
 
+def default_config():
+    """
+    Default config for timing and sampling.
+    """
+    return {
+        "oversampling": 6,
+        "time_window_duration_s": 3.5e-08,
+        "readout_integrates_num_simulation_time_slices": 234,
+    }
+
+
 def make_timing_from_lnb(
     lnb,
     oversampling,

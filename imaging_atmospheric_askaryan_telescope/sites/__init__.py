@@ -6,7 +6,7 @@ import json_utils
 def _get_resources_dir():
     return pkg_resources.resource_filename(
         "imaging_atmospheric_askaryan_telescope",
-        os.path.join("telescopes", "resources"),
+        os.path.join("sites", "resources"),
     )
 
 

@@ -63,8 +63,9 @@ def make_probe_positions(
     sr = outer_radius_m + gs
     x_m = []
     y_m = []
-    for xp_m in np.linspace(-sr, sr, (2 * sr / gs)):
-        for yp_m in np.linspace(-sr, sr, (2 * sr / gs)):
+    _N = int(np.ceil(2 * sr / gs))
+    for xp_m in np.linspace(-sr, sr, _N):
+        for yp_m in np.linspace(-sr, sr, _N):
             xf_m = xp_m + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
             yf_m = yp_m + prng.uniform(low=-gs / 3, high=gs / 3, size=1)
             x_m.append(xf_m)
