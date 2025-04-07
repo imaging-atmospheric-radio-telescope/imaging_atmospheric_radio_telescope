@@ -46,15 +46,12 @@ Enter the python package directory.
 
     cd imaging_atmospheric_askaryan_telescope
 
+Ask the developers of ``CORSIKA`` for the ``username`` and ``password``.
 Download ``corsika-77100.tar.gz`` from KIT and save it in:
 
 .. code-block:: bash
 
     imaging_atmospheric_askaryan_telescope/corsika/__build__/corsika-77100.tar.gz
-
-
-You need to ask the developers of ``CORSIKA`` for the ``username`` and
-``password``.
 
 
 Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_askaryan_telescope`` by
