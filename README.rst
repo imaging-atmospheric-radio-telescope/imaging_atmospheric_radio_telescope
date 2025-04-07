@@ -25,7 +25,14 @@ Askaryan telescope.
 Install
 *******
 
-The python package.
+Clone the python package from GitHub.
+
+.. code-block:: bash
+
+    git clone git@github.com:relleums/imaging_atmospheric_askaryan_telescope.git
+
+
+and install it using ``pip``.
 
 .. code-block:: bash
 
@@ -38,22 +45,11 @@ Enter the python package directory.
 
     cd imaging_atmospheric_askaryan_telescope
 
+Make a ``build`` directory and download ``corsika-77100.tar.gz`` from KIT into
+it. You need to ask the developers of ``CORSIKA`` for the ``username`` and
+``password``.
 
-Download ``CORSIKA-CoREAS`` from KIT.
-You need to ask the developers of CORSIKA for the username and password.
-
-.. code-block:: python
-
-    import imaging_atmospheric_askaryan_telescope as iaat
-
-    iaat.corsika.coreas.install.download(
-        output_dir="build",
-        username="XXX",
-        password="YYY",
-    )
-
-
-Check if it is the exact version we expect.
+Check the version of your download.
 
 .. code-block:: python
 
@@ -61,7 +57,8 @@ Check if it is the exact version we expect.
         corsika_tar_gz_path="build/corsika-77100.tar.gz",
     )
 
-Finally build CORSIKA-CoREAS in the 'build' directory.
+
+Build ``CORSIKA-CoREAS`` in the ``build`` directory.
 
 .. code-block:: python
 
