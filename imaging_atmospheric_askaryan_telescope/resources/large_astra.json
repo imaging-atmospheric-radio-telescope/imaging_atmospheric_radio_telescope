@@ -1,0 +1,22 @@
+{
+    "site_key": "namibia",
+    "lnb_key": "astra_universal",
+    "timing": {
+        "oversampling": 6,
+        "time_window_duration_s": 35e-9,
+        "readout_integrates_num_simulation_time_slices": 234
+    },
+    "mirror": {
+        "random_seed": 0,
+        "focal_length_m": 32.2,
+        "outer_radius_m": 11.5,
+        "inner_radius_m": 1.6,
+        "scatter_center_areal_density_per_m2": 7
+    },
+    "sensor": {
+        "sensor_outer_radius_m": 1.267,
+        "sensor_distance_m": 32.33,
+        "feed_horn_inner_radius_m": 0.042,
+        "feed_horn_transmission": 0.5
+    }
+}
