@@ -1,6 +1,7 @@
 import numpy as np
 import glob
 import os
+from . import antenna_list
 
 DEFAULT_TIME_BOUNDARIES = {
     "automatic_time_boundaries_s": 4e-07,
@@ -64,27 +65,6 @@ def make_steering_card(
     sc += "input parameters for the simulation:\n"
     sc += "\n"
     return sc
-
-
-def make_antenna_list(positions_asl_m, prefix=""):
-    """
-    Parameters
-    ----------
-    positions_asl_m : array
-        Positions of antennas above sea level (asl).
-    """
-    template_line = "AntennaPosition = {x:2f}\t{y:2f}\t{z:2f}\t "
-    template_line += "{prefix:s}{antenna_idx:06d}\n"
-    antenna_list = ""
-    for i in range(positions_asl_m.shape[0]):
-        antenna_list += template_line.format(
-            x=positions_asl_m[i, 0] * 1e2,
-            y=positions_asl_m[i, 1] * 1e2,
-            z=positions_asl_m[i, 2] * 1e2,
-            prefix=prefix,
-            antenna_idx=i,
-        )
-    return antenna_list
 
 
 COREAS_TIME = 0

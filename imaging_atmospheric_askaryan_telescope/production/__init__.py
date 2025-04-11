@@ -95,7 +95,7 @@ def simulate_mirror_electric_fields_manual(
 
         with open(tmp_coreas_antenna_list_path, "wt") as fout:
             fout.write(
-                corsika.coreas.make_antenna_list(
+                corsika.coreas.antenna_list.dumps(
                     positions_asl_m=antenna_positions_asl_m
                 )
             )
