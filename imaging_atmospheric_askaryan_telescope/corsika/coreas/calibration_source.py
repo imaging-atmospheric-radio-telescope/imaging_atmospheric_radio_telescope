@@ -242,22 +242,24 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
     # zeros before s_up
     # -----------------
     for s in np.arange(0, s_up):
-        A[s] = 0.0
+        if s < N:
+            A[s] = 0.0
 
     # ramp up
     # -------
     N_ramp_up = s_sine - s_up
     for s in np.arange(s_up, s_sine):
         weight = (s - s_up) / N_ramp_up
-        A[s] = A[s] * weight
+        if s < N:
+            A[s] = A[s] * weight
 
     # the sine itself
     # ---------------
     N_ramp_down = s_end - s_down
     for s in np.arange(s_down, s_end):
         weight = 1.0 - ((s - s_down) / N_ramp_down)
-        # print(weight)
-        A[s] = A[s] * weight
+        if s < N:
+            A[s] = A[s] * weight
 
     # zeros after end
     # ---------------
