@@ -27,19 +27,19 @@ def assert_make_sine_wave_with_ramp_up_and_down(A, args):
         t_start_of_ramp_down_s + args["emission_ramp_down_duration_s"]
     )
 
-    s_start_of_ramp_up = calibration_source.to_time_slice(
+    s_start_of_ramp_up = calibration_source.time_to_slice(
         t_start_of_ramp_up_s, args["time_slice_duration_s"]
     )
-    s_start_of_emission = calibration_source.to_time_slice(
+    s_start_of_emission = calibration_source.time_to_slice(
         t_start_of_emission_s, args["time_slice_duration_s"]
     )
-    s_start_of_ramp_down = calibration_source.to_time_slice(
+    s_start_of_ramp_down = calibration_source.time_to_slice(
         t_start_of_ramp_down_s, args["time_slice_duration_s"]
     )
-    s_end_of_ramp_down = calibration_source.to_time_slice(
+    s_end_of_ramp_down = calibration_source.time_to_slice(
         t_end_of_ramp_down_s, args["time_slice_duration_s"]
     )
-    s_period = calibration_source.to_time_slice(
+    s_period = calibration_source.time_to_slice(
         1.0 / args["emission_frequency_Hz"], args["time_slice_duration_s"]
     )
 
@@ -127,8 +127,15 @@ def test_example():
     assert_make_sine_wave_with_ramp_up_and_down(A=A, args=args)
 
 
-def test_ramp_up_behind_last_time_slice():
+def test_ramp_up_is_behind_last_time_slice():
     args = make_example_args()
     args["emission_start_time_s"] = 2.0
+    A = calibration_source.make_sine_wave_with_ramp_up_and_ramp_down(**args)
+    assert_make_sine_wave_with_ramp_up_and_down(A=A, args=args)
+
+
+def test_end_of_ramp_down_is_before_first_time_slice():
+    args = make_example_args()
+    args["emission_start_time_s"] = -2.0
     A = calibration_source.make_sine_wave_with_ramp_up_and_ramp_down(**args)
     assert_make_sine_wave_with_ramp_up_and_down(A=A, args=args)

@@ -204,7 +204,7 @@ def plane_wave(
     return E
 
 
-def to_time_slice(t, dt):
+def time_to_slice(t, dt):
     return int(np.round(t / dt))
 
 
@@ -227,10 +227,10 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
 
     # in slices
 
-    s_up = to_time_slice(t=t_up, dt=dt)
-    s_sine = to_time_slice(t=t_sine, dt=dt)
-    s_down = to_time_slice(t=t_down, dt=dt)
-    s_end = to_time_slice(t=t_end, dt=dt)
+    s_up = time_to_slice(t=t_up, dt=dt)
+    s_sine = time_to_slice(t=t_sine, dt=dt)
+    s_down = time_to_slice(t=t_down, dt=dt)
+    s_end = time_to_slice(t=t_end, dt=dt)
 
     TAU = 2.0 * np.pi
 
@@ -242,7 +242,7 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
     # zeros before s_up
     # -----------------
     for s in np.arange(0, s_up):
-        if s < N:
+        if 0 <= s < N:
             A[s] = 0.0
 
     # ramp up
@@ -250,7 +250,7 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
     N_ramp_up = s_sine - s_up
     for s in np.arange(s_up, s_sine):
         weight = (s - s_up) / N_ramp_up
-        if s < N:
+        if 0 <= s < N:
             A[s] = A[s] * weight
 
     # the sine itself
@@ -258,12 +258,13 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
     N_ramp_down = s_end - s_down
     for s in np.arange(s_down, s_end):
         weight = 1.0 - ((s - s_down) / N_ramp_down)
-        if s < N:
+        if 0 <= s < N:
             A[s] = A[s] * weight
 
     # zeros after end
     # ---------------
     for s in np.arange(s_end, N):
-        A[s] = 0.0
+        if 0 <= s < N:
+            A[s] = 0.0
 
     return A
