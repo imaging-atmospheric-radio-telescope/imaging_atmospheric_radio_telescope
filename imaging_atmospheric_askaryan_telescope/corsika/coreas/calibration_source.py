@@ -241,7 +241,7 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
 
     # zeros before s_up
     # -----------------
-    for s in np.arange(0, s_up):
+    for s in np.arange(0, min([N, s_up])):
         if 0 <= s < N:
             A[s] = 0.0
 
