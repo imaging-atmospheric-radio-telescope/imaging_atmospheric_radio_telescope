@@ -1,6 +1,7 @@
 import numpy as np
 import glob
 import os
+from . import calibration_source
 from . import antenna_list
 
 DEFAULT_TIME_BOUNDARIES = {
