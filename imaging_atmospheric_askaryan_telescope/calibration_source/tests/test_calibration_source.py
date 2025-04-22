@@ -1,4 +1,4 @@
-from imaging_atmospheric_askaryan_telescope.corsika.coreas import (
+from imaging_atmospheric_askaryan_telescope import (
     calibration_source,
 )
 import numpy as np

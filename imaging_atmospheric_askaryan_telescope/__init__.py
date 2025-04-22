@@ -10,6 +10,8 @@ from . import electric_fields
 from . import lownoiseblock
 from . import theory
 from . import utils
+from . import calibration_source
+
 
 import os
 import rename_after_writing as rnw

@@ -1,7 +1,6 @@
 import numpy as np
 import glob
 import os
-from . import calibration_source
 from . import antenna_list
 from . import raw_electric_fields
 

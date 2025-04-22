@@ -10,7 +10,7 @@ from .. import telescope as simtelescope
 from .. import electric_fields
 from .. import timing_and_sampling
 from .. import corsika
-from ..corsika.coreas import calibration_source
+from .. import calibration_source
 
 
 def simulate_mirror_electric_fields_manual_calibration_source(

@@ -2,8 +2,8 @@ import numpy as np
 import copy
 import homogeneous_transformation as homtra
 
-from .... import electric_fields
-from .... import signal
+from .. import electric_fields
+from .. import signal
 from . import sine_wave_ramp
 
 
