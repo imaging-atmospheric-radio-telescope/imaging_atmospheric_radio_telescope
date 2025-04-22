@@ -3,6 +3,8 @@ import glob
 import os
 from . import calibration_source
 from . import antenna_list
+from . import raw_electric_fields
+
 
 DEFAULT_TIME_BOUNDARIES = {
     "automatic_time_boundaries_s": 4e-07,
@@ -66,88 +68,3 @@ def make_steering_card(
     sc += "input parameters for the simulation:\n"
     sc += "\n"
     return sc
-
-
-COREAS_TIME = 0
-COREAS_NORTH_COMPONENT = 1
-COREAS_WEST_COMPONENT = 2
-COREAS_VERTICAL_COMPONENT = 3
-
-
-def estimate_time_slice_duration_s(raw_antenna_time_series):
-    return np.gradient(raw_antenna_time_series[0, :, 0]).mean()
-
-
-def assert_same_time_slice_duration(
-    raw_antenna_time_series, time_slice_duration
-):
-    for antenna in range(raw_antenna_time_series.shape[0]):
-        time_slice_duration_this_antenna = np.gradient(
-            raw_antenna_time_series[antenna, :, 0]
-        )
-        valid = (
-            np.abs(time_slice_duration_this_antenna - time_slice_duration)
-            < time_slice_duration / 10
-        )
-        assert np.all(valid)
-    return time_slice_duration
-
-
-def time_series_paths_in_numerical_order(path):
-    all_time_series_paths = glob.glob(os.path.join(path, "raw_*.dat"))
-    antenna_indices = []
-    for time_series_path in all_time_series_paths:
-        basename = os.path.basename(time_series_path)
-        antenna_index = int(basename[4:10])
-        antenna_indices.append(antenna_index)
-    antenna_indices = np.array(antenna_indices)
-    order = np.argsort(antenna_indices)
-    all_time_series_paths = [all_time_series_paths[i] for i in order]
-    return all_time_series_paths
-
-
-# https://www.unitconverters.net/electric-field-strength/statvolt-centimeter-to-volt-meter.htm
-CGS_statVolt_per_cm_to_SI_Volt_per_meter = 2.99792458e4
-
-
-def read_raw_electric_fields(path):
-    """
-    Returns raw antenna responses in SI units (Volt/Meter).
-    """
-    all_time_series_paths = time_series_paths_in_numerical_order(path)
-    antenna_responses = []
-    CGS_to_SI = CGS_statVolt_per_cm_to_SI_Volt_per_meter
-    for time_series_path in all_time_series_paths:
-        raw = np.genfromtxt(time_series_path, dtype=np.float64)
-        raw[:, COREAS_NORTH_COMPONENT] *= CGS_to_SI
-        raw[:, COREAS_WEST_COMPONENT] *= CGS_to_SI
-        raw[:, COREAS_VERTICAL_COMPONENT] *= CGS_to_SI
-        antenna_responses.append(raw)
-    return np.array(antenna_responses)
-
-
-def make_electric_fields(raw_electric_fields):
-    """
-    Read time dependent electric field on reflector dish from event simulated
-    at PATH. Returns dict containing all three components of the electric
-    field and timing information. Electric Field will be returned in SI units.
-    """
-    raw = raw_electric_fields
-    time_slice_duration_s = estimate_time_slice_duration_s(raw)
-    assert_same_time_slice_duration(raw, time_slice_duration_s)
-
-    global_start_time_s = raw[:, :, COREAS_TIME].min()
-
-    start_time_offsets_s = raw[:, 0, COREAS_TIME] - global_start_time_s
-    start_slice_offsets_s = np.round(
-        start_time_offsets_s / time_slice_duration_s
-    ).astype(np.int64)
-    assert np.all(start_slice_offsets_s == 0)
-
-    return {
-        "time_slice_duration_s": time_slice_duration_s,
-        "num_time_slices": raw.shape[1],
-        "num_antennas": raw.shape[0],
-        "electric_fields_V_per_m": raw[:, :, 1:4].astype(np.float32),
-        "global_start_time_s": global_start_time_s,
-    }

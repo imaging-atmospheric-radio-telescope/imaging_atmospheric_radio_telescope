@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from .utils import tarstream
+from . import corsika
 
 
 def init(
@@ -22,6 +23,144 @@ def init(
         dtype=np.float32,
     )
     return out
+
+
+def init_random(seed):
+    prng = prng = np.random.Generator(np.random.PCG64(seed))
+
+    E = init(
+        time_slice_duration_s=prng.uniform(low=1e-9, high=1e-6),
+        num_time_slices=prng.integers(low=100, high=1_000),
+        num_antennas=prng.integers(low=10, high=1_000),
+        global_start_time_s=prng.uniform(low=-5e-6, high=5e-6),
+    )
+    E["electric_fields_V_per_m"] = (
+        prng.uniform(
+            low=-1.0,
+            high=1.0,
+            size=np.prod(E["electric_fields_V_per_m"].shape),
+        )
+        .reshape(E["electric_fields_V_per_m"].shape)
+        .astype(np.float32)
+    )
+
+    return E
+
+
+def assert_valid(electric_fields):
+    E = electric_fields
+    assert not np.isnan(E["global_start_time_s"])
+    assert E["time_slice_duration_s"] > 0.0
+    assert E["num_time_slices"] >= 0
+    assert E["num_antennas"] >= 0
+    assert E["electric_fields_V_per_m"].shape[0] == E["num_antennas"]
+    assert E["electric_fields_V_per_m"].shape[1] == E["num_time_slices"]
+    assert E["electric_fields_V_per_m"].shape[2] == 3
+
+
+def assert_almost_equal(actual, desired, **kwargs):
+    assert_valid(actual)
+    assert_valid(desired)
+
+    np.testing.assert_almost_equal(
+        actual=actual["global_start_time_s"],
+        desired=desired["global_start_time_s"],
+        **kwargs,
+    )
+    np.testing.assert_almost_equal(
+        actual=actual["time_slice_duration_s"],
+        desired=desired["time_slice_duration_s"],
+        **kwargs,
+    )
+    assert actual["num_time_slices"] == desired["num_time_slices"]
+    assert actual["num_antennas"] == desired["num_antennas"]
+    np.testing.assert_almost_equal(
+        actual=actual["electric_fields_V_per_m"],
+        desired=desired["electric_fields_V_per_m"],
+        **kwargs,
+    )
+
+
+def init_from_raw_electric_fields(raw_electric_fields):
+    raw = raw_electric_fields
+    time_slice_duration_s = (
+        corsika.coreas.raw_electric_fields.estimate_time_slice_duration_s(
+            raw_electric_fields=raw
+        )
+    )
+    corsika.coreas.raw_electric_fields.assert_same_time_slice_duration(
+        raw_electric_fields=raw,
+        time_slice_duration_s=time_slice_duration_s,
+    )
+    num_antennas = len(raw)
+    num_time_slices = raw[0].shape[0]
+
+    global_start_time_s = np.min(
+        [raw[a]["time_s"] for a in range(num_antennas)]
+    )
+
+    start_time_offsets_s = np.array(
+        [
+            raw[a]["time_s"][0] - global_start_time_s
+            for a in range(num_antennas)
+        ]
+    )
+
+    start_slice_offsets_s = np.round(
+        start_time_offsets_s / time_slice_duration_s
+    ).astype(np.int64)
+    assert np.all(start_slice_offsets_s == 0)
+
+    E_V_per_m = np.zeros(
+        shape=(num_antennas, num_time_slices, 3),
+        dtype=np.float32,
+    )
+
+    CGS_TO_SI = (
+        corsika.coreas.raw_electric_fields.CGS_statVolt_per_cm_to_SI_Volt_per_meter
+    )
+    for a in range(num_antennas):
+        E_V_per_m[a, :, 0] = raw[a]["E_north_statVolt_per_cm"] * CGS_TO_SI
+        E_V_per_m[a, :, 1] = raw[a]["E_west_statVolt_per_cm"] * CGS_TO_SI
+        E_V_per_m[a, :, 2] = raw[a]["E_vertical_statVolt_per_cm"] * CGS_TO_SI
+
+    return {
+        "time_slice_duration_s": time_slice_duration_s,
+        "num_time_slices": num_time_slices,
+        "num_antennas": num_antennas,
+        "electric_fields_V_per_m": E_V_per_m,
+        "global_start_time_s": global_start_time_s,
+    }
+
+
+def to_raw_electric_fields(electric_fields):
+    ef = electric_fields
+    raw = corsika.coreas.raw_electric_fields.init(
+        num_antennas=ef["num_antennas"],
+        num_time_slices=ef["num_time_slices"],
+    )
+    CGS_TO_SI = (
+        corsika.coreas.raw_electric_fields.CGS_statVolt_per_cm_to_SI_Volt_per_meter
+    )
+
+    for a in range(ef["num_antennas"]):
+        raw[a]["time_s"] = ef["global_start_time_s"] + np.linspace(
+            0,
+            ef["time_slice_duration_s"] * ef["num_time_slices"],
+            ef["num_time_slices"],
+        )
+
+        raw[a]["E_north_statVolt_per_cm"] = (
+            ef["electric_fields_V_per_m"][a, :, 0] / CGS_TO_SI
+        )
+        raw[a]["E_west_statVolt_per_cm"] = (
+            ef["electric_fields_V_per_m"][a, :, 1] / CGS_TO_SI
+        )
+        raw[a]["E_vertical_statVolt_per_cm"] = (
+            ef["electric_fields_V_per_m"][a, :, 2] / CGS_TO_SI
+        )
+
+    return raw
 
 
 def write(path, electric_fields):
