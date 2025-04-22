@@ -10,6 +10,50 @@ from .. import telescope as simtelescope
 from .. import electric_fields
 from .. import timing_and_sampling
 from .. import corsika
+from ..corsika.coreas import calibration_source
+
+
+def simulate_mirror_electric_fields_manual_calibration_source(
+    out_dir,
+    event_id,
+    time_slice_duration_s,
+    antenna_positions_obslvl_m,
+    observation_level_asl_m,
+):
+    antenna_path = os.path.join(out_dir, "electric_fields.tar")
+
+    geometry = calibration_source.plane_wave_in_far_field.make_geometry(
+        azimuth_rad,
+        zenith_rad,
+        polarization_angle_rad,
+        distance_to_plane_defining_time_zero_m,
+        core_position_vector_in_asl_frame_m,
+        antenna_position_vectors_in_asl_frame_m,
+    )
+
+    power = calibration_source.plane_wave_in_far_field.make_power(
+        power_of_isotrop_and_point_like_emitter_W,
+        distance_to_isotrop_and_point_like_emitter_m,
+    )
+
+    sine_wave = calibration_source.plane_wave_in_far_field.make_sine_wave()
+
+    antenna_positions_asl_m = antenna_positions_obslvl_m.copy()
+    antenna_positions_asl_m[:, 2] += observation_level_asl_m
+
+    unified_electric_field = (
+        calibration_source.plane_wave_in_far_field.plane_wave_in_far_field(
+            geometry=geometry,
+            power=power,
+            sine_wave=sine_wave,
+            antenna_positions_asl_m=antenna_positions_asl_m,
+            time_slice_duration_s=time_slice_duration_s,
+        )
+    )
+
+    electric_field.write_tar(
+        path=antenna_path, electric_fields=unified_electric_field
+    )
 
 
 def simulate_mirror_electric_fields_manual(

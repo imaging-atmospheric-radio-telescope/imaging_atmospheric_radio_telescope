@@ -26,7 +26,7 @@ def make_example_args():
 
 def test_distance_between_plane_and_point():
     for z in np.linspace(-5, 6, 101):
-        d = calibration_source.geometry.distance_between_plane_and_point(
+        d = calibration_source.plane_wave_in_far_field.distance_between_plane_and_point(
             plane_support_vector=[0, 0, z],
             plane_normal_vector=[0, 0, 1],
             point=[0, 0, 0],
@@ -35,7 +35,7 @@ def test_distance_between_plane_and_point():
 
 
 def test_geometry_most_simple_case():
-    geom = calibration_source.geometry._make_geometry(
+    geom = calibration_source.plane_wave_in_far_field.make_geometry(
         azimuth_rad=0.0,
         zenith_rad=0.0,
         polarization_angle_rad=0.0,
