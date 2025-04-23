@@ -1,3 +1,5 @@
+import numpy as np
+
 from . import coreas
 from . import build
 
@@ -9,18 +11,17 @@ def make_steering_card(
     unique_identifier,
     primary_particle_key,
     energy_GeV,
-    zenith_distance_deg,
-    azimuth_deg,
+    zenith_rad,
+    azimuth_rad,
     observation_level_asl_m,
     earth_magnetic_field_x_muT,
     earth_magnetic_field_z_muT,
 ):
-    zd_deg = zenith_distance_deg
-    az_deg = azimuth_deg
     obs_level_asl_cm = observation_level_asl_m * 1e2
     primary_particle_id = particle_key_to_corsika_id(
         particle_key=primary_particle_key
     )
+    r2d = np.rad2deg
 
     sc = "RUNNR {:d}\n".format(unique_identifier)
     sc += "EVTNR {:d}\n".format(1)
@@ -31,8 +32,8 @@ def make_steering_card(
 
     sc += "ERANGE {:.3E} {:.3E}\n".format(energy_GeV, energy_GeV)
     sc += "ESLOPE 0\n"
-    sc += "THETAP {:.3E} {:.3E}\n".format(zenith_distance_deg, zd_deg)
-    sc += "PHIP {:.3E} {:.3E}\n".format(az_deg, az_deg)
+    sc += "THETAP {:.3E} {:.3E}\n".format(r2d(zenith_rad), r2d(zenith_rad))
+    sc += "PHIP {:.3E} {:.3E}\n".format(r2d(azimuth_rad), r2d(azimuth_rad))
 
     sc += "ECUTS 3.000E-01 3.000E-01 4.010E-04 4.010E-04\n"
     sc += "ELMFLG T T\n"

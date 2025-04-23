@@ -11,8 +11,8 @@ def test_simulate_mirror_electric_fields_manual():
     primary_particle = {
         "key": "gamma",
         "energy_GeV": 25.0,
-        "azimuth_deg": 30,
-        "zenith_distance_deg": 25,
+        "azimuth_rad": np.deg2rad(30),
+        "zenith_rad": np.deg2rad(25),
         "core_north_m": 50.0,
         "core_west_m": 20.0,
     }
@@ -26,7 +26,7 @@ def test_simulate_mirror_electric_fields_manual():
     }
 
     with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:
-        iaat.production.simulate_mirror_electric_fields_manual(
+        iaat.production.radio_from_airshower._simulate_mirror_electric_fields_manual(
             out_dir=tmp,
             event_id=event_id,
             primary_particle=primary_particle,
