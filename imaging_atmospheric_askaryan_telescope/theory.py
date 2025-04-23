@@ -7,6 +7,25 @@ def allan_formula(
     zenith_distance_rad=np.deg2rad(30),
     geomagnetic_angle_rad=np.deg2rad(30),
 ):
+    """
+    Allans formula returns the expected electric field strngth per bandwith
+    induced by an airshower.
+
+    Parameters
+    ----------
+    energy_GeV : float
+        Primary particle's energy.
+    axis_distance_m : float
+        Distance of observer to shower axis.
+    zenith_distance_rad : float
+        Zenith diastance of shower axis.
+    geomagnetic_angle_rad : float
+
+    Returns
+    -------
+    field_uV_per_m_per_MHz : float
+
+    """
     R0 = 100.0
 
     energy_EeV = 1e-6 * energy_GeV
@@ -21,5 +40,23 @@ def allan_formula(
 
 
 def airy_angle(mirror_diameter, wavelength):
+    """
+    Airy's angle is the best possible angular resolution possible with a disk
+    like aperture.
+
+    Parameters
+    ----------
+    mirror_diameter : float
+        Diameter of aperture.
+    wavelength : float
+
+    Returns
+    -------
+    theta : float
+        Airy's angle in rad.
+    """
+    assert mirror_diameter > 0
+    assert wavelength > 0
+
     theta = np.arcsin(1.22 * wavelength / mirror_diameter)
     return theta
