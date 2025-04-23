@@ -2,6 +2,19 @@ import numpy as np
 
 
 def time_to_slice(t, dt):
+    """
+    Parameters
+    ----------
+    t : float
+        Time.
+    dt : float
+        Time slice duration.
+
+    Returns
+    -------
+    slice : int
+    """
+    assert dt > 0.0
     return int(np.round(t / dt))
 
 
@@ -75,23 +88,24 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
     dt = time_slice_duration_s
 
     # in time relative to 'global_start_time_s'
-    t_emission = emission_start_time_s - global_start_time_s
-    t_up = t_emission - emission_ramp_up_duration_s
-    t_down = t_emission + emission_duration_s
+    t_start = emission_start_time_s - global_start_time_s
+    t_up = t_start - emission_ramp_up_duration_s
+    t_down = t_start + emission_duration_s
     t_end = t_down + emission_ramp_down_duration_s
 
     # in slices
     s_up = time_to_slice(t=t_up, dt=dt)
-    s_sine = time_to_slice(t=t_emission, dt=dt)
+    s_start = time_to_slice(t=t_start, dt=dt)
     s_down = time_to_slice(t=t_down, dt=dt)
     s_end = time_to_slice(t=t_end, dt=dt)
 
     TAU = 2.0 * np.pi
 
-    A = np.zeros(N, dtype=float)
+    # init the time 't'
     t = np.linspace(0.0, N * dt, N, endpoint=False)
     t += global_start_time_s
 
+    # init the amplitude 'A'
     A = np.sin((t - emission_start_time_s) * emission_frequency_Hz * TAU)
 
     # zeros before s_up
@@ -102,22 +116,22 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
 
     # ramp up
     # -------
-    N_ramp_up = s_sine - s_up
-    for s in np.arange(s_up, s_sine):
+    N_ramp_up = s_start - s_up
+    for s in np.arange(s_up, s_start):
         weight = (s - s_up) / N_ramp_up
         if 0 <= s < N:
             A[s] = A[s] * weight
 
-    # the sine itself
-    # ---------------
+    # ramp down
+    # ---------
     N_ramp_down = s_end - s_down
     for s in np.arange(s_down, s_end):
         weight = 1.0 - ((s - s_down) / N_ramp_down)
         if 0 <= s < N:
             A[s] = A[s] * weight
 
-    # zeros after end
-    # ---------------
+    # zeros after s_end
+    # -----------------
     for s in np.arange(s_end, N):
         if 0 <= s < N:
             A[s] = 0.0
