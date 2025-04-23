@@ -290,6 +290,18 @@ def make_time_bin_edges(electric_fields, global_time=True):
     return time_bin_edges
 
 
+def make_time_bin_centers(electric_fields, global_time=True):
+    ef = electric_fields
+    tt = np.linspace(
+        0,
+        (ef["num_time_slices"] - 1) * ef["time_slice_duration_s"],
+        ef["num_time_slices"],
+    )
+    if global_time:
+        tt += ef["global_start_time_s"]
+    return tt
+
+
 def make_antenna_bin_edges(electric_fields):
     N = electric_fields["num_antennas"]
     return np.linspace(0.0, N, N + 1) - 0.5
@@ -321,12 +333,72 @@ def estimate_time_of_first_non_zero_amplitudes(electric_fields):
     first_slices = []
     for ant in range(e["num_antennas"]):
         for dim in range(3):
-            first_slice = np.min(
-                np.nonzero(e["electric_fields_V_per_m"][ant, :, dim])
-            )
-            first_slices.append(first_slice)
+            _nonzero = np.nonzero(e["electric_fields_V_per_m"][ant, :, dim])[0]
+            if len(_nonzero) > 0:
+                first_slice = np.min(_nonzero)
+                first_slices.append(first_slice)
 
-    start_slice = np.median(first_slices)
-    start_time_relative = start_slice * e["time_slice_duration_s"]
-    start_time_s = start_time_relative + e["global_start_time_s"]
-    return start_time_s
+    if len(first_slices) == 0:
+        return float("nan")
+    else:
+        start_slice = np.median(first_slices)
+        start_time_relative = start_slice * e["time_slice_duration_s"]
+        start_time_s = start_time_relative + e["global_start_time_s"]
+        return start_time_s
+
+
+def print_amplitudes(
+    electric_fields, num_samples_to_be_integrated=20, antennas=None
+):
+    """
+    Print the electric field amplitudes with a bar graph
+
+    Parameters
+    ----------
+    electric_field : dict
+
+    num_samples_to_be_integrated : int
+        To not print all time slices, we integrate over this many.
+    antennas : array like (default: None)
+        List of antenna indices to be printed. If None, all antennas will
+        be printed.
+    """
+    N = num_samples_to_be_integrated
+    E = electric_fields
+    if antennas is None:
+        antennas = np.arange(0, E["num_antennas"])
+
+    MM = []
+    TT = []
+    for b in range(E["num_time_slices"] // N):
+        s_start = b * N
+        TT.append(s_start * E["time_slice_duration_s"])
+
+    for a in antennas:
+        e = np.linalg.norm(E["electric_fields_V_per_m"][a], axis=1)
+        emax = np.max(e)
+        mm = []
+        for b in range(E["num_time_slices"] // N):
+            s_start = b * N
+            s_stop = s_start + N
+            m = np.mean(e[s_start:s_stop]) / emax
+            mm.append(m)
+        MM.append(mm)
+    MM = np.array(MM)
+
+    head = "time/ns "
+    for a in antennas:
+        head += f"{a: 10d} "
+    print(head)
+
+    for t in range(len(TT)):
+        line = f"{TT[t]*1e9: 7.1f} "
+        for a in antennas:
+            nn = int(MM[a][t] * 10)
+            for i in range(10):
+                if i < nn:
+                    line += "|"
+                else:
+                    line += "."
+            line += " "
+        print(line)

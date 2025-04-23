@@ -1,9 +1,4 @@
-from imaging_atmospheric_askaryan_telescope import (
-    calibration_source,
-)
-from imaging_atmospheric_askaryan_telescope import (
-    signal,
-)
+import imaging_atmospheric_askaryan_telescope as iaat
 import numpy as np
 
 
@@ -29,7 +24,7 @@ def make_example_args():
 
 def test_distance_between_plane_and_point():
     for z in np.linspace(-5, 6, 101):
-        d = calibration_source.plane_wave_in_far_field.distance_between_plane_and_point(
+        d = iaat.calibration_source.plane_wave_in_far_field.distance_between_plane_and_point(
             plane_support_vector=[0, 0, z],
             plane_normal_vector=[0, 0, 1],
             point=[0, 0, 0],
@@ -38,7 +33,7 @@ def test_distance_between_plane_and_point():
 
 
 def test_geometry_setup_most_simple_case():
-    geom = calibration_source.plane_wave_in_far_field.make_geometry_setup(
+    geom = iaat.calibration_source.plane_wave_in_far_field.make_geometry_setup(
         azimuth_rad=0.0,
         zenith_rad=0.0,
         polarization_angle_rad=0.0,
@@ -62,7 +57,7 @@ def test_geometry_setup_most_simple_case():
 
 
 def test_power_setup():
-    pows = calibration_source.plane_wave_in_far_field.make_power_setup(
+    pows = iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
         power_of_isotrop_and_point_like_emitter_W=3.0,
         distance_to_isotrop_and_point_like_emitter_m=100.0,
     )
@@ -70,30 +65,79 @@ def test_power_setup():
         4 * np.pi * 100**2
     )
     assert pows["electric_field_amplitue_V_per_m"] == np.sqrt(
-        pows["pointing_vector_magnitude_W_per_m2"] * signal.VACUUM_IMPEDANCE
+        pows["pointing_vector_magnitude_W_per_m2"]
+        * iaat.signal.VACUUM_IMPEDANCE
     )
 
 
 def test_plane_wave():
-    frequency_astra_Hz = 9.75e9
+    pwiff = iaat.calibration_source.plane_wave_in_far_field
+
+    # setup
+    # -----
+
+    plane_wave_frequency_Hz = 9.75e9
+    plane_wave_wavelength_m = (
+        iaat.signal.SPEED_OF_LIGHT / plane_wave_frequency_Hz
+    )
     oversampling = 6.0
-    time_slice_duration_s = 1.0 / (oversampling * frequency_astra_Hz)
+    time_slice_duration_s = 1.0 / (oversampling * plane_wave_frequency_Hz)
 
-    c = calibration_source.plane_wave_in_far_field.make_config()
-    c["sine_wave"]["emission_frequency_Hz"] = frequency_astra_Hz
-
-    geometry_setup = (
-        calibration_source.plane_wave_in_far_field.make_geometry_setup(
-            **c["geometry"]
-        )
-    )
-    power_setup = calibration_source.plane_wave_in_far_field.make_power_setup(
-        **c["power"]
+    expected_spatial_resolution_with_given_oversampling_m = (
+        iaat.signal.STANDARD_DEVIATION_OF_RECTANGULAR_FUNCTION
+        * plane_wave_wavelength_m
+        / oversampling
     )
 
-    E = calibration_source.plane_wave_in_far_field.plane_wave_in_far_field(
+    config = pwiff.make_config()
+    config["sine_wave"]["emission_frequency_Hz"] = plane_wave_frequency_Hz
+    config["geometry"]["antenna_position_vectors_in_asl_frame_m"] = [
+        [0, 0, 0],
+        [0, 0, 0.005],
+        [0, 0, 0.010],
+    ]
+
+    geometry_setup = pwiff.make_geometry_setup(**config["geometry"])
+    power_setup = pwiff.make_power_setup(**config["power"])
+
+    # execution
+    # ---------
+
+    E = pwiff.plane_wave_in_far_field(
         geometry_setup=geometry_setup,
         power_setup=power_setup,
-        sine_wave=c["sine_wave"],
+        sine_wave=config["sine_wave"],
         time_slice_duration_s=time_slice_duration_s,
     )
+
+    # testing and asserting
+    # ---------------------
+
+    iaat.electric_fields.assert_valid(E)
+    iaat.electric_fields.print_amplitudes(electric_fields=E)
+
+    # test the phase of the sine wave
+    # -------------------------------
+    time_s = iaat.electric_fields.make_time_bin_centers(E)
+    phase_shifts_rad = []
+    for a in range(E["num_antennas"]):
+        phase_shift_rad = iaat.signal.estimate_phase_angle_of_sine_wave(
+            time_s=time_s,
+            signal=np.linalg.norm(E["electric_fields_V_per_m"][a], axis=1),
+            sine_wave_frequency_Hz=plane_wave_frequency_Hz,
+        )
+        phase_shifts_rad.append(phase_shift_rad)
+    phase_shifts_rad = np.array(phase_shifts_rad)
+
+    phase_shifts_1 = phase_shifts_rad / (2.0 * np.pi)
+    phase_shifts_s = phase_shifts_1 / plane_wave_frequency_Hz
+    phase_shifts_m = phase_shifts_s * iaat.signal.SPEED_OF_LIGHT
+
+    for a in range(E["num_antennas"]):
+        antenna_z_m = config["geometry"][
+            "antenna_position_vectors_in_asl_frame_m"
+        ][a][2]
+        antenna_phase_shift_m = phase_shifts_m[a]
+
+        delta_m = np.abs(antenna_z_m - antenna_phase_shift_m)
+        assert delta_m <= expected_spatial_resolution_with_given_oversampling_m

@@ -2,6 +2,7 @@ import scipy
 from scipy.signal import butter
 from scipy.signal import lfilter
 import numpy as np
+import copy
 
 
 def add_first_to_second_at(first, second, at):
@@ -121,6 +122,7 @@ def butter_bench(
 VACUUM_IMPEDANCE = 120 * np.pi
 SPEED_OF_LIGHT = 299792458.0
 BOLTZMANN_CONSTANT = 1.38e-23
+STANDARD_DEVIATION_OF_RECTANGULAR_FUNCTION = 1.0 / np.sqrt(12.0)
 
 
 def frequency_to_wavelength(frequency, speed_of_light=SPEED_OF_LIGHT):
@@ -215,3 +217,63 @@ def integrate_sliding_window(signal, time_slice_duration, window_num_slices):
     for t in range(signal_num_slices - T):
         out[t] = np.sum(signal[t : t + T]) * time_slice_duration
     return out
+
+
+def correlate_phase_angle_of_sine_wave(
+    time_s,
+    signal,
+    sine_wave_frequency_Hz,
+    phase_angles_rad=np.linspace(-np.pi, np.pi, 100),
+):
+    assert sine_wave_frequency_Hz > 0.0
+
+    TAU = 2.0 * np.pi
+    correlations = []
+    for phase_shift_rad in phase_angles_rad:
+        reference_signal = np.sin(
+            time_s * sine_wave_frequency_Hz * TAU + phase_shift_rad
+        )
+        correlation = np.sum(np.abs(signal * reference_signal))
+        correlations.append(correlation)
+
+    correlations /= np.max(correlations)
+    return np.array(correlations), np.array(phase_angles_rad)
+
+
+def estimate_phase_angle_of_sine_wave(
+    time_s,
+    signal,
+    sine_wave_frequency_Hz,
+    max_num_iterations=10,
+    precision_rad=1e-2,
+):
+    phase_rad = 0.0
+    phase_radius_rad = np.pi
+    num_iterations = 0
+    assert max_num_iterations > 0
+    assert precision_rad > 0
+
+    while True:
+        assert num_iterations <= max_num_iterations
+        num_iterations += 1
+
+        phase_angles_rad = np.linspace(
+            phase_rad - phase_radius_rad, phase_rad + phase_radius_rad, 50
+        )
+
+        correlation, _ = correlate_phase_angle_of_sine_wave(
+            time_s=time_s,
+            signal=signal,
+            sine_wave_frequency_Hz=sine_wave_frequency_Hz,
+            phase_angles_rad=phase_angles_rad,
+        )
+
+        old_phase_rad = copy.copy(phase_rad)
+
+        phase_rad = phase_angles_rad[np.argmax(correlation)]
+        phase_radius_rad *= 0.5
+
+        if np.abs(phase_rad - old_phase_rad) < precision_rad:
+            break
+
+    return phase_rad

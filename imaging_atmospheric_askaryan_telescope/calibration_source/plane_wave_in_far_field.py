@@ -26,7 +26,6 @@ def make_config():
 
     s = {}
     s["emission_frequency_Hz"] = 10e9
-    s["emission_start_time_s"] = 0.0
     s["emission_duration_s"] = 10e-9
     s["emission_ramp_up_duration_s"] = 2e-9
     s["emission_ramp_down_duration_s"] = 2e-9
@@ -215,17 +214,13 @@ def plane_wave_in_far_field(
     power_setup,
     sine_wave,
     time_slice_duration_s,
+    warm_up_duration_s=1e-9,
 ):
+    assert warm_up_duration_s >= 0.0
     geom = geometry_setup
     pows = power_setup
 
     speed_of_light_m_per_s = signal.SPEED_OF_LIGHT
-
-    total_emission_duration_s = (
-        sine_wave["emission_ramp_up_duration_s"]
-        + sine_wave["emission_duration_s"]
-        + sine_wave["emission_ramp_down_duration_s"]
-    )
 
     num_antennas = geom["antenna_position_vectors_in_asl_frame_m"].shape[0]
 
@@ -238,25 +233,37 @@ def plane_wave_in_far_field(
         / speed_of_light_m_per_s
     )
 
-    start_time_of_sampling_s = time_duration_to_reach_closest_antenna_s
+    start_time_of_sampling_s = (
+        time_duration_to_reach_closest_antenna_s
+        - sine_wave["emission_ramp_up_duration_s"]
+        - warm_up_duration_s
+    )
     stop_time_of_sampling_s = (
-        time_duration_to_reach_furthest_antenna_s + total_emission_duration_s
+        time_duration_to_reach_furthest_antenna_s
+        + sine_wave["emission_duration_s"]
+        + sine_wave["emission_ramp_down_duration_s"]
+        + warm_up_duration_s
+    )
+    total_emission_duration_s = (
+        stop_time_of_sampling_s - start_time_of_sampling_s
     )
 
-    time_s = np.arange(
-        start_time_of_sampling_s,
-        stop_time_of_sampling_s,
-        time_slice_duration_s,
+    num_time_slices = int(
+        np.ceil(
+            (stop_time_of_sampling_s - start_time_of_sampling_s)
+            / time_slice_duration_s
+        )
     )
 
     E = electric_fields.init(
         time_slice_duration_s=time_slice_duration_s,
-        num_time_slices=len(time_s),
+        num_time_slices=num_time_slices,
         num_antennas=num_antennas,
         global_start_time_s=start_time_of_sampling_s,
     )
 
     assert 0.99 < np.linalg.norm(geom["E_field_vector_in_asl_frame"]) < 1.01
+    assert pows["electric_field_amplitue_V_per_m"] > 0.0
 
     E_field_vector_in_asl_frame = Nx3_from_stacked_1x3(
         v=geom["E_field_vector_in_asl_frame"],
@@ -269,27 +276,21 @@ def plane_wave_in_far_field(
             / speed_of_light_m_per_s
         )
 
-        global_time_when_wave_reaches_antenna_s = (
-            start_time_of_sampling_s
-            + time_duration_for_wave_to_reach_antenna_s
+        sine_wave_amplitude = sine_wave_ramp.make_sine_wave_with_ramp_up_and_ramp_down(
+            emission_frequency_Hz=sine_wave["emission_frequency_Hz"],
+            emission_start_time_s=time_duration_for_wave_to_reach_antenna_s,
+            emission_duration_s=sine_wave["emission_duration_s"],
+            emission_ramp_up_duration_s=sine_wave[
+                "emission_ramp_up_duration_s"
+            ],
+            emission_ramp_down_duration_s=sine_wave[
+                "emission_ramp_down_duration_s"
+            ],
+            global_start_time_s=E["global_start_time_s"],
+            time_slice_duration_s=E["time_slice_duration_s"],
+            num_time_slices=E["num_time_slices"],
         )
-
-        sine_wave_amplitude = (
-            sine_wave_ramp.make_sine_wave_with_ramp_up_and_ramp_down(
-                emission_frequency_Hz=sine_wave["emission_frequency_Hz"],
-                emission_start_time_s=global_time_when_wave_reaches_antenna_s,
-                emission_duration_s=sine_wave["emission_duration_s"],
-                emission_ramp_up_duration_s=sine_wave[
-                    "emission_ramp_up_duration_s"
-                ],
-                emission_ramp_down_duration_s=sine_wave[
-                    "emission_ramp_down_duration_s"
-                ],
-                global_start_time_s=E["global_start_time_s"],
-                time_slice_duration_s=E["time_slice_duration_s"],
-                num_time_slices=E["num_time_slices"],
-            )
-        )
+        assert not np.all(sine_wave_amplitude == 0)
 
         E["electric_fields_V_per_m"][a] = copy.copy(
             E_field_vector_in_asl_frame
