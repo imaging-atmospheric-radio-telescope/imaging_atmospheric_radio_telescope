@@ -251,6 +251,23 @@ def estimate_phase_angle_of_sine_wave(
     max_num_iterations=10,
     precision_rad=1e-2,
 ):
+    """
+    Estimate the phase angle of a sine wave in 'signal'.
+
+    Parameters
+    ----------
+    time_s : array like
+        Time points where 'signal' is sampled.
+    signal : array like
+        Amplitude of the signal w.r.t. the time 'time_s'.
+    sine_wave_frequency_Hz : float
+        Frequency of the sine wave to look for.
+
+    Returns
+    -------
+    phase_rad : float
+        Estimated phase angle.
+    """
     phase_rad = 0.0
     phase_radius_rad = np.pi
     num_iterations = 0

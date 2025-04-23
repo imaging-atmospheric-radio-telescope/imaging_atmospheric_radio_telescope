@@ -15,7 +15,6 @@ def make_config():
     g["zenith_rad"] = 0.0
     g["polarization_angle_rad"] = 0.0
     g["distance_to_plane_defining_time_zero_m"] = 10e3
-    g["core_position_vector_in_asl_frame_m"] = [0, 0, 0]
     g["antenna_position_vectors_in_asl_frame_m"] = [[0, 0, 0]]
     c["geometry"] = g
 
@@ -123,14 +122,12 @@ def make_geometry_setup(
     zenith_rad,
     polarization_angle_rad,
     distance_to_plane_defining_time_zero_m,
-    core_position_vector_in_asl_frame_m,
     antenna_position_vectors_in_asl_frame_m,
 ):
     assert not np.isnan(azimuth_rad)
     assert not np.isnan(zenith_rad)
     assert not np.isnan(polarization_angle_rad)
     assert not np.isnan(distance_to_plane_defining_time_zero_m)
-    assert has_no_nan(core_position_vector_in_asl_frame_m)
     assert has_no_nan(antenna_position_vectors_in_asl_frame_m)
 
     g = {}
@@ -141,9 +138,6 @@ def make_geometry_setup(
         distance_to_plane_defining_time_zero_m
     )
 
-    g["core_position_vector_in_asl_frame_m"] = np.asarray(
-        core_position_vector_in_asl_frame_m
-    )
     g["antenna_position_vectors_in_asl_frame_m"] = np.asarray(
         antenna_position_vectors_in_asl_frame_m
     )
@@ -176,8 +170,7 @@ def make_geometry_setup(
         g["Pointing_vector_in_asl_frame"]
     )
     g["plane_zero"]["support_vector_in_asl_frame"] = (
-        g["core_position_vector_in_asl_frame_m"]
-        + g["distance_to_plane_defining_time_zero_m"]
+        +g["distance_to_plane_defining_time_zero_m"]
         * g["plane_zero"]["normal_vector_in_asl_frame"]
     )
 

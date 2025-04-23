@@ -16,6 +16,7 @@ from .. import calibration_source
 def simulate_mirror_electric_fields_manual_calibration_source(
     out_dir,
     event_id,
+    plane_wave,
     time_slice_duration_s,
     antenna_positions_obslvl_m,
     observation_level_asl_m,
