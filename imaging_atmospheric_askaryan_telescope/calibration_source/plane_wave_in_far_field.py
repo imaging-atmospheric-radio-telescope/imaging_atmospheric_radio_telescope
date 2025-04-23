@@ -58,6 +58,9 @@ def distance_between_plane_and_point(
 
 
 def has_no_nan(x):
+    """
+    Returns True when array 'x' has no NaNs.
+    """
     return np.all(np.logical_not(np.isnan(x)))
 
 
@@ -96,7 +99,7 @@ def make_civil_transformation(azimuth_rad, zenith_rad, polarization_angle_rad):
     return {"pos": zero, "rot": rot}
 
 
-def make_power(
+def make_power_setup(
     power_of_isotrop_and_point_like_emitter_W,
     distance_to_isotrop_and_point_like_emitter_m,
 ):
@@ -116,7 +119,7 @@ def make_power(
     return p
 
 
-def make_geometry(
+def make_geometry_setup(
     azimuth_rad,
     zenith_rad,
     polarization_angle_rad,
@@ -208,11 +211,14 @@ def make_geometry(
 
 
 def plane_wave_in_far_field(
-    geometry,
-    power,
+    geometry_setup,
+    power_setup,
     sine_wave,
     time_slice_duration_s,
 ):
+    geom = geometry_setup
+    pows = power_setup
+
     speed_of_light_m_per_s = signal.SPEED_OF_LIGHT
 
     total_emission_duration_s = (
@@ -221,14 +227,14 @@ def plane_wave_in_far_field(
         + sine_wave["emission_ramp_down_duration_s"]
     )
 
-    num_antennas = geometry["antenna_position_vectors_in_asl_frame_m"].shape[0]
+    num_antennas = geom["antenna_position_vectors_in_asl_frame_m"].shape[0]
 
     time_duration_to_reach_closest_antenna_s = (
-        geometry["min_antenna_distance_to_plane_defining_time_zero_m"]
+        geom["min_antenna_distance_to_plane_defining_time_zero_m"]
         / speed_of_light_m_per_s
     )
     time_duration_to_reach_furthest_antenna_s = (
-        geometry["max_antenna_distance_to_plane_defining_time_zero_m"]
+        geom["max_antenna_distance_to_plane_defining_time_zero_m"]
         / speed_of_light_m_per_s
     )
 
@@ -250,20 +256,16 @@ def plane_wave_in_far_field(
         global_start_time_s=start_time_of_sampling_s,
     )
 
-    E_field_vector_in_asl_frame = np.zeros(shape=(E["num_time_slices"], 3))
-    E_field_vector_in_asl_frame[:, 0] = geometry[
-        "E_field_vector_in_asl_frame"
-    ][0]
-    E_field_vector_in_asl_frame[:, 1] = geometry[
-        "E_field_vector_in_asl_frame"
-    ][1]
-    E_field_vector_in_asl_frame[:, 2] = geometry[
-        "E_field_vector_in_asl_frame"
-    ][2]
+    assert 0.99 < np.linalg.norm(geom["E_field_vector_in_asl_frame"]) < 1.01
+
+    E_field_vector_in_asl_frame = Nx3_from_stacked_1x3(
+        v=geom["E_field_vector_in_asl_frame"],
+        size=E["num_time_slices"],
+    )
 
     for a in range(num_antennas):
         time_duration_for_wave_to_reach_antenna_s = (
-            geometry["antenna_distances_to_plane_defining_time_zero_m"][a]
+            geom["antenna_distances_to_plane_defining_time_zero_m"][a]
             / speed_of_light_m_per_s
         )
 
@@ -292,12 +294,36 @@ def plane_wave_in_far_field(
         E["electric_fields_V_per_m"][a] = copy.copy(
             E_field_vector_in_asl_frame
         )
-        _s = sine_wave_amplitude
-        E["electric_fields_V_per_m"][a] *= np.c_[_s, _s, _s]
-        _p = (
-            np.ones(E["num_time_slices"])
-            * power["electric_field_amplitue_V_per_m"]
+        E["electric_fields_V_per_m"][a] = Nx3_multiply_elementwise_Nx1(
+            nx3=E["electric_fields_V_per_m"][a],
+            nx1=sine_wave_amplitude,
         )
-        E["electric_fields_V_per_m"][a] *= np.c_[_p, _p, _p]
+        E["electric_fields_V_per_m"][a] = Nx3_multiply_elementwise_scalar(
+            nx3=E["electric_fields_V_per_m"][a],
+            scalar=pows["electric_field_amplitue_V_per_m"],
+        )
 
     return E
+
+
+def Nx3_from_stacked_1x3(v, size):
+    assert len(v) == 3
+    A = np.zeros(shape=(size, 3))
+    A[:, 0] = v[0]
+    A[:, 1] = v[1]
+    A[:, 2] = v[2]
+    return A
+
+
+def Nx3_multiply_elementwise_Nx1(nx3, nx1):
+    assert len(nx3.shape) == 2
+    assert nx3.shape[1] == 3
+    assert nx3.shape[0] == len(nx1)
+    return nx3 * np.c_[nx1, nx1, nx1]
+
+
+def Nx3_multiply_elementwise_scalar(nx3, scalar):
+    assert len(nx3.shape) == 2
+    assert nx3.shape[1] == 3
+    _tmp_nx3 = scalar * np.ones(shape=nx3.shape)
+    return nx3 * _tmp_nx3

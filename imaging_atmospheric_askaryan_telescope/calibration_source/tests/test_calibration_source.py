@@ -1,6 +1,9 @@
 from imaging_atmospheric_askaryan_telescope import (
     calibration_source,
 )
+from imaging_atmospheric_askaryan_telescope import (
+    signal,
+)
 import numpy as np
 
 
@@ -34,8 +37,8 @@ def test_distance_between_plane_and_point():
         np.testing.assert_almost_equal(actual=d, desired=np.abs(z))
 
 
-def test_geometry_most_simple_case():
-    geom = calibration_source.plane_wave_in_far_field.make_geometry(
+def test_geometry_setup_most_simple_case():
+    geom = calibration_source.plane_wave_in_far_field.make_geometry_setup(
         azimuth_rad=0.0,
         zenith_rad=0.0,
         polarization_angle_rad=0.0,
@@ -55,4 +58,17 @@ def test_geometry_most_simple_case():
     np.testing.assert_almost_equal(
         actual=geom["antenna_distances_to_plane_defining_time_zero_m"],
         desired=1_000,
+    )
+
+
+def test_power_setup():
+    pows = calibration_source.plane_wave_in_far_field.make_power_setup(
+        power_of_isotrop_and_point_like_emitter_W=3.0,
+        distance_to_isotrop_and_point_like_emitter_m=100.0,
+    )
+    assert pows["pointing_vector_magnitude_W_per_m2"] == 3 / (
+        4 * np.pi * 100**2
+    )
+    assert pows["electric_field_amplitue_V_per_m"] == np.sqrt(
+        pows["pointing_vector_magnitude_W_per_m2"] * signal.VACUUM_IMPEDANCE
     )
