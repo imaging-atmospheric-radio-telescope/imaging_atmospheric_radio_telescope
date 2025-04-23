@@ -2,6 +2,9 @@ from . import coreas
 from . import build
 
 
+TOP_OF_ATMOSPHERE_ALTITUDE_M = 115e3
+
+
 def make_steering_card(
     unique_identifier,
     primary_particle_key,

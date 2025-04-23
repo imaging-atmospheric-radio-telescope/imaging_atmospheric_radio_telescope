@@ -268,7 +268,7 @@ def estimate_phase_angle_of_sine_wave(
     phase_rad : float
         Estimated phase angle.
     """
-    phase_rad = 0.0
+    phase_rad = np.pi
     phase_radius_rad = np.pi
     num_iterations = 0
     assert max_num_iterations > 0

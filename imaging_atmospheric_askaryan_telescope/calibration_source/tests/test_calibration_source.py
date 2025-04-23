@@ -70,6 +70,9 @@ def test_plane_wave():
 
     config = pwiff.make_config()
     config["sine_wave"]["emission_frequency_Hz"] = plane_wave_frequency_Hz
+    config["geometry"]["distance_to_plane_defining_time_zero_m"] = (
+        1e6 * plane_wave_wavelength_m
+    )
     config["geometry"]["antenna_position_vectors_in_asl_frame_m"] = [
         [0, 0, 0],
         [0, 0, 0.005],
@@ -119,4 +122,5 @@ def test_plane_wave():
         antenna_phase_shift_m = phase_shifts_m[a]
 
         delta_m = np.abs(antenna_z_m - antenna_phase_shift_m)
+        # print(a, f"{antenna_phase_shift_m * 1e3: 5.2f}mm")
         assert delta_m <= expected_spatial_resolution_with_given_oversampling_m
