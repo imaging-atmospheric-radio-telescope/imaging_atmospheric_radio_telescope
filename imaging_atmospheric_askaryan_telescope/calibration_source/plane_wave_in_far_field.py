@@ -15,7 +15,6 @@ def make_config():
     g["zenith_rad"] = 0.0
     g["polarization_angle_rad"] = 0.0
     g["distance_to_plane_defining_time_zero_m"] = 10e3
-    g["antenna_position_vectors_in_asl_frame_m"] = [[0, 0, 0]]
     c["geometry"] = g
 
     p = {}

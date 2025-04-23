@@ -73,13 +73,18 @@ def test_plane_wave():
     config["geometry"]["distance_to_plane_defining_time_zero_m"] = (
         1e6 * plane_wave_wavelength_m
     )
-    config["geometry"]["antenna_position_vectors_in_asl_frame_m"] = [
-        [0, 0, 0],
-        [0, 0, 0.005],
-        [0, 0, 0.010],
-    ]
+    antenna_position_vectors_in_asl_frame_m = np.array(
+        [
+            [0, 0, 0],
+            [0, 0, 0.005],
+            [0, 0, 0.010],
+        ]
+    )
 
-    geometry_setup = pwiff.make_geometry_setup(**config["geometry"])
+    geometry_setup = pwiff.make_geometry_setup(
+        antenna_position_vectors_in_asl_frame_m=antenna_position_vectors_in_asl_frame_m,
+        **config["geometry"],
+    )
     power_setup = pwiff.make_power_setup(**config["power"])
 
     # execution
@@ -116,9 +121,7 @@ def test_plane_wave():
     phase_shifts_m = phase_shifts_s * iaat.signal.SPEED_OF_LIGHT_M_PER_S
 
     for a in range(E["num_antennas"]):
-        antenna_z_m = config["geometry"][
-            "antenna_position_vectors_in_asl_frame_m"
-        ][a][2]
+        antenna_z_m = antenna_position_vectors_in_asl_frame_m[a, 2]
         antenna_phase_shift_m = phase_shifts_m[a]
 
         delta_m = np.abs(antenna_z_m - antenna_phase_shift_m)
