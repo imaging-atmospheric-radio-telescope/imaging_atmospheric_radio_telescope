@@ -202,9 +202,12 @@ def lnb_mixer(
 
 
 def estimate_power_spectrum_density(
-    amplitudes, time_slice_duration, num_time_slices_to_average_over
+    amplitudes, time_slice_duration_s, num_time_slices_to_average_over
 ):
-    sampling_frequency = 1.0 / time_slice_duration
+    assert time_slice_duration_s > 0
+    assert num_time_slices_to_average_over >= 1
+
+    sampling_frequency = 1.0 / time_slice_duration_s
     frequencies, power_density = scipy.signal.welch(
         x=amplitudes,
         fs=sampling_frequency,

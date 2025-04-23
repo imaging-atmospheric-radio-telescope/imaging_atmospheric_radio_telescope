@@ -346,7 +346,7 @@ def write_figure_electric_fields_power_density_spectrum(
             pds_antenna,
         ) = iaat.signal.estimate_power_spectrum_density(
             amplitudes=E_amplitude[antenna, :],
-            time_slice_duration=ef["time_slice_duration_s"],
+            time_slice_duration_s=ef["time_slice_duration_s"],
             num_time_slices_to_average_over=num_time_slices_to_average_over,
         )
         pds[antenna, :] = pds_antenna

@@ -177,7 +177,7 @@ for component in ["probe", "mirror", "sensor"]:
                 electric_fields=field,
                 component_mask=[1, 1, 0],
                 num_time_slices_to_average_over=(
-                    field["electric_fields_V_per_m"].shape[1] // 20
+                    field["electric_fields_V_per_m"].shape[1] // 5
                 ),
                 channels_label=channels_label,
                 figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
