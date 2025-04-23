@@ -17,7 +17,7 @@ prng = np.random.Generator(np.random.PCG64(42))
 electric_field_thermal_noise_amplitude = (
     iaat.signal.electric_field_of_thermal_noise(
         antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-        antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth"],
+        antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth"],
     )
 )
 

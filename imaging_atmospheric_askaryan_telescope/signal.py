@@ -141,10 +141,12 @@ def calculate_antenna_power(effective_area, electric_field):
 
 def electric_power_of_thermal_noise(
     antenna_temperature_K=80,
-    antenna_bandwidth=1e9,
+    antenna_bandwidth_Hz=1e9,
 ):
     return (
-        antenna_temperature_K * BOLTZMANN_CONSTANT_J_PER_K * antenna_bandwidth
+        antenna_temperature_K
+        * BOLTZMANN_CONSTANT_J_PER_K
+        * antenna_bandwidth_Hz
     )
 
 
@@ -154,11 +156,11 @@ def radiated_power_to_blackbody_temperature(power_W, bandwidth_Hz):
 
 def electric_field_of_thermal_noise(
     antenna_temperature_K=80,
-    antenna_bandwidth=1e9,
+    antenna_bandwidth_Hz=1e9,
 ):
     P = electric_power_of_thermal_noise(
         antenna_temperature_K=antenna_temperature_K,
-        antenna_bandwidth=antenna_bandwidth,
+        antenna_bandwidth_Hz=antenna_bandwidth_Hz,
     )
     return np.sqrt(P * VACUUM_IMPEDANCE_OHM)
 

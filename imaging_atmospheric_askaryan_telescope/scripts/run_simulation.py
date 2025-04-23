@@ -270,7 +270,7 @@ electric_field_thermal_noise_amplitude_V_per_m = (
     iaat.signal.electric_field_of_thermal_noise(
         antenna_temperature_K=telescope["lnb"]["noise_temperature_K"]
         * COOLING,
-        antenna_bandwidth=telescope["lnb"]["intermediate_bandwidth_Hz"],
+        antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
     )
 )
 

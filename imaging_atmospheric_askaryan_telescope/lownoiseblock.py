@@ -33,6 +33,6 @@ def init(key):
     )
     lnb["noise_power_W"] = signal.electric_power_of_thermal_noise(
         antenna_temperature_K=lnb["noise_temperature_K"],
-        antenna_bandwidth=lnb["intermediate_bandwidth_Hz"],
+        antenna_bandwidth_Hz=lnb["intermediate_bandwidth_Hz"],
     )
     return lnb
