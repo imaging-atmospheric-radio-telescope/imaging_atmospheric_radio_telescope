@@ -71,7 +71,9 @@ def make_timing_from_lnb(
     specified shower core.
     """
     OVERHEAD_DISTANCE_M = 10e4
-    TIME_TO_TRAVEL_OVERHEAD_S = OVERHEAD_DISTANCE_M / signal.SPEED_OF_LIGHT
+    TIME_TO_TRAVEL_OVERHEAD_S = (
+        OVERHEAD_DISTANCE_M / signal.SPEED_OF_LIGHT_M_PER_S
+    )
 
     tt["start_time_probe"] = {}
     tt["start_time_probe"]["time_slice_duration_s"] = (

@@ -6,7 +6,7 @@ import tempfile
 
 
 def test_simulate_mirror_electric_fields_manual():
-    SPEED_OF_LIGHT = iaat.signal.SPEED_OF_LIGHT
+    SPEED_OF_LIGHT_M_PER_S = iaat.signal.SPEED_OF_LIGHT_M_PER_S
     event_id = 103
     primary_particle = {
         "key": "gamma",
@@ -21,8 +21,8 @@ def test_simulate_mirror_electric_fields_manual():
     antenna_positions_obslvl_m = np.asarray([[0, 0, 0], [0, 1, 0]])
     coreas_time_boundaries = {
         "automatic_time_boundaries_s": 0,
-        "time_lower_boundary_s": -100e3 / SPEED_OF_LIGHT,
-        "time_upper_boundary_s": +100e3 / SPEED_OF_LIGHT,
+        "time_lower_boundary_s": -100e3 / SPEED_OF_LIGHT_M_PER_S,
+        "time_upper_boundary_s": +100e3 / SPEED_OF_LIGHT_M_PER_S,
     }
 
     with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:

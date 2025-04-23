@@ -66,7 +66,7 @@ def test_power_setup():
     )
     assert pows["electric_field_amplitue_V_per_m"] == np.sqrt(
         pows["pointing_vector_magnitude_W_per_m2"]
-        * iaat.signal.VACUUM_IMPEDANCE
+        * iaat.signal.VACUUM_IMPEDANCE_OHM
     )
 
 
@@ -78,7 +78,7 @@ def test_plane_wave():
 
     plane_wave_frequency_Hz = 9.75e9
     plane_wave_wavelength_m = (
-        iaat.signal.SPEED_OF_LIGHT / plane_wave_frequency_Hz
+        iaat.signal.SPEED_OF_LIGHT_M_PER_S / plane_wave_frequency_Hz
     )
     oversampling = 6.0
     time_slice_duration_s = 1.0 / (oversampling * plane_wave_frequency_Hz)
@@ -131,7 +131,7 @@ def test_plane_wave():
 
     phase_shifts_1 = phase_shifts_rad / (2.0 * np.pi)
     phase_shifts_s = phase_shifts_1 / plane_wave_frequency_Hz
-    phase_shifts_m = phase_shifts_s * iaat.signal.SPEED_OF_LIGHT
+    phase_shifts_m = phase_shifts_s * iaat.signal.SPEED_OF_LIGHT_M_PER_S
 
     for a in range(E["num_antennas"]):
         antenna_z_m = config["geometry"][

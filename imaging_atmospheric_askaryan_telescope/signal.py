@@ -119,13 +119,13 @@ def butter_bench(
     return ratio
 
 
-VACUUM_IMPEDANCE = 120 * np.pi
-SPEED_OF_LIGHT = 299792458.0
-BOLTZMANN_CONSTANT = 1.38e-23
+VACUUM_IMPEDANCE_OHM = 120 * np.pi
+SPEED_OF_LIGHT_M_PER_S = 299792458.0
+BOLTZMANN_CONSTANT_J_PER_K = 1.38e-23
 STANDARD_DEVIATION_OF_RECTANGULAR_FUNCTION = 1.0 / np.sqrt(12.0)
 
 
-def frequency_to_wavelength(frequency, speed_of_light=SPEED_OF_LIGHT):
+def frequency_to_wavelength(frequency, speed_of_light=SPEED_OF_LIGHT_M_PER_S):
     return speed_of_light / frequency
 
 
@@ -134,7 +134,7 @@ def calculate_antenna_effective_area(wavelength, gain):
 
 
 def calculate_antenna_power(effective_area, electric_field):
-    S = (electric_field**2) / VACUUM_IMPEDANCE
+    S = (electric_field**2) / VACUUM_IMPEDANCE_OHM
     Pr = effective_area * S
     return Pr
 
@@ -143,11 +143,13 @@ def electric_power_of_thermal_noise(
     antenna_temperature_K=80,
     antenna_bandwidth=1e9,
 ):
-    return antenna_temperature_K * BOLTZMANN_CONSTANT * antenna_bandwidth
+    return (
+        antenna_temperature_K * BOLTZMANN_CONSTANT_J_PER_K * antenna_bandwidth
+    )
 
 
 def radiated_power_to_blackbody_temperature(power_W, bandwidth_Hz):
-    return power_W / (BOLTZMANN_CONSTANT * bandwidth_Hz)
+    return power_W / (BOLTZMANN_CONSTANT_J_PER_K * bandwidth_Hz)
 
 
 def electric_field_of_thermal_noise(
@@ -158,7 +160,7 @@ def electric_field_of_thermal_noise(
         antenna_temperature_K=antenna_temperature_K,
         antenna_bandwidth=antenna_bandwidth,
     )
-    return np.sqrt(P * VACUUM_IMPEDANCE)
+    return np.sqrt(P * VACUUM_IMPEDANCE_OHM)
 
 
 def lnb_mixer(

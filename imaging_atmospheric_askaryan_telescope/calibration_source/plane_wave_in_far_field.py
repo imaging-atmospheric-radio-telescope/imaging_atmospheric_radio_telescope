@@ -104,7 +104,7 @@ def make_power_setup(
 ):
     assert power_of_isotrop_and_point_like_emitter_W >= 0.0
     assert distance_to_isotrop_and_point_like_emitter_m > 0.0
-    vacuum_impedance_Ohm = signal.VACUUM_IMPEDANCE
+    vacuum_impedance_Ohm = signal.VACUUM_IMPEDANCE_OHM
 
     p = {}
     p["pointing_vector_magnitude_W_per_m2"] = (
@@ -220,7 +220,7 @@ def plane_wave_in_far_field(
     geom = geometry_setup
     pows = power_setup
 
-    speed_of_light_m_per_s = signal.SPEED_OF_LIGHT
+    speed_of_light_m_per_s = signal.SPEED_OF_LIGHT_M_PER_S
 
     num_antennas = geom["antenna_position_vectors_in_asl_frame_m"].shape[0]
 

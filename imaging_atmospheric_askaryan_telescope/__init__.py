@@ -56,7 +56,7 @@ def from_config(work_dir):
         sensor=_sensor,
         mirror=_mirror,
         lnb=_lnb,
-        speed_of_light_m_per_s=signal.SPEED_OF_LIGHT,
+        speed_of_light_m_per_s=signal.SPEED_OF_LIGHT_M_PER_S,
     )
 
     _timing_and_sampling = timing_and_sampling.make_timing_from_lnb(
