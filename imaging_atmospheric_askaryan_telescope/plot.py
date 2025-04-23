@@ -27,9 +27,6 @@ FIG_1920X1080F1P5 = {"rows": 1080, "cols": 1920, "fontsize": 1.5}
 FIG_3840X1080F1P5 = {"rows": 2160, "cols": 3840, "fontsize": 3.0}
 
 
-ELECTRON_VOLT_J = 1.602176634e-19
-
-
 def log10_limits(v, ratio=0):
     vmin = (1 - ratio) * 10 ** np.floor(np.log10(np.min(v)))
     vmax = (1 + ratio) * 10 ** np.ceil(np.log10(np.max(v)))
@@ -150,8 +147,12 @@ def save_image_slices_energy_deposite(
         eney = readout_energy_J[:, :, 1]
         estr = "deposited energy / J"
     elif units == "electron_volt":
-        enex = readout_energy_J[:, :, 0] / ELECTRON_VOLT_J * 1e6  # ueV
-        eney = readout_energy_J[:, :, 1] / ELECTRON_VOLT_J * 1e6  # ueV
+        enex = (
+            readout_energy_J[:, :, 0] / iaat.signal.ELECTRON_VOLT_J * 1e6
+        )  # ueV
+        eney = (
+            readout_energy_J[:, :, 1] / iaat.signal.ELECTRON_VOLT_J * 1e6
+        )  # ueV
         estr = r"deposited energy / $\mu$eV"
     elif units == "black_body_temperature":
         assert bandwidth_Hz != None

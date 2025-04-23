@@ -191,12 +191,12 @@ if True:
 
     print(
         "Energy on mirror",
-        1e6 * En_mirror_J / iaat_plot.ELECTRON_VOLT_J,
+        1e6 * En_mirror_J / iaat.signal.ELECTRON_VOLT_J,
         "ueV",
     )
     print(
         "Energy on sensor",
-        1e6 * En_sensor_J / iaat_plot.ELECTRON_VOLT_J,
+        1e6 * En_sensor_J / iaat.signal.ELECTRON_VOLT_J,
         "ueV",
     )
 
