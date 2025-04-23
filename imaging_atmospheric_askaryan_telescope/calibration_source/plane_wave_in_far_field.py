@@ -27,6 +27,7 @@ def make_config():
     s["emission_duration_s"] = 10e-9
     s["emission_ramp_up_duration_s"] = 2e-9
     s["emission_ramp_down_duration_s"] = 2e-9
+    s["emission_overhead_duration_before_and_after_s"] = 1e-9
     c["sine_wave"] = s
 
     return c
@@ -206,9 +207,8 @@ def plane_wave_in_far_field(
     power_setup,
     sine_wave,
     time_slice_duration_s,
-    warm_up_duration_s=1e-9,
 ):
-    assert warm_up_duration_s >= 0.0
+    assert sine_wave["emission_overhead_duration_before_and_after_s"] >= 0.0
     geom = geometry_setup
     pows = power_setup
 
@@ -228,13 +228,13 @@ def plane_wave_in_far_field(
     start_time_of_sampling_s = (
         time_duration_to_reach_closest_antenna_s
         - sine_wave["emission_ramp_up_duration_s"]
-        - warm_up_duration_s
+        - sine_wave["emission_overhead_duration_before_and_after_s"]
     )
     stop_time_of_sampling_s = (
         time_duration_to_reach_furthest_antenna_s
         + sine_wave["emission_duration_s"]
         + sine_wave["emission_ramp_down_duration_s"]
-        + warm_up_duration_s
+        + sine_wave["emission_overhead_duration_before_and_after_s"]
     )
     total_emission_duration_s = (
         stop_time_of_sampling_s - start_time_of_sampling_s
