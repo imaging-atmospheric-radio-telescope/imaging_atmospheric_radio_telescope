@@ -258,7 +258,7 @@ def simulate_telescope_response(
         )
 
         start_time_based_on_probe = (
-            timing_and_sampling.estimate_start_time_from_electric_fields(
+            electric_fields.estimate_time_of_first_non_zero_amplitudes(
                 electric_fields=probe_electric_fields
             )
         )

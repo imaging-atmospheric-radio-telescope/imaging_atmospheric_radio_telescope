@@ -72,3 +72,28 @@ def test_power_setup():
     assert pows["electric_field_amplitue_V_per_m"] == np.sqrt(
         pows["pointing_vector_magnitude_W_per_m2"] * signal.VACUUM_IMPEDANCE
     )
+
+
+def test_plane_wave():
+    frequency_astra_Hz = 9.75e9
+    oversampling = 6.0
+    time_slice_duration_s = 1.0 / (oversampling * frequency_astra_Hz)
+
+    c = calibration_source.plane_wave_in_far_field.make_config()
+    c["sine_wave"]["emission_frequency_Hz"] = frequency_astra_Hz
+
+    geometry_setup = (
+        calibration_source.plane_wave_in_far_field.make_geometry_setup(
+            **c["geometry"]
+        )
+    )
+    power_setup = calibration_source.plane_wave_in_far_field.make_power_setup(
+        **c["power"]
+    )
+
+    E = calibration_source.plane_wave_in_far_field.plane_wave_in_far_field(
+        geometry_setup=geometry_setup,
+        power_setup=power_setup,
+        sine_wave=c["sine_wave"],
+        time_slice_duration_s=time_slice_duration_s,
+    )

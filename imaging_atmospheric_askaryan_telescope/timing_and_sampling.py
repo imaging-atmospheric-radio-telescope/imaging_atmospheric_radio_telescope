@@ -98,22 +98,6 @@ def make_timing_from_lnb(
     return tt
 
 
-def estimate_start_time_from_electric_fields(electric_fields):
-    e = electric_fields
-    first_slices = []
-    for ant in range(e["num_antennas"]):
-        for dim in range(3):
-            first_slice = np.min(
-                np.nonzero(e["electric_fields_V_per_m"][ant, :, dim])
-            )
-            first_slices.append(first_slice)
-
-    start_slice = np.median(first_slices)
-    start_time_relative = start_slice * e["time_slice_duration_s"]
-    start_time_s = start_time_relative + e["global_start_time_s"]
-    return start_time_s
-
-
 def make_time_window_bounds(
     start_time_s,
     time_window_duration_s,

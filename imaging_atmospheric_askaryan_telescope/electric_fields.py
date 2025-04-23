@@ -303,3 +303,30 @@ def get_combined_norm_of_components(electric_fields, component_mask):
         electric_fields["electric_fields_V_per_m"][:, :, component_mask],
         axis=2,
     )
+
+
+def estimate_time_of_first_non_zero_amplitudes(electric_fields):
+    """
+    Estimates the time when the electric fields start do differ from zero.
+
+    Parameters
+    ----------
+    electric_field : dict
+
+    Returns
+    -------
+    start_time_s : float
+    """
+    e = electric_fields
+    first_slices = []
+    for ant in range(e["num_antennas"]):
+        for dim in range(3):
+            first_slice = np.min(
+                np.nonzero(e["electric_fields_V_per_m"][ant, :, dim])
+            )
+            first_slices.append(first_slice)
+
+    start_slice = np.median(first_slices)
+    start_time_relative = start_slice * e["time_slice_duration_s"]
+    start_time_s = start_time_relative + e["global_start_time_s"]
+    return start_time_s
