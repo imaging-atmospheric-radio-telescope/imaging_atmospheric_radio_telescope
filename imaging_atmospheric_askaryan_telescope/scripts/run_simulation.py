@@ -149,7 +149,6 @@ for component in ["probe", "mirror", "sensor"]:
 
 # check energy conservation
 # -------------------------
-COOLING = 1e-6
 if True:
     E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
     E_mirror = iaat.electric_fields.read_tar(E_mirror_path)
@@ -268,8 +267,7 @@ if not os.path.exists(_fig_path_lnb_gain):
 # -------------
 electric_field_thermal_noise_amplitude_V_per_m = (
     iaat.signal.electric_field_of_thermal_noise(
-        antenna_temperature_K=telescope["lnb"]["noise_temperature_K"]
-        * COOLING,
+        antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
         antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
     )
 )
@@ -299,9 +297,7 @@ _noise_power_W = iaat.signal.calculate_antenna_power(
 )
 
 assert (
-    0.9
-    < (telescope["lnb"]["noise_power_W"] * COOLING / np.mean(_noise_power_W))
-    < 1.1
+    0.9 < (telescope["lnb"]["noise_power_W"] / np.mean(_noise_power_W)) < 1.1
 )
 
 # adding signal and noise
