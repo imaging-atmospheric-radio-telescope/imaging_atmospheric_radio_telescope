@@ -196,11 +196,13 @@ def simulate_mirror_electric_fields_manual(
         shutil.move(tmp_coreas_antenna_dir, raw_antenna_dir)
 
         # unify output antennas
-        raw_electric_fields = corsika.coreas.raw_electric_fields.read(
+        coreas_electric_fields = corsika.coreas.coreas_electric_fields.read(
             raw_antenna_dir
         )
-        unified_electric_field = electric_fields.init_from_raw_electric_fields(
-            raw_electric_fields=raw_electric_fields
+        unified_electric_field = (
+            electric_fields.init_from_coreas_electric_fields(
+                coreas_electric_fields=coreas_electric_fields
+            )
         )
         electric_fields.write_tar(
             path=antenna_path,

@@ -81,15 +81,15 @@ def assert_almost_equal(actual, desired, **kwargs):
     )
 
 
-def init_from_raw_electric_fields(raw_electric_fields):
-    raw = raw_electric_fields
+def init_from_coreas_electric_fields(coreas_electric_fields):
+    raw = coreas_electric_fields
     time_slice_duration_s = (
-        corsika.coreas.raw_electric_fields.estimate_time_slice_duration_s(
-            raw_electric_fields=raw
+        corsika.coreas.coreas_electric_fields.estimate_time_slice_duration_s(
+            coreas_electric_fields=raw
         )
     )
-    corsika.coreas.raw_electric_fields.assert_same_time_slice_duration(
-        raw_electric_fields=raw,
+    corsika.coreas.coreas_electric_fields.assert_same_time_slice_duration(
+        coreas_electric_fields=raw,
         time_slice_duration_s=time_slice_duration_s,
     )
     num_antennas = len(raw)
@@ -117,7 +117,7 @@ def init_from_raw_electric_fields(raw_electric_fields):
     )
 
     CGS_TO_SI = (
-        corsika.coreas.raw_electric_fields.CGS_statVolt_per_cm_to_SI_Volt_per_meter
+        corsika.coreas.coreas_electric_fields.CGS_statVolt_per_cm_to_SI_Volt_per_meter
     )
     for a in range(num_antennas):
         E_V_per_m[a, :, 0] = raw[a]["E_north_statVolt_per_cm"] * CGS_TO_SI
@@ -133,14 +133,14 @@ def init_from_raw_electric_fields(raw_electric_fields):
     }
 
 
-def to_raw_electric_fields(electric_fields):
+def to_coreas_electric_fields(electric_fields):
     ef = electric_fields
-    raw = corsika.coreas.raw_electric_fields.init(
+    raw = corsika.coreas.coreas_electric_fields.init(
         num_antennas=ef["num_antennas"],
         num_time_slices=ef["num_time_slices"],
     )
     CGS_TO_SI = (
-        corsika.coreas.raw_electric_fields.CGS_statVolt_per_cm_to_SI_Volt_per_meter
+        corsika.coreas.coreas_electric_fields.CGS_statVolt_per_cm_to_SI_Volt_per_meter
     )
 
     for a in range(ef["num_antennas"]):

@@ -7,8 +7,8 @@ import tempfile
 def test_raw_to_unified_and_back():
     for seed in range(10):
         E = iaat.electric_fields.init_random(seed=seed)
-        raw = iaat.electric_fields.to_raw_electric_fields(E)
-        back_E = iaat.electric_fields.init_from_raw_electric_fields(raw)
+        raw = iaat.electric_fields.to_coreas_electric_fields(E)
+        back_E = iaat.electric_fields.init_from_coreas_electric_fields(raw)
         iaat.electric_fields.assert_almost_equal(actual=back_E, desired=E)
 
 

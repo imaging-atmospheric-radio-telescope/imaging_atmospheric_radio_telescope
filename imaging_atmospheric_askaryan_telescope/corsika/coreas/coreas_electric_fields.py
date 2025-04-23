@@ -13,7 +13,7 @@ DTYPES = [
 ]
 
 
-def _init_raw_electric_field(num_time_slices):
+def _init_coreas_electric_field(num_time_slices):
     return np.recarray(
         shape=num_time_slices,
         dtype=DTYPES,
@@ -22,7 +22,8 @@ def _init_raw_electric_field(num_time_slices):
 
 def init(num_antennas, num_time_slices):
     return [
-        _init_raw_electric_field(num_time_slices) for i in range(num_antennas)
+        _init_coreas_electric_field(num_time_slices)
+        for i in range(num_antennas)
     ]
 
 
@@ -65,19 +66,21 @@ def assert_almost_eqaul(actual, desired, **kwargs):
             )
 
 
-def estimate_time_slice_duration_s(raw_electric_fields):
+def estimate_time_slice_duration_s(coreas_electric_fields):
     first_antenna = 0
-    return np.median(np.gradient(raw_electric_fields[first_antenna]["time_s"]))
+    return np.median(
+        np.gradient(coreas_electric_fields[first_antenna]["time_s"])
+    )
 
 
 def assert_same_time_slice_duration(
-    raw_electric_fields, time_slice_duration_s
+    coreas_electric_fields, time_slice_duration_s
 ):
-    num_antennas = len(raw_electric_fields)
+    num_antennas = len(coreas_electric_fields)
 
     for a in range(num_antennas):
         time_slice_duration_this_antenna = np.gradient(
-            raw_electric_fields[a]["time_s"]
+            coreas_electric_fields[a]["time_s"]
         )
         valid = (
             np.abs(time_slice_duration_this_antenna - time_slice_duration_s)
@@ -115,36 +118,36 @@ def read(path):
 
     Returns
     -------
-    raw_electric_fields : list of numpy.recarrays
+    coreas_electric_fields : list of numpy.recarrays
         In CGC units (StatVolt / cm).
     """
     all_time_series_paths = list_time_series_paths_in_numerical_order(path)
-    raw_electric_fields = []
+    coreas_electric_fields = []
     for time_series_path in all_time_series_paths:
         with open(time_series_path, "rt") as f:
-            raw_electric_field = loads(text=f.read())
-        raw_electric_fields.append(raw_electric_field)
-    return raw_electric_fields
+            coreas_electric_field = loads(text=f.read())
+        coreas_electric_fields.append(coreas_electric_field)
+    return coreas_electric_fields
 
 
-def dumps(raw_electric_field):
+def dumps(coreas_electric_field):
     """
-    Dumps a single raw_electric_field into a string with the format used
+    Dumps a single coreas_electric_field into a string with the format used
     by CORSIKA CoREAS.
 
     Parameters
     ----------
-    raw_electric_field : numpy.recarray
+    coreas_electric_field : numpy.recarray
         time, north, west, vertical
 
     Returns
     -------
     text : str
     """
-    num_time_slices = raw_electric_field.shape[0]
+    num_time_slices = coreas_electric_field.shape[0]
     s = io.StringIO()
     for i in range(num_time_slices):
-        t, n, w, v = raw_electric_field[i]
+        t, n, w, v = coreas_electric_field[i]
         s.write(f"{t:f}\t{n:f}\t{w:f}\t{v:f}\n")
     s.seek(0)
     return s.read()
@@ -158,7 +161,7 @@ def loads(text):
 
     Returns
     -------
-    raw_electric_field : numpy.recarray
+    coreas_electric_field : numpy.recarray
         time, north, west, vertical
     """
     tt = []
@@ -173,31 +176,33 @@ def loads(text):
         ww.append(w)
         vv.append(v)
 
-    raw_electric_field = _init_raw_electric_field(num_time_slices=len(tt))
-    raw_electric_field["time_s"] = tt
-    raw_electric_field["E_north_statVolt_per_cm"] = nn
-    raw_electric_field["E_west_statVolt_per_cm"] = ww
-    raw_electric_field["E_vertical_statVolt_per_cm"] = vv
-    return raw_electric_field
+    coreas_electric_field = _init_coreas_electric_field(
+        num_time_slices=len(tt)
+    )
+    coreas_electric_field["time_s"] = tt
+    coreas_electric_field["E_north_statVolt_per_cm"] = nn
+    coreas_electric_field["E_west_statVolt_per_cm"] = ww
+    coreas_electric_field["E_vertical_statVolt_per_cm"] = vv
+    return coreas_electric_field
 
 
-def write(path, raw_electric_fields):
+def write(path, coreas_electric_fields):
     """
-    Writes the 'raw_electric_fields' into the directory 'path', the same way as
+    Writes the 'coreas_electric_fields' into the directory 'path', the same way as
     CoREAS does it.
 
     Parameters
     ----------
     path : str
         Output directory.
-    raw_electric_fields : list of numpy.recarrays
+    coreas_electric_fields : list of numpy.recarrays
         In CGC units (StatVolt / cm).
     """
     os.makedirs(path, exist_ok=True)
-    num_antennas = len(raw_electric_fields)
+    num_antennas = len(coreas_electric_fields)
     for a in range(num_antennas):
         time_series_path = os.path.join(path, f"raw_{a:06d}.dat")
-        raw_electric_field = raw_electric_fields[a]
+        coreas_electric_field = coreas_electric_fields[a]
         with rnw.open(time_series_path, "wt") as f:
-            text = dumps(raw_electric_field=raw_electric_field)
+            text = dumps(coreas_electric_field=coreas_electric_field)
             f.write(text)

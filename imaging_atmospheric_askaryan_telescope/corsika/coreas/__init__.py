@@ -2,7 +2,7 @@ import numpy as np
 import glob
 import os
 from . import antenna_list
-from . import raw_electric_fields
+from . import coreas_electric_fields
 
 
 DEFAULT_TIME_BOUNDARIES = {
