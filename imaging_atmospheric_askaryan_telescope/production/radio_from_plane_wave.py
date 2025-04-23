@@ -28,8 +28,6 @@ def simulate_mirror_electric_fields(
         **plane_wave_config["power"]
     )
 
-    sine_wave = calibration_source.plane_wave_in_far_field.make_sine_wave()
-
     E = calibration_source.plane_wave_in_far_field.plane_wave_in_far_field(
         geometry_setup=geometry_setup,
         power_setup=power_setup,

@@ -262,6 +262,27 @@ def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
     return tele
 
 
+def square_amplitude(v):
+    norm = np.linalg.norm(v)
+    valid = norm > 0.0
+    out = np.zeros(shape=v.shape)
+    out[valid] = v[valid]
+    for dim in range(3):
+        out[valid, dim] *= norm[valid]
+    return out
+
+
+def sqrt_amplitude(v):
+    norm = np.linalg.norm(v)
+    valid = norm > 0.0
+    out = np.zeros(shape=v.shape)
+    out[valid] = v[valid]
+    for dim in range(3):
+        out[valid, dim] /= norm[valid]
+        out[valid, dim] *= np.sqrt(norm[valid])
+    return out
+
+
 def square_but_keep_sign(v):
     return (v**2) * np.sign(v)
 
@@ -386,37 +407,42 @@ def propagate_electric_field_from_mirror_to_sensor(
     feed_horn_area_m2 = (
         1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
     )
-    mirror_area_m2 = telescope["mirror"]["area_m2"]
+    mirror_scatter_area_m2 = (
+        1.0 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
+    )
 
-    e_field_scaling = np.sqrt(mirror_area_m2 / feed_horn_area_m2)
+    N_scatter = telescope["mirror"]["num_scatter_centers"]
 
-    for dim in range(3):
-        for ise in range(telescope["sensor"]["num_feed_horns"]):
-            print(dim, ise)
-            for imi in range(telescope["mirror"]["num_scatter_centers"]):
-                # timing
-                # ------
-                time_delay = telescope["matrix"]["relative_time_delays_s"][
-                    ise, imi
+    e_field_scaling = np.sqrt(
+        mirror_scatter_area_m2 / feed_horn_area_m2 * N_scatter
+    )
+
+    for ise in range(telescope["sensor"]["num_feed_horns"]):
+        print(ise)
+        for imi in range(telescope["mirror"]["num_scatter_centers"]):
+            # timing
+            # ------
+            time_delay = telescope["matrix"]["relative_time_delays_s"][
+                ise, imi
+            ]
+
+            slice_delay = int(
+                np.round(time_delay / sen["time_slice_duration_s"])
+            )
+
+            # amplitude
+            # ---------
+            for dim in range(3):
+                first = (1.0 / N_scatter) * mir["electric_fields_V_per_m"][
+                    imi, :, dim
                 ]
-
-                slice_delay = int(
-                    np.round(time_delay / sen["time_slice_duration_s"])
-                )
-
-                # amplitude
-                # ---------
-                first = mir["electric_fields_V_per_m"][imi, :, dim]
-
                 signal.add_first_to_second_at(
-                    first=square_but_keep_sign(first),
+                    first=first,
                     second=sen["electric_fields_V_per_m"][ise, :, dim],
                     at=slice_delay,
                 )
 
-            sen["electric_fields_V_per_m"][ise, :, dim] = sqrt_but_keep_sign(
-                sen["electric_fields_V_per_m"][ise, :, dim]
-            )
+        for dim in range(3):
             sen["electric_fields_V_per_m"][ise, :, dim] *= e_field_scaling
 
     return sen

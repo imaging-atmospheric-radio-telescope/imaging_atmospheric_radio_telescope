@@ -18,8 +18,8 @@ def write_and_read_back_dict(path, config):
     return read_dict(path)
 
 
+"""
 parser = argparse.ArgumentParser(description="Simulate Askaryan-telescope")
-
 parser.add_argument(
     "-o", help="Path to output directory", required=True, metavar="OUT_DIR"
 )
@@ -70,24 +70,60 @@ else:
         path=os.path.join(out_dir, "random_seed.json"),
         config={"random_seed": random_seed},
     )["random_seed"]
+"""
 
-# init
-# ----
+work_dir = "run"
 
-telescope, timing = iaat.init_telescope_and_timing(config=config)
-site = iaat.sites.init(key=config["site_key"])
+if not os.path.exists(work_dir):
+    iaat.init(
+        work_dir=work_dir,
+        site_key="namibia",
+        telescope_key="large_size_telescope",
+    )
+
+askaryan = iaat.from_config(work_dir=work_dir)
+telescope = askaryan["telescope"]
+timing = askaryan["timing"]
+site = askaryan["site"]
+
+random_seed = 1337
+
+if False:
+    source_config = iaat.production.radio_from_airshower.make_config()
+    source_config["event_id"] = random_seed
+    source_config["azimuth_rad"] = np.deg2rad(45)
+    source_config["zenith_rad"] = np.deg2rad(1.5)
+    source_config["core_north_m"] = 50.0
+    source_config["core_west_m"] = 20.0
+    source_config["energy_GeV"] = 10_000.0
+else:
+    source_config = iaat.production.radio_from_plane_wave.make_config()
+    source_config["geometry"]["azimuth_rad"] = np.deg2rad(0.0)
+    source_config["geometry"]["zenith_rad"] = np.deg2rad(0.0)
+    source_config["geometry"][
+        "distance_to_plane_defining_time_zero_m"
+    ] = iaat.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
+    source_config["power"]["power_of_isotrop_and_point_like_emitter_W"] = 1e3
+    source_config["power"][
+        "distance_to_isotrop_and_point_like_emitter_m"
+    ] = 100e3
+    source_config["sine_wave"]["emission_frequency_Hz"] = (
+        timing["electric_fields"]["sampling_frequency_Hz"] / 6 * 1
+    )
+    source_config["sine_wave"]["emission_duration_s"] = 5e-9
+    source_config["sine_wave"]["emission_ramp_up_duration_s"] = 1e-9
+    source_config["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
+
+out_dir = os.path.join(work_dir, source_config["__type__"])
 
 
 # start simulation
 # ----------------
-
 prng = np.random.Generator(np.random.PCG64(random_seed))
-
 
 iaat.production.simulate_telescope_response(
     out_dir=out_dir,
-    event_id=random_seed,
-    primary_particle=primary_particle,
+    source_config=source_config,
     site=site,
     telescope=telescope,
     timing=timing,
@@ -114,37 +150,39 @@ for component in ["probe", "mirror", "sensor"]:
     fig_path = os.path.join(plot_dir, component + ".jpg")
     if not os.path.exists(fig_path):
         field_path = os.path.join(out_dir, component, "electric_fields.tar")
-        field = iaat.electric_fields.read_tar(field_path)
-        iaat_plot.write_figure_electric_fields_overview(
-            electric_fields=field,
-            path=fig_path,
-            component_mask=[1, 1, 0],
-            channels_label=channels_label,
-            figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
-            norm=None,
-            vmin=0.0,
-            vmax=np.max(field["electric_fields_V_per_m"]),
-            roi_time=roi_time,
-        )
+        if os.path.exists(field_path):
+            field = iaat.electric_fields.read_tar(field_path)
+            iaat_plot.write_figure_electric_fields_overview(
+                electric_fields=field,
+                path=fig_path,
+                component_mask=[1, 1, 0],
+                channels_label=channels_label,
+                figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+                norm=None,
+                vmin=1e-6 * np.max(field["electric_fields_V_per_m"]),
+                vmax=np.max(field["electric_fields_V_per_m"]),
+                roi_time=roi_time,
+            )
 
     fig_spectrum_path = os.path.join(
         plot_dir, component + "_power_spectrum_density.jpg"
     )
     if not os.path.exists(fig_spectrum_path):
         field_path = os.path.join(out_dir, component, "electric_fields.tar")
-        field = iaat.electric_fields.read_tar(field_path)
+        if os.path.exists(field_path):
+            field = iaat.electric_fields.read_tar(field_path)
 
-        iaat_plot.write_figure_electric_fields_power_density_spectrum(
-            path=fig_spectrum_path,
-            electric_fields=field,
-            component_mask=[1, 1, 0],
-            num_time_slices_to_average_over=(
-                field["electric_fields_V_per_m"].shape[1] // 20
-            ),
-            channels_label=channels_label,
-            figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
-            roi_frequency=roi_frequency,
-        )
+            iaat_plot.write_figure_electric_fields_power_density_spectrum(
+                path=fig_spectrum_path,
+                electric_fields=field,
+                component_mask=[1, 1, 0],
+                num_time_slices_to_average_over=(
+                    field["electric_fields_V_per_m"].shape[1] // 20
+                ),
+                channels_label=channels_label,
+                figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
+                roi_frequency=roi_frequency,
+            )
 
 
 # check energy conservation
@@ -162,8 +200,6 @@ if True:
     A_eff_sensor_feed_horn_m2 = (
         1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
     )
-
-    scatter_gain = A_eff_mirror_scatter_center_m2 / A_eff_sensor_feed_horn_m2
 
     P_mirror_W = np.zeros(
         shape=(E_mirror["num_antennas"], E_mirror["num_time_slices"])
@@ -188,17 +224,35 @@ if True:
     En_mirror_J = np.sum(P_mirror_W) * E_mirror["time_slice_duration_s"]
     En_sensor_J = np.sum(P_sensor_W) * E_sensor["time_slice_duration_s"]
 
-    print(
-        "Energy on mirror",
-        1e6 * En_mirror_J / iaat.signal.ELECTRON_VOLT_J,
-        "ueV",
+    En_mirror_eV = En_mirror_J / iaat.signal.ELECTRON_VOLT_J
+    En_sensor_eV = En_sensor_J / iaat.signal.ELECTRON_VOLT_J
+
+    _power_geom = (
+        iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
+            **source_config["power"]
+        )
     )
-    print(
-        "Energy on sensor",
-        1e6 * En_sensor_J / iaat.signal.ELECTRON_VOLT_J,
-        "ueV",
+    expected_power_on_mirror_W = (
+        telescope["mirror"]["area_m2"]
+        * _power_geom["pointing_vector_magnitude_W_per_m2"]
+    )
+    expected_energy_on_mirror_J = (
+        expected_power_on_mirror_W
+        * source_config["sine_wave"]["emission_duration_s"]
+    )
+    expected_energy_on_mirror_eV = (
+        expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J
     )
 
+    print(
+        "Energy on mirror",
+        En_mirror_eV,
+        "eV",
+        "expected",
+        expected_energy_on_mirror_eV,
+        "eV",
+    )
+    print("Energy on sensor", En_sensor_eV, "eV")
 
 # plot instrument
 # ---------------
@@ -334,7 +388,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         global_start_time_s=sensor_electric_fields["global_start_time_s"],
         lnb_power_min_fraction_of_max=1e-3,
         norm=None,
-        lnb_power_min_W=0.0,
+        lnb_power_min_W=1e-6 * np.max(total_power_leaving_lnb_xy),
         lnb_power_max_W=np.max(total_power_leaving_lnb_xy),
         expected_noise_power_W=telescope["lnb"]["noise_power_W"],
         channels_label="pixels / 1",

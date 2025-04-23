@@ -229,7 +229,7 @@ def save_image_slices_energy_deposite(
         )
         fig.savefig(
             os.path.join(
-                path, "{:06d}_horizontal.jpg".format(readout_time_slice)
+                path, "horizontal_{:06d}_.jpg".format(readout_time_slice)
             ),
         )
         ax.set_xlabel(image_x_label)
@@ -249,7 +249,7 @@ def save_image_slices_energy_deposite(
         )
         fig.savefig(
             os.path.join(
-                path, "{:06d}_vertical.jpg".format(readout_time_slice)
+                path, "vertical_{:06d}.jpg".format(readout_time_slice)
             ),
         )
         ax.set_xlabel(image_x_label)
@@ -268,7 +268,7 @@ def save_image_slices_energy_deposite(
             cmap=cmap,
         )
         fig.savefig(
-            os.path.join(path, "{:06d}_sum.jpg".format(readout_time_slice)),
+            os.path.join(path, "sum_{:06d}.jpg".format(readout_time_slice)),
         )
         ax.set_xlabel(image_x_label)
         ax.set_ylabel(image_y_label)
@@ -286,8 +286,6 @@ def write_matrix(
     cmap="viridis",
     cmap_marker=None,
     norm=None,
-    vmin=None,
-    vmax=None,
     figsize=FIG_1920X1080F1P5,
     title=None,
 ):
@@ -301,8 +299,6 @@ def write_matrix(
         matrix,
         cmap=cmap,
         norm=norm,
-        vmin=vmin,
-        vmax=vmax,
     )
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -330,7 +326,7 @@ def write_figure_electric_fields_power_density_spectrum(
     roi_frequency=None,
 ):
     if norm == None:
-        norm = seb.matplotlib.colors.LogNorm()
+        norm = seb.matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
 
     ef = electric_fields
 
@@ -394,8 +390,6 @@ def write_figure_electric_fields_power_density_spectrum(
             1e9 * exposure_time_s, 1e-9 * sampling_frequency_Hz
         ),
         figsize=figsize,
-        vmin=vmin,
-        vmax=vmax,
     )
 
 
@@ -428,6 +422,11 @@ def ax_add_electric_field(
         vmax = make_vmax_to_match_decades(v=E_amplitude)
         vmin = vmax * 1e-3
 
+    if norm is None:
+        norm = seb.matplotlib.colors.LogNorm(
+            vmin=vmin * amplitude_scale, vmax=vmax * amplitude_scale
+        )
+
     if roi_time == None:
         start_time = 0.0
         stop_time = (
@@ -449,8 +448,6 @@ def ax_add_electric_field(
         E_amplitude[:, start_time_slice:stop_time_slice] * amplitude_scale,
         cmap=cmap,
         norm=norm,
-        vmin=vmin * amplitude_scale,
-        vmax=vmax * amplitude_scale,
     )
     return im
 
@@ -460,13 +457,17 @@ def write_figure_electric_fields_overview(
     path,
     figsize=FIG_3840X1080F1P5,
     cmap="viridis",
-    norm=seb.matplotlib.colors.LogNorm(),
+    norm=None,
     vmin=None,
     vmax=None,
     component_mask=[1, 1, 0],
     channels_label="channels / 1",
     roi_time=None,
 ):
+    if norm is None:
+        print("vmin", vmin, "vmax", vmax)
+        norm = seb.matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+
     fig = seb.figure(style=figsize)
     ax = seb.add_axes(fig=fig, span=[0.125, 0.15, 0.68, 0.75])
     ax_cmap = seb.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.75])
@@ -476,8 +477,6 @@ def write_figure_electric_fields_overview(
         component_mask=component_mask,
         cmap=cmap,
         norm=norm,
-        vmin=vmin,
-        vmax=vmax,
         time_scale=1e9,
         amplitude_scale=1e6,
         roi_time=roi_time,
@@ -527,6 +526,11 @@ def write_figure_lnb_power(
         np.abs(relative_time_bin_edges_s - roi_time[1])
     )
 
+    if norm is None:
+        norm = seb.matplotlib.colors.LogNorm(
+            vmin=1e12 * lnb_power_min_W, vmax=1e12 * lnb_power_max_W
+        )
+
     write_matrix(
         path=path,
         matrix=1e12 * lnb_power_W[:, start_time_slice : stop_time_slice - 1],
@@ -539,8 +543,6 @@ def write_figure_lnb_power(
         y_label=channels_label,
         z_label="power / pW",
         norm=norm,
-        vmax=1e12 * lnb_power_max_W,
-        vmin=1e12 * lnb_power_min_W,
         figsize=figsize,
         cmap_marker=expected_noise_power_pW,
     )
