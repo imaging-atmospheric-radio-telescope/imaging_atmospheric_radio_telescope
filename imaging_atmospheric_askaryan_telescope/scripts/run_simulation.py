@@ -98,8 +98,8 @@ if False:
     source_config["energy_GeV"] = 10_000.0
 else:
     source_config = iaat.production.radio_from_plane_wave.make_config()
-    source_config["geometry"]["azimuth_rad"] = np.deg2rad(0.0)
-    source_config["geometry"]["zenith_rad"] = np.deg2rad(0.0)
+    source_config["geometry"]["azimuth_rad"] = np.deg2rad(30)
+    source_config["geometry"]["zenith_rad"] = np.deg2rad(1.5)
     source_config["geometry"][
         "distance_to_plane_defining_time_zero_m"
     ] = iaat.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
@@ -114,8 +114,9 @@ else:
     source_config["sine_wave"]["emission_ramp_up_duration_s"] = 1e-9
     source_config["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
 
-out_dir = os.path.join(work_dir, source_config["__type__"])
-
+out_dir = os.path.join(
+    work_dir, source_config["__type__"], f"{random_seed:06d}"
+)
 
 # start simulation
 # ----------------
