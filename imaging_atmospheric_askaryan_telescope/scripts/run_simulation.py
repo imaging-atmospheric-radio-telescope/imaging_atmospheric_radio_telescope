@@ -18,60 +18,6 @@ def write_and_read_back_dict(path, config):
     return read_dict(path)
 
 
-"""
-parser = argparse.ArgumentParser(description="Simulate Askaryan-telescope")
-parser.add_argument(
-    "-o", help="Path to output directory", required=True, metavar="OUT_DIR"
-)
-parser.add_argument(
-    "-n", type=int, help="unique identifier", required=True, metavar="ID"
-)
-parser.add_argument(
-    "-p",
-    help="Path to particle config-file (json).",
-    required=True,
-    metavar="PARTICLE_PATH",
-)
-parser.add_argument(
-    "-i",
-    help="Path to instrument config-file (json).",
-    required=True,
-    metavar="INSTRUMENT_PATH",
-)
-
-args = parser.parse_args()
-random_seed = args.n
-config = read_dict(path=args.i)
-primary_particle = read_dict(path=args.p)
-
-out_dir = os.path.join(args.o, "{:06d}".format(random_seed))
-
-if os.path.exists(out_dir):
-    config = read_dict(
-        path=os.path.join(out_dir, "config.json"),
-    )
-    primary_particle = read_dict(
-        path=os.path.join(out_dir, "primary.json"),
-    )
-    random_seed = read_dict(path=os.path.join(out_dir, "random_seed.json"))[
-        "random_seed"
-    ]
-else:
-    os.makedirs(out_dir, exist_ok=True)
-    config = write_and_read_back_dict(
-        path=os.path.join(out_dir, "config.json"),
-        config=config,
-    )
-    primary_particle = write_and_read_back_dict(
-        path=os.path.join(out_dir, "primary.json"),
-        config=primary_particle,
-    )
-    random_seed = write_and_read_back_dict(
-        path=os.path.join(out_dir, "random_seed.json"),
-        config={"random_seed": random_seed},
-    )["random_seed"]
-"""
-
 work_dir = "run"
 
 if not os.path.exists(work_dir):
