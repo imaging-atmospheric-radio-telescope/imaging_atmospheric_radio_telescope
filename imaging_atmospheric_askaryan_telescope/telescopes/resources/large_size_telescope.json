@@ -9,7 +9,7 @@
         "random_seed": 0,
         "focal_length_m": 32.2,
         "outer_radius_m": 11.5,
-        "inner_radius_m": 1.6,
+        "inner_radius_m": 2.0,
         "scatter_center_areal_density_per_m2": 7
     },
     "sensor": {
