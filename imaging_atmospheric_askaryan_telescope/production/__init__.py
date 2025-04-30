@@ -26,6 +26,7 @@ def simulate_telescope_response(
     # Electric fields on mirror
     # -------------------------
     if source_config["__type__"] == "airshower":
+        print("Simulating air shower using CORSIKA CoREAS ... ", end="")
         radio_from_airshower.assert_config_is_valid(source_config)
         radio_from_airshower.simulate_mirror_electric_fields(
             out_dir=out_dir,
@@ -36,7 +37,10 @@ def simulate_telescope_response(
             ],
             timing=timing,
         )
+        print("Done.")
+
     elif source_config["__type__"] == "plane_wave":
+        print("Simulating plane wave ... ", end="")
         radio_from_plane_wave.simulate_mirror_electric_fields(
             out_dir=out_dir,
             plane_wave_config=source_config,
@@ -48,6 +52,8 @@ def simulate_telescope_response(
             ],
             observation_level_asl_m=site["observation_level_asl_m"],
         )
+        print("Done.")
+
     else:
         assert (
             False
@@ -59,10 +65,13 @@ def simulate_telescope_response(
     if not os.path.exists(sensor_dir):
         os.makedirs(sensor_dir)
 
+        print(
+            "Propagating electric fields from mirror to feed horns ... ",
+            end="",
+        )
         mirror_electric_fields = electric_fields.read_tar(
             path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
         )
-
         sensor_electric_fields = (
             simtelescope.propagate_electric_field_from_mirror_to_sensor(
                 telescope=telescope,
@@ -72,11 +81,11 @@ def simulate_telescope_response(
                 ],
             )
         )
-
         electric_fields.write_tar(
             path=os.path.join(sensor_dir, "electric_fields.tar"),
             electric_fields=sensor_electric_fields,
         )
+        print("Done.")
 
     # Electric response of LNBs electric fields
     # -----------------------------------------

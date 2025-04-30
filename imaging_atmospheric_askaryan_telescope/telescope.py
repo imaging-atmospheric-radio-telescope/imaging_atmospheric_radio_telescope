@@ -300,7 +300,6 @@ def propagate_electric_field_from_mirror_to_sensor(
     )
 
     for ise in range(telescope["sensor"]["num_feed_horns"]):
-        print(ise)
         for imi in range(telescope["mirror"]["num_scatter_centers"]):
             # timing
             # ------
