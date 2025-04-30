@@ -133,8 +133,8 @@ and
     primary_particle = {
         "key": "gamma",
         "energy_GeV": 10e4,
-        "zenith_distance_deg": 1.3,
-        "azimuth_deg": 202.3,
+        "zenith_rad": numpy.deg2rad(1.3),
+        "azimuth_rad": numpy.deg2rad(202.3),
         "core_north_m": 112.0,
         "core_west_m": 0.0,
     }
