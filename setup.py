@@ -47,6 +47,7 @@ setuptools.setup(
         # "sebastians_matplotlib_addons>=0.0.17",
         "json_utils_sebastian-achim-mueller",
         "rename_after_writing",
+        "homogeneous_transformation",
     ],
     license="MIT",
     classifiers=[
