@@ -81,7 +81,7 @@ plot_dir = os.path.join(out_dir, "plot")
 os.makedirs(plot_dir, exist_ok=True)
 for component in ["probe", "mirror", "sensor"]:
     if component == "sensor":
-        channels_label = "pixels / 1"
+        channels_label = "feed horns / 1"
         roi_time = [2.5e-9, 7.5e-9]
         roi_frequency = [2.5e9, 25e9]
     elif component == "mirror":
@@ -162,8 +162,6 @@ for component in ["mirror", "sensor"]:
             * field["time_slice_duration_s"]
             / iaat.signal.ELECTRON_VOLT_J
         )
-        print(component, _E_eV, "eV")
-        print(fig_path)
         iaat_plot.write_matrix(
             path=fig_path,
             matrix=_power,
