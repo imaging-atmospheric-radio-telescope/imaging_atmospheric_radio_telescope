@@ -26,6 +26,7 @@ def simulate_telescope_response(
     # Electric fields on mirror
     # -------------------------
     if source_config["__type__"] == "airshower":
+        radio_from_airshower.assert_config_is_valid(source_config)
         radio_from_airshower.simulate_mirror_electric_fields(
             out_dir=out_dir,
             airshower_config=source_config,

@@ -29,6 +29,13 @@ def make_config():
     return c
 
 
+def assert_config_is_valid(config):
+    template = make_config()
+    top_level_config_keys = set(template.keys())
+    for key in config:
+        assert key in top_level_config_keys
+
+
 def _simulate_mirror_electric_fields_manual(
     out_dir,
     event_id,

@@ -34,15 +34,15 @@ site = askaryan["site"]
 
 random_seed = 1400
 
-if False:
+if True:
     source_config = iaat.production.radio_from_airshower.make_config()
     source_config["event_id"] = random_seed
-    source_config["key"] = "gamma"
-    source_config["azimuth_rad"] = np.deg2rad(30)
-    source_config["zenith_rad"] = np.deg2rad(1.5)
-    source_config["core_north_m"] = 50.0
-    source_config["core_west_m"] = 20.0
-    source_config["energy_GeV"] = 10_000.0
+    source_config["primary_particle"]["key"] = "gamma"
+    source_config["primary_particle"]["azimuth_rad"] = np.deg2rad(30)
+    source_config["primary_particle"]["zenith_rad"] = np.deg2rad(1.5)
+    source_config["primary_particle"]["core_north_m"] = 50.0
+    source_config["primary_particle"]["core_west_m"] = 20.0
+    source_config["primary_particle"]["energy_GeV"] = 10_000.0
 else:
     source_config = iaat.production.radio_from_plane_wave.make_config()
     source_config["geometry"]["azimuth_rad"] = np.deg2rad(30)
@@ -136,13 +136,9 @@ for component in ["probe", "mirror", "sensor"]:
 for component in ["mirror", "sensor"]:
     if component == "sensor":
         channels_label = "feed horns / 1"
-        roi_time = [2.5e-9, 7.5e-9]
-        roi_frequency = [2.5e9, 25e9]
         A_effective = 1 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
     elif component == "mirror":
         channels_label = "scatter centers / 1"
-        roi_time = [2.5e-9, 7.5e-9]
-        roi_frequency = [2.5e9, 25e9]
         A_effective = (
             1 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
         )
@@ -179,7 +175,7 @@ for component in ["mirror", "sensor"]:
             cmap="viridis",
             cmap_marker=None,
             norm=None,
-            figsize={"rows": 2160, "cols": 1920, "fontsize": 1.5},
+            figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
             title=None,
         )
 
