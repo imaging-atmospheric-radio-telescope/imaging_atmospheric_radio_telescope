@@ -32,12 +32,13 @@ telescope = askaryan["telescope"]
 timing = askaryan["timing"]
 site = askaryan["site"]
 
-random_seed = 1337
+random_seed = 1400
 
 if False:
     source_config = iaat.production.radio_from_airshower.make_config()
     source_config["event_id"] = random_seed
-    source_config["azimuth_rad"] = np.deg2rad(45)
+    source_config["key"] = "gamma"
+    source_config["azimuth_rad"] = np.deg2rad(30)
     source_config["zenith_rad"] = np.deg2rad(1.5)
     source_config["core_north_m"] = 50.0
     source_config["core_west_m"] = 20.0
@@ -49,13 +50,11 @@ else:
     source_config["geometry"][
         "distance_to_plane_defining_time_zero_m"
     ] = iaat.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
-    source_config["power"]["power_of_isotrop_and_point_like_emitter_W"] = 1e3
+    source_config["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e0
     source_config["power"][
         "distance_to_isotrop_and_point_like_emitter_m"
     ] = 100e3
-    source_config["sine_wave"]["emission_frequency_Hz"] = (
-        timing["electric_fields"]["sampling_frequency_Hz"] / 6 * 1
-    )
+    source_config["sine_wave"]["emission_frequency_Hz"] = 11.1e9
     source_config["sine_wave"]["emission_duration_s"] = 5e-9
     source_config["sine_wave"]["emission_ramp_up_duration_s"] = 1e-9
     source_config["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
@@ -106,8 +105,8 @@ for component in ["probe", "mirror", "sensor"]:
                 channels_label=channels_label,
                 figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
                 norm=None,
-                vmin=1e-6 * np.max(field["electric_fields_V_per_m"]),
-                vmax=np.max(field["electric_fields_V_per_m"]),
+                vmin=np.max(field["electric_fields_V_per_m"]),
+                vmax=1e6 * np.max(field["electric_fields_V_per_m"]),
                 roi_time=roi_time,
             )
 
@@ -130,6 +129,59 @@ for component in ["probe", "mirror", "sensor"]:
                 figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
                 roi_frequency=roi_frequency,
             )
+
+
+# plot power
+# ----------
+for component in ["mirror", "sensor"]:
+    if component == "sensor":
+        channels_label = "feed horns / 1"
+        roi_time = [2.5e-9, 7.5e-9]
+        roi_frequency = [2.5e9, 25e9]
+        A_effective = 1 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
+    elif component == "mirror":
+        channels_label = "scatter centers / 1"
+        roi_time = [2.5e-9, 7.5e-9]
+        roi_frequency = [2.5e9, 25e9]
+        A_effective = (
+            1 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
+        )
+
+    fig_path = os.path.join(out_dir, "plot", f"{component}_power.jpg")
+    if not os.path.exists(fig_path):
+        field_path = os.path.join(out_dir, component, "electric_fields.tar")
+        field = iaat.electric_fields.read_tar(field_path)
+
+        field_norm = np.linalg.norm(field["electric_fields_V_per_m"], axis=2)
+        assert field_norm.shape[0] == field["num_antennas"]
+        assert field_norm.shape[1] == field["num_time_slices"]
+
+        _power = iaat.signal.calculate_antenna_power(
+            effective_area=A_effective,
+            electric_field=field_norm,
+        )
+
+        _E_eV = (
+            np.sum(_power)
+            * field["time_slice_duration_s"]
+            / iaat.signal.ELECTRON_VOLT_J
+        )
+        print(component, _E_eV, "eV")
+        print(fig_path)
+        iaat_plot.write_matrix(
+            path=fig_path,
+            matrix=_power,
+            x_bin_edges=1e9 * iaat.electric_fields.make_time_bin_edges(field),
+            y_bin_edges=iaat.electric_fields.make_antenna_bin_edges(field),
+            x_label="time / ns",
+            y_label=channels_label,
+            z_label="Power / W",
+            cmap="viridis",
+            cmap_marker=None,
+            norm=None,
+            figsize={"rows": 2160, "cols": 1920, "fontsize": 1.5},
+            title=None,
+        )
 
 
 # check energy conservation
@@ -174,32 +226,33 @@ if True:
     En_mirror_eV = En_mirror_J / iaat.signal.ELECTRON_VOLT_J
     En_sensor_eV = En_sensor_J / iaat.signal.ELECTRON_VOLT_J
 
-    _power_geom = (
-        iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
-            **source_config["power"]
+    if source_config["__type__"] == "plane_wave":
+        _power_geom = (
+            iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
+                **source_config["power"]
+            )
         )
-    )
-    expected_power_on_mirror_W = (
-        telescope["mirror"]["area_m2"]
-        * _power_geom["pointing_vector_magnitude_W_per_m2"]
-    )
-    expected_energy_on_mirror_J = (
-        expected_power_on_mirror_W
-        * source_config["sine_wave"]["emission_duration_s"]
-    )
-    expected_energy_on_mirror_eV = (
-        expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J
-    )
+        expected_power_on_mirror_W = (
+            telescope["mirror"]["area_m2"]
+            * _power_geom["pointing_vector_magnitude_W_per_m2"]
+        )
+        expected_energy_on_mirror_J = (
+            expected_power_on_mirror_W
+            * source_config["sine_wave"]["emission_duration_s"]
+        )
+        expected_energy_on_mirror_eV = (
+            expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J
+        )
 
-    print(
-        "Energy on mirror",
-        En_mirror_eV,
-        "eV",
-        "expected",
-        expected_energy_on_mirror_eV,
-        "eV",
-    )
-    print("Energy on sensor", En_sensor_eV, "eV")
+        print(
+            "Energy on mirror",
+            En_mirror_eV,
+            "eV",
+            "expected",
+            expected_energy_on_mirror_eV,
+            "eV",
+        )
+        print("Energy on sensor", En_sensor_eV, "eV")
 
 # plot instrument
 # ---------------
@@ -295,6 +348,14 @@ noise_efield_leaving_lnb = np.sqrt(
 _noise_power_W = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area_m2"],
     electric_field=noise_efield_leaving_lnb,
+)
+_signal_leaving_power_W = iaat.signal.calculate_antenna_power(
+    effective_area=telescope["lnb"]["effective_area_m2"],
+    electric_field=signal_efield_leaving_lnb,
+)
+_signal_entering_power_W = iaat.signal.calculate_antenna_power(
+    effective_area=telescope["lnb"]["effective_area_m2"],
+    electric_field=signal_efield_entering_lnb,
 )
 
 assert (

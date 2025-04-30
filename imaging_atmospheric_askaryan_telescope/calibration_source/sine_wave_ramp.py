@@ -72,7 +72,7 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
         in 'num_time_slices' equally long time slices of
         'time_slice_duration_s'.
     """
-    MIN_OVERSAMPLNG_RATIO = 6.0
+    MIN_OVERSAMPLNG_RATIO = 3.0
     assert emission_frequency_Hz > 0.0
     assert emission_duration_s >= 0.0
     assert emission_ramp_up_duration_s >= 0.0
