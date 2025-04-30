@@ -262,35 +262,6 @@ def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
     return tele
 
 
-def square_amplitude(v):
-    norm = np.linalg.norm(v)
-    valid = norm > 0.0
-    out = np.zeros(shape=v.shape)
-    out[valid] = v[valid]
-    for dim in range(3):
-        out[valid, dim] *= norm[valid]
-    return out
-
-
-def sqrt_amplitude(v):
-    norm = np.linalg.norm(v)
-    valid = norm > 0.0
-    out = np.zeros(shape=v.shape)
-    out[valid] = v[valid]
-    for dim in range(3):
-        out[valid, dim] /= norm[valid]
-        out[valid, dim] *= np.sqrt(norm[valid])
-    return out
-
-
-def square_but_keep_sign(v):
-    return (v**2) * np.sign(v)
-
-
-def sqrt_but_keep_sign(v):
-    return np.sqrt((np.abs(v))) * np.sign(v)
-
-
 def propagate_electric_field_from_mirror_to_sensor(
     telescope,
     mirror_electric_fields,
@@ -301,99 +272,10 @@ def propagate_electric_field_from_mirror_to_sensor(
     #====================================
     Delays of the fields are defined by the distances between the
     scatter-centers on the mirror and the feed-horns in the sensor.
-    But how to add up the electric-fields amplitudes?
 
-    fh: feed horn
-    sc: scatter center
-    Z_vacuum: Impedance of vacuum
-
-    The power P_sc that can be received and radiated again by the n-th
-    scatter-center on the mirror.
-
-    P_sc_n = A_sc E_sc_n^{2} Z_vacuum                                        (1)
-
-    N := Number of scatter-centers on the mirror                             (2)
-
-    We assume that all scatter-centers have the same effective area A_fh.
-    Same the power P_sc that can be received by the m-th feed-horn on the
-    sensor.
-
-    P_fh_m = A_fh E_fh_m^{2} Z_vacuum                                        (3)
-\
-    M := Number of feed-horns in the sensor                                  (4)
-
-    The effective area of a scatter-center on the mirror is:
-
-    A_sc = A_mirror * N^{-1}.                                                (5)
-
-    With the mirror f/D being large, the distance from any scatter-center
-    to any feed-horn is roughly the focal-length f.
-
-    | position_fh_m - position_sc_n |_2 =approx. f, for all m, n             (6)
-
-    # Scenario 1
-    # ----------
-    A plane wave runs streight into a parabolic dish and all its power will
-    be received by the central feed-horn c.
-
-    P_fh_c = Sum_{n}^{N} P_sc_n                                            (1.1)
-
-    <=> A_fh E_fh_c^2 Z_vacuum = Sum_{n}^{N} ( A_sc E_sc_m^2 Z_vacuum )
-
-    <=> A_fh E_fh_c^2 = Sum_{n}^{N} ( A_sc E_sc_n^2 )
-
-    <=> = N A_sc Sum_{n}^{N} ( E_sc_n^2 )
-
-    <=> = N A_mirror N^{-1} Sum_{n}^{N} ( E_sc_n^2 )
-
-    <=> = A_mirror Sum_{n}^{N} ( E_sc_n^2 )
-
-    <=> E_fh_c^2 = A_mirror/A_fh Sum_{n}^{N} ( E_sc_n^2 )
-
-    <=> E_fh_c = sqrt(A_mirror/A_fh) sqrt( Sum_{n}^{N} ( E_sc_n^2 ) )
-
-    The E-field is pretty much scaled with sqrt(A_mirror/A_fh), and this is
-    exactly what one would expect from the gain perspective
-    What does this mean for the sign?
-    I think we have to square and sqrt but keep the sign.
-
-    Scenario 2
-    ----------
-    Strict huygenes principle. Every scatter-center on the mirror absorbs all
-    the E-field and then radiates it again in a spherical wave.
-
-    P_fh_m = Sum_{n}^{N} (A_fh/A_sphere_n P_sc)
-
-    <=> A_fh E_fh_m^{2} = A_fh Sum_{n}^{N} ( A_sc/A_sphere_n E_sc_n^{2} )
-
-    <=> E_fh_m^{2} = Sum_{n}^{N} ( A_sc/A_sphere_n E_sc_n^{2} )
-
-    A_sphere_n is almost the same for all n.
-
-    <=> E_fh_m^{2} = A_sc/A_sphere Sum_{n}^{N} ( E_sc_n^{2} )
-
-    <=> E_fh_m = sqrt(A_sc/A_sphere) sqrt( Sum_{n}^{N} ( E_sc_n^{2} ) )
-
-    Well, this is very different from Scenario 1.
-    One might argue that A_sphere should be A_hemisphere as half of the sphere
-    is reflected by the mirror, but still
-
-         Scenario 2                                  Scenario 1
-    sqrt(A_sc/A_sphere)                         sqrt(A_mirror/A_fh)
-          = 0.004                                      = 190
-
-    With example numbers. f=18.9m, D=12.6m A_sc=0.0714m2, A_fh=0.0026m2
-    A_sphere=4489m2
-
-    Scenario 3
-    ----------
-    Strict huygenes principle but this way the other way around.
-
-    P_sc_n = A_sc/A_sphere Sum_{m}^{M} P_fh
-
-    <=> A_sc E_sc_n^2 = A_sc/A_sphere Sum_{m}^{M} ( A_fh E_fh_m^2 )
-
-    <=> E_sc_n^2 = (A_fh/A_sphere) Sum_{m}^{M} E_fh_m^2
+    The electric field amplitude weights are:
+        sqrt(1/num_scatter_centers_in_mirror) *
+        sqrt(area_mirror_scatter/area_feed_horn)
     """
     mir = mirror_electric_fields
     sen = electric_fields.init(

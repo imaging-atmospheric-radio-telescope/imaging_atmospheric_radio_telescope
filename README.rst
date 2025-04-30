@@ -163,6 +163,17 @@ An depricated example of a single event and some plots.
     python imaging_atmospheric_askaryan_telescope/scripts/test.py
 
 
+************
+Contributing
+************
+
+Use black package linting with 79 columns:
+
+.. code-block:: bash
+
+    black -l79 imaging_atmospheric_askaryan_telescope/
+
+
 **********
 References
 **********
