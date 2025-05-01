@@ -131,8 +131,8 @@ for component in ["probe", "mirror", "sensor"]:
             )
 
 
-# plot power
-# ----------
+# plot power density
+# ------------------
 for component in ["mirror", "sensor"]:
     if component == "sensor":
         channels_label = "feed horns / 1"
@@ -143,7 +143,7 @@ for component in ["mirror", "sensor"]:
             1 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
         )
 
-    fig_path = os.path.join(out_dir, "plot", f"{component}_power.jpg")
+    fig_path = os.path.join(out_dir, "plot", f"{component}_power_density.jpg")
     if not os.path.exists(fig_path):
         field_path = os.path.join(out_dir, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
@@ -156,23 +156,19 @@ for component in ["mirror", "sensor"]:
             effective_area=A_effective,
             electric_field=field_norm,
         )
+        _power_density = _power / A_effective
 
-        _E_eV = (
-            np.sum(_power)
-            * field["time_slice_duration_s"]
-            / iaat.signal.ELECTRON_VOLT_J
-        )
         iaat_plot.write_matrix(
             path=fig_path,
-            matrix=_power,
+            matrix=_power_density,
             x_bin_edges=1e9 * iaat.electric_fields.make_time_bin_edges(field),
             y_bin_edges=iaat.electric_fields.make_antenna_bin_edges(field),
             x_label="time / ns",
             y_label=channels_label,
-            z_label="Power / W",
+            z_label=r"areal power density / Wm$^{-2}$",
             cmap="viridis",
             cmap_marker=None,
-            norm=None,
+            norm=iaat_plot.seb.matplotlib.colors.LogNorm(),
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
             title=None,
         )
