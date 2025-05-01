@@ -26,7 +26,11 @@ def simulate_telescope_response(
     # Electric fields on mirror
     # -------------------------
     if source_config["__type__"] == "airshower":
-        print("Simulating air shower using CORSIKA CoREAS ... ", end="")
+        print(
+            "Simulating air shower using CORSIKA CoREAS ... ",
+            end="",
+            flush=True,
+        )
         radio_from_airshower.assert_config_is_valid(source_config)
         radio_from_airshower.simulate_mirror_electric_fields(
             out_dir=out_dir,
@@ -40,7 +44,7 @@ def simulate_telescope_response(
         print("Done.")
 
     elif source_config["__type__"] == "plane_wave":
-        print("Simulating plane wave ... ", end="")
+        print("Simulating plane wave ... ", end="", flush=True)
         radio_from_plane_wave.simulate_mirror_electric_fields(
             out_dir=out_dir,
             plane_wave_config=source_config,
@@ -68,6 +72,7 @@ def simulate_telescope_response(
         print(
             "Propagating electric fields from mirror to feed horns ... ",
             end="",
+            flush=True,
         )
         mirror_electric_fields = electric_fields.read_tar(
             path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
