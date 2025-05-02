@@ -207,19 +207,16 @@ def simulate_telescope_response(
                 trailing_overhead_duration_s=signal_duration_s / 2,
             )
 
-            electric_field_thermal_noise_amplitude_V_per_m = (
-                signal.electric_field_of_thermal_noise(
-                    antenna_temperature_K=telescope["lnb"][
-                        "noise_temperature_K"
-                    ],
-                    antenna_bandwidth_Hz=telescope["lnb"][
-                        "intermediate_bandwidth_Hz"
-                    ],
-                )
+            electric_field_thermal_noise_amplitude_V_per_m = signal.calculate_electric_field_strength_of_thermal_noise_V_per_m(
+                antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
+                antenna_bandwidth_Hz=telescope["lnb"][
+                    "intermediate_bandwidth_Hz"
+                ],
+                antenna_effective_area_m2=telescope["lnb"][
+                    "effective_area_m2"
+                ],
             )
-            E_lnb_noise["electric_fields_V_per_m"] = np.sqrt(
-                1 / telescope["lnb"]["effective_area_m2"]
-            ) * prng.normal(
+            E_lnb_noise["electric_fields_V_per_m"] = prng.normal(
                 loc=0.0,
                 scale=electric_field_thermal_noise_amplitude_V_per_m,
                 size=(

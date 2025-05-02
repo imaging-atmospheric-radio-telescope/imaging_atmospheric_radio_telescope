@@ -5,19 +5,19 @@ import math
 
 # setup
 # -----
-with open("config.json", "rt") as f:
-    config = json_numpy.loads(f.read())
-
-telescope, timing = iaat.init_telescope_and_timing(config=config)
+config = iaat.from_config("run")
+telescope = config["telescope"]
+timing = config["timing"]
 
 # start simulation
 # ----------------
 prng = np.random.Generator(np.random.PCG64(42))
 
-electric_field_thermal_noise_amplitude = (
-    iaat.signal.electric_field_of_thermal_noise(
-        antenna_temperature_K=telescope["lnb"]["noise_temperature"],
-        antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth"],
+electric_field_thermal_noise_amplitude_V_per_m = (
+    iaat.signal.calculate_electric_field_strength_of_thermal_noise_V_per_m(
+        antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
+        antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
+        antenna_effective_area_m2=telescope["lnb"]["effective_area_m2"],
     )
 )
 
@@ -27,7 +27,7 @@ num_neighbor_pixels_in_trigger = 7
 
 numT = timing["readout"]["integrates_num_simulation_time_slices"]
 simulation_time_slice_duration = timing["electric_fields"][
-    "time_slice_duration"
+    "time_slice_duration_s"
 ]
 
 simulation_time_slices_which_are_sampled_by_readout = np.arange(
@@ -43,21 +43,19 @@ readout_energy_blocks = []
 for block in range(10):
     print(block)
 
-    noise_efield_leaving_lnb = np.sqrt(
-        1 / telescope["lnb"]["effective_area"]
-    ) * prng.normal(
+    noise_efield_leaving_lnb = prng.normal(
         loc=0.0,
-        scale=electric_field_thermal_noise_amplitude,
+        scale=electric_field_thermal_noise_amplitude_V_per_m,
         size=noise_num_time_slices,
     )
 
     _noise_power = iaat.signal.calculate_antenna_power(
-        effective_area=telescope["lnb"]["effective_area"],
+        effective_area=telescope["lnb"]["effective_area_m2"],
         electric_field=noise_efield_leaving_lnb,
     )
 
     assert (
-        0.9 < (telescope["lnb"]["noise_power"] / np.mean(_noise_power)) < 1.1
+        0.9 < (telescope["lnb"]["noise_power_W"] / np.mean(_noise_power)) < 1.1
     )
 
     # integrate over time for readout
@@ -77,8 +75,8 @@ for block in range(10):
         _readout_energy[i] = noise_energy[simulation_time_slice]
 
     expected_noise_energy_in_read_out_slice = (
-        telescope["lnb"]["noise_power"]
-        * timing["readout"]["time_slice_duration"]
+        telescope["lnb"]["noise_power_W"]
+        * timing["readout"]["time_slice_duration_s"]
     )
 
     readout_energy_blocks.append(_readout_energy)
@@ -99,28 +97,30 @@ trigger_energy_mean = (
 )
 
 
-acceptable_accidental_trigger_rate = 1 / 3600
-acceptable_time_unti_next_accidental_trigger = (
-    1 / acceptable_accidental_trigger_rate
+acceptable_accidental_trigger_rate_Hz = 1 / 3600
+acceptable_time_unti_next_accidental_trigger_s = (
+    1 / acceptable_accidental_trigger_rate_Hz
 )
 num_readout_time_slices_until_acceptable_accidental_trigger = (
-    acceptable_time_unti_next_accidental_trigger
-    / timing["readout"]["time_slice_duration"]
+    acceptable_time_unti_next_accidental_trigger_s
+    / timing["readout"]["time_slice_duration_s"]
 )
 acceptable_probability_for_readout_time_slice_to_trigger_accidentally = (
     1.0 / num_readout_time_slices_until_acceptable_accidental_trigger
-) * (1.0 / telescope["sensor"]["num_antennas"])
+) * (1.0 / telescope["sensor"]["num_feed_horns"])
 
 sigma = 8.1
 p = 1 - math.erf(sigma / np.sqrt(2))
 
-trigger_energy_threshold = trigger_energy_mean + sigma * trigger_energy_std
-trigger_energy_threshold_eV = trigger_energy_threshold / 1.602e-19
+trigger_energy_threshold_J = trigger_energy_mean + sigma * trigger_energy_std
+trigger_energy_threshold_eV = (
+    trigger_energy_threshold_J / iaat.signal.ELECTRON_VOLT_J
+)
 trigger_energy_threshold_K = (
     iaat.signal.radiated_power_to_blackbody_temperature(
-        power_W=trigger_energy_threshold
-        / timing["readout"]["time_slice_duration"],
-        bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth"],
+        power_W=trigger_energy_threshold_J
+        / timing["readout"]["time_slice_duration_s"],
+        bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
     )
 )
 

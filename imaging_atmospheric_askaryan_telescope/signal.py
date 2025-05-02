@@ -155,15 +155,16 @@ def radiated_power_to_blackbody_temperature(power_W, bandwidth_Hz):
     return power_W / (BOLTZMANN_CONSTANT_J_PER_K * bandwidth_Hz)
 
 
-def electric_field_of_thermal_noise(
-    antenna_temperature_K=80,
-    antenna_bandwidth_Hz=1e9,
+def calculate_electric_field_strength_of_thermal_noise_V_per_m(
+    antenna_temperature_K,
+    antenna_bandwidth_Hz,
+    antenna_effective_area_m2,
 ):
-    P = electric_power_of_thermal_noise(
+    Power_W = electric_power_of_thermal_noise(
         antenna_temperature_K=antenna_temperature_K,
         antenna_bandwidth_Hz=antenna_bandwidth_Hz,
     )
-    return np.sqrt(P * VACUUM_IMPEDANCE_OHM)
+    return np.sqrt(Power_W * VACUUM_IMPEDANCE_OHM / antenna_effective_area_m2)
 
 
 def lnb_mixer(
