@@ -4,7 +4,7 @@ from .utils import tarstream
 from . import corsika
 
 
-def init(
+def init_zeros(
     time_slice_duration_s,
     num_time_slices,
     num_antennas,
@@ -25,10 +25,77 @@ def init(
     return out
 
 
+def get_exposure_duration_s(electric_fields):
+    return (
+        electric_fields["time_slice_duration_s"]
+        * electric_fields["num_time_slices"]
+    )
+
+
+def init_zeros_like(other):
+    return init_zeros(
+        time_slice_duration_s=other["time_slice_duration_s"],
+        num_time_slices=other["num_time_slices"],
+        num_antennas=other["num_antennas"],
+        global_start_time_s=other["global_start_time_s"],
+    )
+
+
+def init_zeros_like_other_but_with_overhead_in_time(
+    other,
+    leading_overhead_num_time_slices=None,
+    leading_overhead_duration_s=None,
+    trailing_overhead_num_time_slices=None,
+    trailing_overhead_duration_s=None,
+):
+    leading_overhead_num_time_slices = _num_time_slices_from_duration(
+        time_slice_duration_s=other["time_slice_duration_s"],
+        duration_s=leading_overhead_duration_s,
+        num_time_slices=leading_overhead_num_time_slices,
+    )
+    trailing_overhead_num_time_slices = _num_time_slices_from_duration(
+        time_slice_duration_s=other["time_slice_duration_s"],
+        duration_s=trailing_overhead_duration_s,
+        num_time_slices=trailing_overhead_num_time_slices,
+    )
+
+    total_num_time_slices = (
+        leading_overhead_num_time_slices
+        + other["num_time_slices"]
+        + trailing_overhead_num_time_slices
+    )
+
+    leading_overhead_duration_s = (
+        leading_overhead_num_time_slices * other["time_slice_duration_s"]
+    )
+
+    return init_zeros(
+        time_slice_duration_s=other["time_slice_duration_s"],
+        num_time_slices=total_num_time_slices,
+        num_antennas=other["num_antennas"],
+        global_start_time_s=other["global_start_time_s"]
+        - leading_overhead_duration_s,
+    )
+
+
+def _num_time_slices_from_duration(
+    time_slice_duration_s, duration_s=None, num_time_slices=None
+):
+    assert time_slice_duration_s > 0
+    if duration_s is None:
+        assert num_time_slices is not None
+        assert num_time_slices >= 0
+    else:
+        assert num_time_slices is None
+        assert duration_s >= 0.0
+        num_time_slices = int(np.round(duration_s / time_slice_duration_s))
+    return num_time_slices
+
+
 def init_random(seed):
     prng = prng = np.random.Generator(np.random.PCG64(seed))
 
-    E = init(
+    E = init_zeros(
         time_slice_duration_s=prng.uniform(low=1e-9, high=1e-6),
         num_time_slices=prng.integers(low=100, high=1_000),
         num_antennas=prng.integers(low=10, high=1_000),
@@ -135,7 +202,7 @@ def init_from_coreas_electric_fields(coreas_electric_fields):
 
 def to_coreas_electric_fields(electric_fields):
     ef = electric_fields
-    raw = corsika.coreas.coreas_electric_fields.init(
+    raw = corsika.coreas.coreas_electric_fields.init_zeros(
         num_antennas=ef["num_antennas"],
         num_time_slices=ef["num_time_slices"],
     )
@@ -222,10 +289,10 @@ def read(path):
         ]
 
     with open(os.path.join(path, "num_time_slices.uint64"), "rb") as f:
-        o["num_time_slices"] = np.frombuffer(f.read(), dtype="uint64")[0]
+        o["num_time_slices"] = int(np.frombuffer(f.read(), dtype="uint64")[0])
 
     with open(os.path.join(path, "num_antennas.uint64"), "rb") as f:
-        o["num_antennas"] = np.frombuffer(f.read(), dtype="uint64")[0]
+        o["num_antennas"] = int(np.frombuffer(f.read(), dtype="uint64")[0])
 
     with open(os.path.join(path, "global_start_time_s.float64"), "rb") as f:
         o["global_start_time_s"] = np.frombuffer(f.read(), dtype="float64")[0]
@@ -255,11 +322,11 @@ def read_tar(path):
 
         filename, filebytes = t.read()
         assert filename == "num_time_slices.uint64"
-        o["num_time_slices"] = np.frombuffer(filebytes, dtype="uint64")[0]
+        o["num_time_slices"] = int(np.frombuffer(filebytes, dtype="uint64")[0])
 
         filename, filebytes = t.read()
         assert filename == "num_antennas.uint64"
-        o["num_antennas"] = np.frombuffer(filebytes, dtype="uint64")[0]
+        o["num_antennas"] = int(np.frombuffer(filebytes, dtype="uint64")[0])
 
         filename, filebytes = t.read()
         assert filename == "global_start_time_s.float64"

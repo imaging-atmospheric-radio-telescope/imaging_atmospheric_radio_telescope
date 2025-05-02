@@ -30,16 +30,16 @@ def make_steering_card(
     sc += "SEED {:d} 0 0\n".format(unique_identifier + 2)
     sc += "PRMPAR {:d}\n".format(primary_particle_id)
 
-    sc += "ERANGE {:.E} {:.E}\n".format(energy_GeV, energy_GeV)
+    sc += "ERANGE {:E} {:E}\n".format(energy_GeV, energy_GeV)
     sc += "ESLOPE 0\n"
-    sc += "THETAP {:.E} {:.E}\n".format(r2d(zenith_rad), r2d(zenith_rad))
-    sc += "PHIP {:.E} {:.E}\n".format(r2d(azimuth_rad), r2d(azimuth_rad))
+    sc += "THETAP {:E} {:E}\n".format(r2d(zenith_rad), r2d(zenith_rad))
+    sc += "PHIP {:E} {:E}\n".format(r2d(azimuth_rad), r2d(azimuth_rad))
 
     sc += "ECUTS 3.000E-01 3.000E-01 4.010E-04 4.010E-04\n"
     sc += "ELMFLG T T\n"
     sc += "NSHOW 1\n"
     sc += "DIRECT './'\n"
-    sc += "OBSLEV {:.E}\n".format(obs_level_asl_cm)
+    sc += "OBSLEV {:E}\n".format(obs_level_asl_cm)
 
     sc += "ECTMAP 1.000E+05\n"
     sc += "STEPFC 1.000E+00\n"
@@ -47,7 +47,7 @@ def make_steering_card(
     sc += "MUADDI T\n"
     sc += "PAROUT F  F\n"
     sc += "MAXPRT 1\n"
-    sc += "MAGNET {:.E} {:.E}\n".format(
+    sc += "MAGNET {:E} {:E}\n".format(
         earth_magnetic_field_x_muT,
         earth_magnetic_field_z_muT,
     )

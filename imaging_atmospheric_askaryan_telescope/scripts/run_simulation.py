@@ -32,9 +32,9 @@ telescope = askaryan["telescope"]
 timing = askaryan["timing"]
 site = askaryan["site"]
 
-random_seed = 1400
+random_seed = 1401
 
-if True:
+if False:
     source_config = iaat.production.radio_from_airshower.make_config()
     source_config["event_id"] = random_seed
     source_config["primary_particle"]["key"] = "gamma"
@@ -73,11 +73,13 @@ iaat.production.simulate_telescope_response(
     site=site,
     telescope=telescope,
     timing=timing,
+    thermal_noise_random_seed=random_seed + 1,
 )
 
 # plot electic fields
 # -------------------
 plot_dir = os.path.join(out_dir, "plot")
+
 os.makedirs(plot_dir, exist_ok=True)
 for component in ["probe", "mirror", "sensor"]:
     if component == "sensor":
@@ -93,10 +95,11 @@ for component in ["probe", "mirror", "sensor"]:
         roi_time = None
         roi_frequency = None
 
-    fig_path = os.path.join(plot_dir, component + ".jpg")
+    fig_path = os.path.join(plot_dir, component + "_electric_fields.jpg")
     if not os.path.exists(fig_path):
         field_path = os.path.join(out_dir, component, "electric_fields.tar")
         if os.path.exists(field_path):
+            print("plot", fig_path)
             field = iaat.electric_fields.read_tar(field_path)
             iaat_plot.write_figure_electric_fields_overview(
                 electric_fields=field,
@@ -107,7 +110,7 @@ for component in ["probe", "mirror", "sensor"]:
                 norm=None,
                 vmin=np.max(field["electric_fields_V_per_m"]),
                 vmax=1e6 * np.max(field["electric_fields_V_per_m"]),
-                roi_time=roi_time,
+                # roi_time=roi_time,
             )
 
     fig_spectrum_path = os.path.join(
@@ -116,6 +119,7 @@ for component in ["probe", "mirror", "sensor"]:
     if not os.path.exists(fig_spectrum_path):
         field_path = os.path.join(out_dir, component, "electric_fields.tar")
         if os.path.exists(field_path):
+            print("plot", fig_spectrum_path)
             field = iaat.electric_fields.read_tar(field_path)
 
             iaat_plot.write_figure_electric_fields_power_density_spectrum(
@@ -133,8 +137,8 @@ for component in ["probe", "mirror", "sensor"]:
 
 # plot power density
 # ------------------
-for component in ["mirror", "sensor"]:
-    if component == "sensor":
+for component in ["mirror", "feed_horns"]:
+    if component == "feed_horns":
         channels_label = "feed horns / 1"
         A_effective = 1 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
     elif component == "mirror":
@@ -145,6 +149,7 @@ for component in ["mirror", "sensor"]:
 
     fig_path = os.path.join(out_dir, "plot", f"{component}_power_density.jpg")
     if not os.path.exists(fig_path):
+        print("plot", fig_path)
         field_path = os.path.join(out_dir, component, "electric_fields.tar")
         field = iaat.electric_fields.read_tar(field_path)
 
@@ -180,7 +185,7 @@ if True:
     E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
     E_mirror = iaat.electric_fields.read_tar(E_mirror_path)
 
-    E_sensor_path = os.path.join(out_dir, "sensor", "electric_fields.tar")
+    E_sensor_path = os.path.join(out_dir, "feed_horns", "electric_fields.tar")
     E_sensor = iaat.electric_fields.read_tar(E_sensor_path)
 
     A_eff_mirror_scatter_center_m2 = (
@@ -253,12 +258,14 @@ pos_keys = {
 for component in ["mirror", "sensor"]:
     fig_path = os.path.join(plot_dir, component + ".antenna_positions.jpg")
     if not os.path.exists(fig_path):
+        print("plot", fig_path)
         iaat_plot.write_figure_antenna_positions(
             positions=telescope[component][pos_keys[component]], path=fig_path
         )
 
 # simulate lnb
 # ------------
+"""
 feed_horn_geometric_gain = (
     telescope["sensor"]["feed_horn_area_m2"]
     / telescope["lnb"]["effective_area_m2"]
@@ -286,21 +293,27 @@ signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
         "intermediate_frequency_stop_Hz"
     ],
 )
+"""
 
 # plot lnb mixer gain
-_lnb_bench_frequency_Hz = np.geomspace(0.1e9, 10e9, 100)
-_lnb_bench_gain = iaat.signal.butter_bench(
-    frequencies=_lnb_bench_frequency_Hz,
-    bandpass=iaat.signal.butter_bandpass_filter,
-    filter_config={
-        "frequency_start": telescope["lnb"]["intermediate_frequency_start_Hz"],
-        "frequency_stop": telescope["lnb"]["intermediate_frequency_stop_Hz"],
-    },
-    num_time_slices=10000,
-    time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
-)
+# -------------------
 _fig_path_lnb_gain = os.path.join(plot_dir, "lnb_gain.jpg")
 if not os.path.exists(_fig_path_lnb_gain):
+    _lnb_bench_frequency_Hz = np.geomspace(0.1e9, 10e9, 100)
+    _lnb_bench_gain = iaat.signal.butter_bench(
+        frequencies=_lnb_bench_frequency_Hz,
+        bandpass=iaat.signal.butter_bandpass_filter,
+        filter_config={
+            "frequency_start": telescope["lnb"][
+                "intermediate_frequency_start_Hz"
+            ],
+            "frequency_stop": telescope["lnb"][
+                "intermediate_frequency_stop_Hz"
+            ],
+        },
+        num_time_slices=10000,
+        time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
+    )
     iaat_plot.write_figure_gain(
         path=_fig_path_lnb_gain,
         frequency=_lnb_bench_frequency_Hz,
@@ -309,6 +322,7 @@ if not os.path.exists(_fig_path_lnb_gain):
 
 # thermal noise
 # -------------
+"""
 electric_field_thermal_noise_amplitude_V_per_m = (
     iaat.signal.electric_field_of_thermal_noise(
         antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
@@ -356,12 +370,23 @@ assert (
 numS = sensor_electric_fields["num_time_slices"]
 total_efield_leaving_lnb = noise_efield_leaving_lnb
 total_efield_leaving_lnb[:, numS:, :] += signal_efield_leaving_lnb
+"""
+
+sensor_electric_fields = iaat.electric_fields.read_tar(
+    os.path.join(out_dir, "feed_horns", "electric_fields.tar")
+)
+
+total_efield_leaving_lnb = iaat.electric_fields.read_tar(
+    os.path.join(out_dir, "lnb_signal_and_noise_output", "electric_fields.tar")
+)
 
 # efield to power
 total_power_leaving_lnb = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area_m2"],
-    electric_field=total_efield_leaving_lnb,
+    electric_field=total_efield_leaving_lnb["electric_fields_V_per_m"],
 )
+numS = sensor_electric_fields["num_time_slices"]
+
 
 # plot power_leaving_lnb
 # ----------------------
@@ -403,13 +428,13 @@ simulation_time_slice_duration = timing["electric_fields"][
     "time_slice_duration_s"
 ]
 
-for t in range(noise_num_time_slices - numT):
+for t in range(total_efield_leaving_lnb["num_time_slices"] - numT):
     w = np.sum(total_power_leaving_lnb[:, t : t + numT, :], axis=1)
     total_power_sliding_integral[:, t, :] = w * simulation_time_slice_duration
 
 simulation_time_slices_which_are_sampled_by_readout = np.arange(
     0,
-    noise_num_time_slices,
+    total_efield_leaving_lnb["num_time_slices"],
     numT,
 )
 random_offset_or_readout_wrt_global_time_num_time_slices = int(
@@ -424,7 +449,7 @@ readout_energy = np.zeros(
 readout_global_start_time_s = (
     random_offset_or_readout_wrt_global_time_num_time_slices
     * timing["electric_fields"]["time_slice_duration_s"]
-    + lnb_simulation_global_start_time_s
+    + total_efield_leaving_lnb["global_start_time_s"]
 )
 for i in range(num_readout_frames):
     simulation_time_slice = (
@@ -494,6 +519,7 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
             image_y_label="$c_y$ / (1$^{\circ}$)",
         )
 
+"""
 # plot images seen by trigger
 # ---------------------------
 trigger_energy = iaat.telescope.apply_pixel_summation(
@@ -521,3 +547,4 @@ for units in ["electron_volt", "black_body_temperature", "jansky"]:
             image_x_label="$c_x$ / (1$^{\circ}$)",
             image_y_label="$c_y$ / (1$^{\circ}$)",
         )
+"""

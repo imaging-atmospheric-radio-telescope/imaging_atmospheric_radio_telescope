@@ -248,7 +248,7 @@ def plane_wave_in_far_field(
         )
     )
 
-    E = electric_fields.init(
+    E = electric_fields.init_zeros(
         time_slice_duration_s=time_slice_duration_s,
         num_time_slices=num_time_slices,
         num_antennas=num_antennas,

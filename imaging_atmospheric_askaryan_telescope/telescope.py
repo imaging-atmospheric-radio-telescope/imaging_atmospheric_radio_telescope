@@ -278,7 +278,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         sqrt(area_mirror_scatter/area_feed_horn)
     """
     mir = mirror_electric_fields
-    sen = electric_fields.init(
+    sen = electric_fields.init_zeros(
         time_slice_duration_s=mir["time_slice_duration_s"],
         num_time_slices=num_time_slices,
         num_antennas=telescope["sensor"]["num_feed_horns"],

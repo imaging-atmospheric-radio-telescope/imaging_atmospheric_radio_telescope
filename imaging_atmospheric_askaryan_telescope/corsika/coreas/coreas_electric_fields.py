@@ -13,16 +13,20 @@ DTYPES = [
 ]
 
 
-def _init_coreas_electric_field(num_time_slices):
-    return np.recarray(
+def _init_zeros_coreas_electric_field(num_time_slices):
+    field = np.recarray(
         shape=num_time_slices,
         dtype=DTYPES,
     )
+    for dt in DTYPES:
+        key, _ = dt
+        field[key] = 0.0
+    return field
 
 
-def init(num_antennas, num_time_slices):
+def init_zeros(num_antennas, num_time_slices):
     return [
-        _init_coreas_electric_field(num_time_slices)
+        _init_zeros_coreas_electric_field(num_time_slices)
         for i in range(num_antennas)
     ]
 
@@ -35,7 +39,9 @@ def init_random(seed):
     global_start_time_s = prng.uniform(low=-5e-6, high=5e-6)
     time_slice_duration_s = prng.uniform(low=1e-9, high=1e-6)
 
-    raw = init(num_antennas=num_antennas, num_time_slices=num_time_slices)
+    raw = init_zeros(
+        num_antennas=num_antennas, num_time_slices=num_time_slices
+    )
 
     for a in range(num_antennas):
         raw[a]["time_s"] = global_start_time_s + np.linspace(
@@ -176,7 +182,7 @@ def loads(text):
         ww.append(w)
         vv.append(v)
 
-    coreas_electric_field = _init_coreas_electric_field(
+    coreas_electric_field = _init_zeros_coreas_electric_field(
         num_time_slices=len(tt)
     )
     coreas_electric_field["time_s"] = tt
