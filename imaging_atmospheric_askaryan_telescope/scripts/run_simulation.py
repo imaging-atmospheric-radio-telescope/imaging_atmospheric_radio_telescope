@@ -32,7 +32,7 @@ telescope = askaryan["telescope"]
 timing = askaryan["timing"]
 site = askaryan["site"]
 
-random_seed = 1401
+random_seed = 1403
 
 if False:
     source_config = iaat.production.radio_from_airshower.make_config()
@@ -263,37 +263,6 @@ for component in ["mirror", "sensor"]:
             positions=telescope[component][pos_keys[component]], path=fig_path
         )
 
-# simulate lnb
-# ------------
-"""
-feed_horn_geometric_gain = (
-    telescope["sensor"]["feed_horn_area_m2"]
-    / telescope["lnb"]["effective_area_m2"]
-)
-feed_horn_gain = (
-    feed_horn_geometric_gain * telescope["sensor"]["feed_horn_transmission"]
-)
-sensor_electric_fields = iaat.electric_fields.read_tar(
-    path=os.path.join(out_dir, "sensor", "electric_fields.tar")
-)
-
-signal_efield_entering_lnb = (
-    np.sqrt(feed_horn_gain) * sensor_electric_fields["electric_fields_V_per_m"]
-)
-signal_efield_leaving_lnb = iaat.signal.lnb_mixer(
-    amplitudes=signal_efield_entering_lnb,
-    time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
-    local_oscillator_frequency=telescope["lnb"][
-        "local_oscillator_frequency_Hz"
-    ],
-    intermediate_frequency_start=telescope["lnb"][
-        "intermediate_frequency_start_Hz"
-    ],
-    intermediate_frequency_stop=telescope["lnb"][
-        "intermediate_frequency_stop_Hz"
-    ],
-)
-"""
 
 # plot lnb mixer gain
 # -------------------
@@ -319,58 +288,6 @@ if not os.path.exists(_fig_path_lnb_gain):
         frequency=_lnb_bench_frequency_Hz,
         gain=_lnb_bench_gain,
     )
-
-# thermal noise
-# -------------
-"""
-electric_field_thermal_noise_amplitude_V_per_m = (
-    iaat.signal.electric_field_of_thermal_noise(
-        antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
-        antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
-    )
-)
-
-noise_num_time_slices = int(sensor_electric_fields["num_time_slices"]) * int(2)
-lnb_simulation_global_start_time_s = (
-    sensor_electric_fields["global_start_time_s"]
-    - sensor_electric_fields["num_time_slices"]
-    * sensor_electric_fields["time_slice_duration_s"]
-)
-
-noise_efield_leaving_lnb = np.sqrt(
-    1 / telescope["lnb"]["effective_area_m2"]
-) * prng.normal(
-    loc=0.0,
-    scale=electric_field_thermal_noise_amplitude_V_per_m,
-    size=(
-        sensor_electric_fields["num_antennas"],
-        noise_num_time_slices,
-        3,
-    ),
-)
-
-_noise_power_W = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area_m2"],
-    electric_field=noise_efield_leaving_lnb,
-)
-_signal_leaving_power_W = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area_m2"],
-    electric_field=signal_efield_leaving_lnb,
-)
-_signal_entering_power_W = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area_m2"],
-    electric_field=signal_efield_entering_lnb,
-)
-
-assert (
-    0.9 < (telescope["lnb"]["noise_power_W"] / np.mean(_noise_power_W)) < 1.1
-)
-
-# adding signal and noise
-numS = sensor_electric_fields["num_time_slices"]
-total_efield_leaving_lnb = noise_efield_leaving_lnb
-total_efield_leaving_lnb[:, numS:, :] += signal_efield_leaving_lnb
-"""
 
 sensor_electric_fields = iaat.electric_fields.read_tar(
     os.path.join(out_dir, "feed_horns", "electric_fields.tar")

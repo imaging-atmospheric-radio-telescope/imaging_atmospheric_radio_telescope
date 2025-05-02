@@ -36,8 +36,13 @@ def make_timing_from_lnb(
 
     tt["electric_fields"] = {}
 
+    _lnb_mixer_sum_frequency = (
+        lnb["local_oscillator_frequency_Hz"]
+        + lnb["intermediate_frequency_stop_Hz"]
+    )
+
     tt["electric_fields"]["sampling_frequency_Hz"] = (
-        lnb["local_oscillator_frequency_Hz"] * oversampling
+        _lnb_mixer_sum_frequency * oversampling
     )
     tt["electric_fields"]["time_slice_duration_s"] = (
         1.0 / tt["electric_fields"]["sampling_frequency_Hz"]

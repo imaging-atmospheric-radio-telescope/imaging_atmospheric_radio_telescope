@@ -273,17 +273,12 @@ def simulate_telescope_response(
                     out_dir, "lnb_noise_output", "electric_fields.tar"
                 )
             )
-            E_lnb_noise_and_signal = electric_fields.init_zeros_like(
-                other=E_lnb_noise,
+            E_lnb_noise_and_signal = (
+                electric_fields.add_first_to_second_according_to_global_time(
+                    first=E_lnb_signal,
+                    second=E_lnb_noise,
+                )
             )
-            injection_time_slice = E_lnb_signal["num_time_slices"]
-            E_lnb_noise_and_signal["electric_fields_V_per_m"] += E_lnb_noise[
-                "electric_fields_V_per_m"
-            ]
-            E_lnb_noise_and_signal["electric_fields_V_per_m"][
-                :, injection_time_slice:, :
-            ] += E_lnb_signal["electric_fields_V_per_m"]
-
             electric_fields.write_tar(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
                 electric_fields=E_lnb_noise_and_signal,

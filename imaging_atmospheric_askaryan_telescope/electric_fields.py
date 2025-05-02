@@ -1,7 +1,9 @@
 import numpy as np
 import os
+import copy
 from .utils import tarstream
 from . import corsika
+from . import signal
 
 
 def init_zeros(
@@ -112,6 +114,12 @@ def init_random(seed):
     )
 
     return E
+
+
+def copy(other):
+    out = init_zeros_like(other)
+    out["electric_fields_V_per_m"] = np.copy(other["electric_fields_V_per_m"])
+    return out
 
 
 def assert_valid(electric_fields):
@@ -228,6 +236,47 @@ def to_coreas_electric_fields(electric_fields):
         )
 
     return raw
+
+
+def add_first_to_second_according_to_global_time(first, second):
+    """
+    Add up the electric fields in first and second according to their
+    global start times. The 'second' will only change when it overlaps with
+    'first' in time.
+
+                |-------------| first
+                .     |--------------------------| second
+                .     .
+                T1    T2
+
+    Returns
+    -------
+    modified copy of second
+    """
+    assert first["num_antennas"] == second["num_antennas"]
+
+    if first["time_slice_duration_s"] == second["time_slice_duration_s"]:
+        dT_s = first["time_slice_duration_s"]
+    else:
+        dT1_s = first["time_slice_duration_s"]
+        dT2_s = second["time_slice_duration_s"]
+        epsilon = 1e-6
+        assert (1.0 - epsilon) < dT1_s / dT2_s < (1.0 + epsilon)
+        dT_s = np.mean([dT1_s, dT2_s])
+
+    delta_T_s = first["global_start_time_s"] - second["global_start_time_s"]
+    at_time_slice_in_second = int(np.round(delta_T_s / dT_s))
+
+    out = copy(second)
+
+    for antenna in range(first["num_antennas"]):
+        signal.add_first_to_second_at(
+            first=first["electric_fields_V_per_m"][antenna],
+            second=out["electric_fields_V_per_m"][antenna],
+            at=at_time_slice_in_second,
+        )
+
+    return out
 
 
 def write(path, electric_fields):
