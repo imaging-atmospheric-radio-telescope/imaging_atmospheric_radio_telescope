@@ -465,7 +465,6 @@ def write_figure_electric_fields_overview(
     roi_time=None,
 ):
     if norm is None:
-        print("vmin", vmin, "vmax", vmax)
         norm = seb.matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
 
     fig = seb.figure(style=figsize)
