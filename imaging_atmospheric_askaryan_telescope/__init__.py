@@ -1,4 +1,5 @@
 # Copyright 2017 Sebastian A. Mueller
+from .version import __version__
 from . import sites
 from . import timing_and_sampling
 from . import corsika
