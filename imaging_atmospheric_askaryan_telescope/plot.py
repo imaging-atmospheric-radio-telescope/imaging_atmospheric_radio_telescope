@@ -44,6 +44,7 @@ def write_figure_gain(
     frequency,
     gain,
     scale="G",
+    frequency_lim=None,
     figsize={"rows": 1080, "cols": 1440, "fontsize": 1.5},
 ):
     if scale == None:
@@ -61,7 +62,11 @@ def write_figure_gain(
 
     frequency_scale = frequency / s
 
-    fmin, fmax = log10_limits(v=frequency_scale, ratio=0.0)
+    if frequency_lim is None:
+        fmin, fmax = log10_limits(v=frequency_scale, ratio=0.0)
+    else:
+        fmin, fmax = np.asarray(frequency_lim) / s
+
     gmin, gmax = log10_limits(v=gain, ratio=0.05)
 
     ax.plot(frequency_scale, gain, "-k")

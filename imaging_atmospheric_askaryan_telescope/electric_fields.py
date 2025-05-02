@@ -463,6 +463,43 @@ def estimate_time_of_first_non_zero_amplitudes(electric_fields):
         return start_time_s
 
 
+def estimate_power_spectrum_density_W_per_Hz_per_m2(
+    electric_fields,
+    antenna_effective_area_m2,
+    frequency_bin_edges_Hz,
+    components=[True, True, True],
+):
+    E = electric_fields
+    nu_bin_edges = frequency_bin_edges_Hz
+    nu_num_nins = len(nu_bin_edges) - 1
+
+    mat_W_per_Hz_per_m2 = np.zeros(shape=(nu_num_nins, E["num_antennas"]))
+
+    for antenna in range(E["num_antennas"]):
+        for component in [0, 1, 2]:
+            if components[component]:
+                _e_by_nu = signal.split_into_frequency_bins(
+                    amplitudes=E["electric_fields_V_per_m"][
+                        antenna, :, component
+                    ],
+                    time_slice_duration_s=E["time_slice_duration_s"],
+                    frequency_bin_edges_Hz=nu_bin_edges,
+                )
+                for nu in range(nu_num_nins):
+                    nu_bandwidth_Hz = nu_bin_edges[nu + 1] - nu_bin_edges[nu]
+                    _Power_W = np.mean(
+                        signal.calculate_antenna_power(
+                            effective_area=antenna_effective_area_m2,
+                            electric_field=_e_by_nu[nu],
+                        )
+                    )
+                    mat_W_per_Hz_per_m2[nu, antenna] += (
+                        _Power_W / nu_bandwidth_Hz / antenna_effective_area_m2
+                    )
+
+    return mat_W_per_Hz_per_m2
+
+
 def print_amplitudes(
     electric_fields, num_samples_to_be_integrated=20, antennas=None
 ):

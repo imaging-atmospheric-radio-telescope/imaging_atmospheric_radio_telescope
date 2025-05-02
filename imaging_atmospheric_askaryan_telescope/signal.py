@@ -219,6 +219,25 @@ def estimate_power_spectrum_density(
     return frequencies, power_density
 
 
+def split_into_frequency_bins(
+    amplitudes, time_slice_duration_s, frequency_bin_edges_Hz
+):
+    num_bins = len(frequency_bin_edges_Hz) - 1
+    out_amplitudes = []
+    for i in range(num_bins):
+        nu_start_Hz = frequency_bin_edges_Hz[i]
+        nu_stop_Hz = frequency_bin_edges_Hz[i + 1]
+
+        _part = butter_bandpass_filter(
+            amplitudes=amplitudes,
+            frequency_start=nu_start_Hz,
+            frequency_stop=nu_stop_Hz,
+            time_slice_duration=time_slice_duration_s,
+        )
+        out_amplitudes.append(_part)
+    return out_amplitudes
+
+
 def integrate_sliding_window(signal, time_slice_duration, window_num_slices):
     T = window_num_slices
     signal_num_slices = signal.shape[0]
