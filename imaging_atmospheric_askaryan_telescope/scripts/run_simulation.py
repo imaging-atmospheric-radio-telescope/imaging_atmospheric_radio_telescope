@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 
-import binning_utils
 import imaging_atmospheric_askaryan_telescope as iaat
 from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
 
