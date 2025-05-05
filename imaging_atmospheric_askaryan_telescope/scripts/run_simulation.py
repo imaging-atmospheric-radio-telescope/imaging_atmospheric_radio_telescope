@@ -77,23 +77,23 @@ pos_keys = {
     "mirror": "scatter_center_positions_m",
     "sensor": "feed_horn_positions_m",
 }
-for component in ["mirror", "sensor"]:
-    fig_path = os.path.join(plot_dir, component + ".antenna_positions.jpg")
+for part in ["mirror", "sensor"]:
+    fig_path = os.path.join(plot_dir, part + ".antenna_positions.jpg")
     if not os.path.exists(fig_path):
         print("plot", fig_path)
         iaat_plot.write_figure_antenna_positions(
-            positions=telescope[component][pos_keys[component]], path=fig_path
+            positions=telescope[part][pos_keys[part]], path=fig_path
         )
 
 
 # plot electic fields
 # -------------------
-for component in ["probe", "mirror", "feed_horns"]:
-    if component == "feed_horns":
+for part in ["probe", "mirror", "feed_horns"]:
+    if part == "feed_horns":
         channels_label = "feed horns / 1"
         A_effective_m2 = telescope["sensor"]["feed_horn_area_m2"]
         roi_frequency = [2.5e9, 25e9]
-    elif component == "mirror":
+    elif part == "mirror":
         channels_label = "scatter centers / 1"
         roi_frequency = [2.5e9, 25e9]
         A_effective_m2 = telescope["mirror"]["scatter_center_area_m2"]
@@ -108,11 +108,11 @@ for component in ["probe", "mirror", "feed_horns"]:
             gain=1.0,
         )
 
-    field_path = os.path.join(out_dir, component, "electric_fields.tar")
+    field_path = os.path.join(out_dir, part, "electric_fields.tar")
 
     # Electric fields
     # ---------------
-    fig_path = os.path.join(plot_dir, f"{component:s}_electric_fields.jpg")
+    fig_path = os.path.join(plot_dir, f"{part:s}_electric_fields.jpg")
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
         field = iaat.electric_fields.read_tar(field_path)
@@ -129,7 +129,7 @@ for component in ["probe", "mirror", "feed_horns"]:
 
     # Areal power density
     # -------------------
-    fig_path = os.path.join(out_dir, "plot", f"{component}_power_density.jpg")
+    fig_path = os.path.join(out_dir, "plot", f"{part}_power_density.jpg")
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
         field = iaat.electric_fields.read_tar(field_path)
@@ -162,7 +162,7 @@ for component in ["probe", "mirror", "feed_horns"]:
     frequency_bin_edges_Hz = np.geomspace(2.5e9, 25e9, 31)
 
     fig_path = os.path.join(
-        out_dir, "plot", f"{component}_power_density_spectrum.jpg"
+        out_dir, "plot", f"{part}_power_density_spectrum.jpg"
     )
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
