@@ -86,7 +86,8 @@ def make_sin(frequency, time_slice_duration, num_time_slices):
     N = num_time_slices
     dt = time_slice_duration
     t = np.linspace(0, N * dt, N, endpoint=False)
-    return t, np.sin(t * frequency * (2.0 * np.pi))
+    a = np.sin(t * frequency * (2.0 * np.pi))
+    return t, a
 
 
 def butter_bench(
@@ -166,41 +167,6 @@ def calculate_electric_field_strength_of_thermal_noise_V_per_m(
         antenna_bandwidth_Hz=antenna_bandwidth_Hz,
     )
     return np.sqrt(Power_W * VACUUM_IMPEDANCE_OHM / antenna_effective_area_m2)
-
-
-def lnb_mixer(
-    amplitudes,
-    time_slice_duration,
-    local_oscillator_frequency,
-    intermediate_frequency_start,
-    intermediate_frequency_stop,
-):
-    num_channels, num_time_slices, num_dims = amplitudes.shape
-
-    _, sine_ampl = make_sin(
-        frequency=local_oscillator_frequency,
-        time_slice_duration=time_slice_duration,
-        num_time_slices=num_time_slices,
-    )
-
-    amplmix = np.zeros(shape=amplitudes.shape)
-    for channel in range(num_channels):
-        for dim in range(num_dims):
-            ss = sine_ampl * amplitudes[channel, :, dim]
-            amplmix[channel, :, dim] = ss
-
-    amplban = np.zeros(shape=amplitudes.shape)
-    for channel in range(num_channels):
-        for dim in range(num_dims):
-            ss = butter_bandpass_filter(
-                amplitudes=amplmix[channel, :, dim],
-                frequency_start=intermediate_frequency_start,
-                frequency_stop=intermediate_frequency_stop,
-                time_slice_duration=time_slice_duration,
-            )
-            amplban[channel, :, dim] = ss
-
-    return amplban
 
 
 def estimate_power_spectrum_density(

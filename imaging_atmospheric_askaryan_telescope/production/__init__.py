@@ -12,6 +12,7 @@ from .. import telescope as simtelescope
 from .. import electric_fields
 from .. import signal
 from .. import time_series
+from .. import lownoiseblock
 
 
 def simulate_telescope_response(
@@ -83,21 +84,21 @@ def simulate_telescope_response(
                 end="",
                 flush=True,
             )
-            mirror_electric_fields = electric_fields.read_tar(
+            E_mirror = time_series.read(
                 path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
             )
-            sensor_electric_fields = (
+            E_sensor = (
                 simtelescope.propagate_electric_field_from_mirror_to_sensor(
                     telescope=telescope,
-                    mirror_electric_fields=mirror_electric_fields,
+                    mirror_electric_fields=E_mirror,
                     num_time_slices=timing["electric_fields"]["sensor"][
                         "num_time_slices"
                     ],
                 )
             )
-            electric_fields.write_tar(
+            time_series.write(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
-                electric_fields=sensor_electric_fields,
+                time_series=E_sensor,
             )
             print("Done.")
 
@@ -111,26 +112,22 @@ def simulate_telescope_response(
                 end="",
                 flush=True,
             )
-            sensor_electric_fields = electric_fields.read_tar(
+            E_sensor = time_series.read(
                 path=os.path.join(
                     out_dir, "feed_horns", "electric_fields.tar"
                 ),
             )
-            lnb_input_electric_fields = (
-                simulate_electric_field_leaving_feed_horns(
-                    electric_fields_entering_feed_horns=sensor_electric_fields,
-                    feed_horn_area_m2=telescope["sensor"]["feed_horn_area_m2"],
-                    lnb_effective_area_m2=telescope["lnb"][
-                        "effective_area_m2"
-                    ],
-                    feed_horn_transmission=telescope["sensor"][
-                        "feed_horn_transmission"
-                    ],
-                )
+            E_lnb_input = simulate_electric_field_leaving_feed_horns(
+                electric_fields_entering_feed_horns=E_sensor,
+                feed_horn_area_m2=telescope["sensor"]["feed_horn_area_m2"],
+                lnb_effective_area_m2=telescope["lnb"]["effective_area_m2"],
+                feed_horn_transmission=telescope["sensor"][
+                    "feed_horn_transmission"
+                ],
             )
-            electric_fields.write_tar(
+            time_series.write(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
-                electric_fields=lnb_input_electric_fields,
+                time_series=E_lnb_input,
             )
             print("Done.")
 
@@ -144,41 +141,24 @@ def simulate_telescope_response(
                 end="",
                 flush=True,
             )
-            lnb_input_electric_fields = electric_fields.read_tar(
+            E_lnb_input = time_series.read(
                 path=os.path.join(out_dir, "lnb_input", "electric_fields.tar"),
             )
-            lnb_signal_output_electric_fields = (
-                electric_fields.init_zeros_like(
-                    other=lnb_input_electric_fields
-                )
+            E_lnb_signal_output = lownoiseblock.simulate_mixer(
+                lnb_input_electric_fields=E_lnb_input,
+                local_oscillator_frequency=telescope["lnb"][
+                    "local_oscillator_frequency_Hz"
+                ],
+                intermediate_frequency_start=telescope["lnb"][
+                    "intermediate_frequency_start_Hz"
+                ],
+                intermediate_frequency_stop=telescope["lnb"][
+                    "intermediate_frequency_stop_Hz"
+                ],
             )
-            lnb_signal_output_electric_fields["electric_fields_V_per_m"] = (
-                signal.lnb_mixer(
-                    amplitudes=lnb_input_electric_fields[
-                        "electric_fields_V_per_m"
-                    ],
-                    time_slice_duration=timing["electric_fields"][
-                        "time_slice_duration_s"
-                    ],
-                    local_oscillator_frequency=telescope["lnb"][
-                        "local_oscillator_frequency_Hz"
-                    ],
-                    intermediate_frequency_start=telescope["lnb"][
-                        "intermediate_frequency_start_Hz"
-                    ],
-                    intermediate_frequency_stop=telescope["lnb"][
-                        "intermediate_frequency_stop_Hz"
-                    ],
-                )
-            )
-            lnb_signal_output_electric_fields["electric_fields_V_per_m"] = (
-                lnb_signal_output_electric_fields[
-                    "electric_fields_V_per_m"
-                ].astype(np.float32)
-            )
-            electric_fields.write_tar(
+            time_series.write(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
-                electric_fields=lnb_signal_output_electric_fields,
+                time_series=E_lnb_signal_output,
             )
             print("Done.")
 
@@ -196,17 +176,17 @@ def simulate_telescope_response(
                 np.random.PCG64(thermal_noise_random_seed)
             )
 
-            E_lnb_signal = electric_fields.read_tar(
+            E_lnb_signal = time_series.read(
                 path=os.path.join(out_dir, "lnb_input", "electric_fields.tar"),
             )
-            signal_duration_s = electric_fields.get_exposure_duration_s(
-                E_lnb_signal
-            )
+            signal_duration_s = E_lnb_signal.exposure_duration_s
 
-            E_lnb_noise = electric_fields.init_zeros_like_other_but_with_overhead_in_time(
-                other=E_lnb_signal,
-                leading_overhead_duration_s=signal_duration_s / 2,
-                trailing_overhead_duration_s=signal_duration_s / 2,
+            E_lnb_noise = (
+                time_series.zeros_like_other_but_with_overhead_in_time(
+                    other=E_lnb_signal,
+                    leading_overhead_duration_s=signal_duration_s / 2,
+                    trailing_overhead_duration_s=signal_duration_s / 2,
+                )
             )
 
             electric_field_thermal_noise_amplitude_V_per_m = signal.calculate_electric_field_strength_of_thermal_noise_V_per_m(
@@ -218,33 +198,34 @@ def simulate_telescope_response(
                     "effective_area_m2"
                 ],
             )
-            E_lnb_noise["electric_fields_V_per_m"] = prng.normal(
-                loc=0.0,
-                scale=electric_field_thermal_noise_amplitude_V_per_m,
-                size=(
-                    E_lnb_noise["num_antennas"],
-                    E_lnb_noise["num_time_slices"],
-                    3,
-                ),
-            )
-            lnb_noise_output_power_W = signal.calculate_antenna_power_W(
-                effective_area_m2=telescope["lnb"]["effective_area_m2"],
-                electric_field_V_per_m=E_lnb_noise["electric_fields_V_per_m"],
-            )
-            assert (
-                0.9
-                < (
-                    telescope["lnb"]["noise_power_W"]
-                    / np.mean(lnb_noise_output_power_W)
+            for channel in range(E_lnb_noise.num_channels):
+                E_lnb_noise[channel] = prng.normal(
+                    loc=0.0,
+                    scale=electric_field_thermal_noise_amplitude_V_per_m,
+                    size=(
+                        E_lnb_noise.num_time_slices,
+                        E_lnb_noise.num_components,
+                    ),
                 )
-                < 1.1
-            )
-            E_lnb_noise["electric_fields_V_per_m"] = E_lnb_noise[
-                "electric_fields_V_per_m"
-            ].astype(np.float32)
-            electric_fields.write_tar(
+
+            for channel in range(E_lnb_noise.num_channels):
+                lnb_noise_output_power_W = signal.calculate_antenna_power_W(
+                    effective_area_m2=telescope["lnb"]["effective_area_m2"],
+                    electric_field_V_per_m=E_lnb_noise[channel],
+                )
+                assert (
+                    0.9
+                    < (
+                        telescope["lnb"]["noise_power_W"]
+                        / np.mean(lnb_noise_output_power_W)
+                    )
+                    < 1.1
+                )
+
+            assert E_lnb_noise.dtype == E_lnb_signal.dtype
+            time_series.write(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
-                electric_fields=E_lnb_noise,
+                time_series=E_lnb_noise,
             )
 
             print("Done.")
@@ -261,26 +242,23 @@ def simulate_telescope_response(
                 end="",
                 flush=True,
             )
-            E_lnb_signal = electric_fields.read_tar(
+            E_lnb_signal = time_series.read(
                 path=os.path.join(
                     out_dir, "lnb_signal_output", "electric_fields.tar"
                 )
             )
 
-            E_lnb_noise = electric_fields.read_tar(
+            E_lnb_noise = time_series.read(
                 path=os.path.join(
                     out_dir, "lnb_noise_output", "electric_fields.tar"
                 )
             )
-            E_lnb_noise_and_signal = (
-                electric_fields.add_first_to_second_according_to_global_time(
-                    first=E_lnb_signal,
-                    second=E_lnb_noise,
-                )
-            )
-            electric_fields.write_tar(
+
+            E_lnb_noise_and_signal = E_lnb_noise.add(E_lnb_signal)
+
+            time_series.write(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
-                electric_fields=E_lnb_noise_and_signal,
+                time_series=E_lnb_noise_and_signal,
             )
             print("Done.")
 
@@ -294,36 +272,22 @@ def simulate_telescope_response(
                 end="",
                 flush=True,
             )
-            E_lnb_output = electric_fields.read_tar(
+            E_lnb_output = time_series.read(
                 path=os.path.join(
                     out_dir,
                     "lnb_signal_and_noise_output",
                     "electric_fields.tar",
                 )
             )
-            (
-                readout_energy_J,
-                readout_global_start_time_s,
-                readout_time_slice_duration_s,
-            ) = simulate_readout(
+            Ene_readout = simulate_readout(
                 electric_fields_leaving_lnbs=E_lnb_output,
                 telescope=telescope,
                 timing=timing,
                 random_seed=readout_random_seed,
             )
-            readout_energy = time_series.TimeSeries(
-                time_slice_duration_s=readout_time_slice_duration_s,
-                global_start_time_s=readout_global_start_time_s,
-                num_time_slices=readout_energy_J.shape[1],
-                num_channels=readout_energy_J.shape[0],
-                num_components=readout_energy_J.shape[2],
-                si_unit="J",
-                dtype="float32",
-            )
-            readout_energy._x = readout_energy_J
             time_series.write(
                 path=os.path.join(tmp_dir, "energies.ts.tar"),
-                time_series=readout_energy,
+                time_series=Ene_readout,
             )
 
             print("Done.")
@@ -342,13 +306,13 @@ def simulate_electric_field_leaving_feed_horns(
     feed_horn_geometric_gain = feed_horn_area_m2 / lnb_effective_area_m2
     feed_horn_gain = feed_horn_geometric_gain * feed_horn_transmission
 
-    electric_field_leaving_feed_horns = electric_fields.init_zeros_like(
+    electric_field_leaving_feed_horns = time_series.zeros_like(
         other=electric_fields_entering_feed_horns
     )
 
-    electric_field_leaving_feed_horns["electric_fields_V_per_m"] = (
+    electric_field_leaving_feed_horns[:] = (
         np.sqrt(feed_horn_gain).astype(np.float32)
-        * electric_fields_entering_feed_horns["electric_fields_V_per_m"]
+        * electric_fields_entering_feed_horns[:]
     )
     return electric_field_leaving_feed_horns
 
@@ -365,7 +329,7 @@ def simulate_readout(
     # E field to power
     total_power_leaving_lnb = signal.calculate_antenna_power_W(
         effective_area_m2=telescope["lnb"]["effective_area_m2"],
-        electric_field_V_per_m=E_lnb["electric_fields_V_per_m"],
+        electric_field_V_per_m=E_lnb[:],
     )
 
     # integrate power_leaving_lnb over time for readout
@@ -379,7 +343,7 @@ def simulate_readout(
         "time_slice_duration_s"
     ]
 
-    for t in range(E_lnb["num_time_slices"] - numT):
+    for t in range(E_lnb.num_time_slices - numT):
         w = np.sum(total_power_leaving_lnb[:, t : t + numT, :], axis=1)
         total_power_sliding_integral[:, t, :] = (
             w * simulation_time_slice_duration
@@ -387,7 +351,7 @@ def simulate_readout(
 
     simulation_time_slices_which_are_sampled_by_readout = np.arange(
         0,
-        E_lnb["num_time_slices"],
+        E_lnb.num_time_slices,
         numT,
     )
     random_offset_of_readout_wrt_global_time_num_time_slices = int(
@@ -396,14 +360,27 @@ def simulate_readout(
     num_readout_frames = (
         len(simulation_time_slices_which_are_sampled_by_readout) - 1
     )
-    readout_energy_J = np.zeros(
-        shape=(telescope["sensor"]["num_feed_horns"], num_readout_frames, 2)
+
+    readout_time_slice_duration_s = (
+        timing["readout"]["integrates_num_simulation_time_slices"]
+        * timing["electric_fields"]["time_slice_duration_s"]
     )
+
     readout_global_start_time_s = (
         random_offset_of_readout_wrt_global_time_num_time_slices
         * timing["electric_fields"]["time_slice_duration_s"]
-        + E_lnb["global_start_time_s"]
+        + E_lnb.global_start_time_s
     )
+
+    readout_energy = time_series.zeros(
+        time_slice_duration_s=readout_time_slice_duration_s,
+        num_time_slices=num_readout_frames,
+        num_channels=telescope["sensor"]["num_feed_horns"],
+        num_components=2,
+        global_start_time_s=readout_global_start_time_s,
+        si_unit="J",
+    )
+
     for i in range(num_readout_frames):
         simulation_time_slice = (
             simulation_time_slices_which_are_sampled_by_readout[i]
@@ -417,16 +394,7 @@ def simulate_readout(
         y_comp_energy = total_power_sliding_integral[
             :, simulation_time_slice, 1
         ]
-        readout_energy_J[:, i, 0] = x_comp_energy
-        readout_energy_J[:, i, 1] = y_comp_energy
+        readout_energy[:, i, 0] = x_comp_energy
+        readout_energy[:, i, 1] = y_comp_energy
 
-    readout_time_slice_duration_s = (
-        timing["readout"]["integrates_num_simulation_time_slices"]
-        * timing["electric_fields"]["time_slice_duration_s"]
-    )
-
-    return (
-        readout_energy_J,
-        readout_global_start_time_s,
-        readout_time_slice_duration_s,
-    )
+    return readout_energy

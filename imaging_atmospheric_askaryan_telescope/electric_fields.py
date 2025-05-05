@@ -5,7 +5,7 @@ from .utils import tarstream
 from . import corsika
 from . import signal
 
-
+"""
 def init_zeros(
     time_slice_duration_s,
     num_time_slices,
@@ -154,6 +154,7 @@ def assert_almost_equal(actual, desired, **kwargs):
         desired=desired["electric_fields_V_per_m"],
         **kwargs,
     )
+"""
 
 
 def init_from_coreas_electric_fields(coreas_electric_fields):
@@ -279,6 +280,7 @@ def add_first_to_second_according_to_global_time(first, second):
     return out
 
 
+"""
 def write(path, electric_fields):
     s = electric_fields
     os.makedirs(path, exist_ok=True)
@@ -427,6 +429,11 @@ def get_combined_norm_of_components(electric_fields, component_mask):
         electric_fields["electric_fields_V_per_m"][:, :, component_mask],
         axis=2,
     )
+"""
+
+
+def calculate_antenna_power_W(electric_fields, antenna_effective_area_m2):
+    assert electric_fields.si_unit == "V_per_m"
 
 
 def estimate_time_of_first_non_zero_amplitudes(electric_fields):
@@ -469,16 +476,14 @@ def estimate_power_spectrum_density_W_per_Hz_per_m2(
     nu_bin_edges = frequency_bin_edges_Hz
     nu_num_nins = len(nu_bin_edges) - 1
 
-    mat_W_per_Hz_per_m2 = np.zeros(shape=(nu_num_nins, E["num_antennas"]))
+    mat_W_per_Hz_per_m2 = np.zeros(shape=(nu_num_nins, E.num_channels))
 
-    for antenna in range(E["num_antennas"]):
+    for antenna in range(E.num_channels):
         for component in [0, 1, 2]:
             if components[component]:
                 _e_by_nu = signal.split_into_frequency_bins(
-                    amplitudes=E["electric_fields_V_per_m"][
-                        antenna, :, component
-                    ],
-                    time_slice_duration_s=E["time_slice_duration_s"],
+                    amplitudes=E[antenna, :, component],
+                    time_slice_duration_s=E.time_slice_duration_s,
                     frequency_bin_edges_Hz=nu_bin_edges,
                 )
                 for nu in range(nu_num_nins):

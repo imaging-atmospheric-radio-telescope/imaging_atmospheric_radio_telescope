@@ -1,7 +1,7 @@
 # Copyright 2025 Sebastian A. Mueller
 import os
 
-from .. import electric_fields
+from .. import time_series
 from .. import calibration_source
 
 
@@ -38,4 +38,4 @@ def simulate_mirror_electric_fields(
     mirror_dir = os.path.join(out_dir, "mirror")
     os.makedirs(mirror_dir, exist_ok=True)
     antenna_path = os.path.join(mirror_dir, "electric_fields.tar")
-    electric_fields.write_tar(path=antenna_path, electric_fields=E)
+    time_series.write(path=antenna_path, time_series=E)

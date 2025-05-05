@@ -7,7 +7,7 @@ import os
 import copy
 import binning_utils
 from . import signal
-from . import electric_fields
+from . import time_series
 
 
 def make_parabola_surface_height_m(
@@ -329,13 +329,16 @@ def propagate_electric_field_from_mirror_to_sensor(
         sqrt(1/num_scatter_centers_in_mirror) *
         sqrt(area_mirror_scatter/area_feed_horn)
     """
-    mir = mirror_electric_fields
-    sen = electric_fields.init_zeros(
-        time_slice_duration_s=mir["time_slice_duration_s"],
+    E_mirror = mirror_electric_fields
+    E_sensor = time_series.zeros(
+        time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
-        num_antennas=telescope["sensor"]["num_feed_horns"],
-        global_start_time_s=mir["global_start_time_s"]
+        num_channels=telescope["sensor"]["num_feed_horns"],
+        num_components=E_mirror.num_components,
+        global_start_time_s=E_mirror.global_start_time_s
         + np.mean(telescope["matrix"]["absolute_time_delays_s"]),
+        si_unit=E_mirror.si_unit,
+        dtype=E_mirror.dtype,
     )
 
     feed_horn_area_m2 = telescope["sensor"]["feed_horn_area_m2"]
@@ -356,25 +359,23 @@ def propagate_electric_field_from_mirror_to_sensor(
             ]
 
             slice_delay = int(
-                np.round(time_delay / sen["time_slice_duration_s"])
+                np.round(time_delay / E_sensor.time_slice_duration_s)
             )
 
             # amplitude
             # ---------
             for dim in range(3):
-                first = (1.0 / N_scatter) * mir["electric_fields_V_per_m"][
-                    imi, :, dim
-                ]
+                first = (1.0 / N_scatter) * E_mirror[imi, :, dim]
                 signal.add_first_to_second_at(
                     first=first,
-                    second=sen["electric_fields_V_per_m"][ise, :, dim],
+                    second=E_sensor[ise, :, dim],
                     at=slice_delay,
                 )
 
         for dim in range(3):
-            sen["electric_fields_V_per_m"][ise, :, dim] *= e_field_scaling
+            E_sensor[ise, :, dim] *= e_field_scaling
 
-    return sen
+    return E_sensor
 
 
 def find_neighbors(positions_xy, max_num_neighbors, integration_radius):

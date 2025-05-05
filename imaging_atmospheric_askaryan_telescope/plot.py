@@ -410,21 +410,15 @@ def ax_add_electric_field(
     amplitude_scale=1,
     roi_time=None,
 ):
-    time_bin_edges = iaat.electric_fields.make_time_bin_edges(
-        electric_fields=electric_fields,
-        global_time=False,
-    )
-    antenna_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
-        electric_fields=electric_fields
-    )
+    time_bin_edges = electric_fields.make_time_bin_edges(global_time=False)
+    antenna_bin_edges = electric_fields.make_channel_bin_edges()
 
-    E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
-        electric_fields=electric_fields,
+    E_amplitude = electric_fields.norm_components(
         component_mask=component_mask,
     )
 
     if vmin == None and vmax == None:
-        vmax = make_vmax_to_match_decades(v=E_amplitude)
+        vmax = make_vmax_to_match_decades(v=E_amplitude[:])
         vmin = vmax * 1e-3
 
     if norm is None:
@@ -434,18 +428,11 @@ def ax_add_electric_field(
 
     if roi_time == None:
         start_time = 0.0
-        stop_time = (
-            electric_fields["num_time_slices"]
-            * electric_fields["time_slice_duration_s"]
-        )
+        stop_time = electric_fields.exposure_duration_s
         roi_time = [start_time, stop_time]
 
-    start_time_slice = int(
-        roi_time[0] / electric_fields["time_slice_duration_s"]
-    )
-    stop_time_slice = int(
-        roi_time[1] / electric_fields["time_slice_duration_s"]
-    )
+    start_time_slice = int(roi_time[0] / electric_fields.time_slice_duration_s)
+    stop_time_slice = int(roi_time[1] / electric_fields.time_slice_duration_s)
 
     im = ax.pcolormesh(
         time_bin_edges[start_time_slice : stop_time_slice + 1] * time_scale,
@@ -485,7 +472,7 @@ def write_figure_electric_fields_overview(
         amplitude_scale=1e6,
         roi_time=roi_time,
     )
-    gst_ns = 1e9 * electric_fields["global_start_time_s"]
+    gst_ns = 1e9 * electric_fields.global_start_time_s
     ax.set_xlabel("relative time / ns (absolute: {:.2f}ns)".format(gst_ns))
     ax.set_ylabel(channels_label)
     seb.plt.colorbar(im, cax=ax_cmap)

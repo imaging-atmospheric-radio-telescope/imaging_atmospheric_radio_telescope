@@ -1,4 +1,5 @@
 from . import signal
+from . import time_series
 
 
 def init(key):
@@ -36,3 +37,41 @@ def init(key):
         antenna_bandwidth_Hz=lnb["intermediate_bandwidth_Hz"],
     )
     return lnb
+
+
+def simulate_mixer(
+    lnb_input_electric_fields,
+    local_oscillator_frequency,
+    intermediate_frequency_start,
+    intermediate_frequency_stop,
+):
+    E_input = lnb_input_electric_fields
+    E_inter = time_series.zeros_like(other=E_input)
+    E_output = time_series.zeros_like(other=E_input)
+
+    _, sine_ampl = signal.make_sin(
+        frequency=local_oscillator_frequency,
+        time_slice_duration=E_input.time_slice_duration_s,
+        num_time_slices=E_input.num_time_slices,
+        dtype=E_input.dtype,
+    )
+    sine_ampl = sine_ampl.astype(E_input.dtype)
+
+    for channel in range(E_input.num_channels):
+        for dim in range(E_input.num_components):
+            ss = sine_ampl * E_input[channel, :, dim]
+            E_inter[channel, :, dim] = ss
+
+    E_output = time_series.zeros_like(other=E_input)
+    for channel in range(E_input.num_channels):
+        for dim in range(E_input.num_components):
+            ss = signal.butter_bandpass_filter(
+                amplitudes=E_inter[channel, :, dim],
+                frequency_start=intermediate_frequency_start,
+                frequency_stop=intermediate_frequency_stop,
+                time_slice_duration=E_input.time_slice_duration_s,
+            )
+            E_output[channel, :, dim] = ss
+
+    assert E_input.dtype == E_output.dtype
+    return E_output

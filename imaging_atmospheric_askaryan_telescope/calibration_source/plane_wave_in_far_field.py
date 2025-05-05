@@ -2,7 +2,7 @@ import numpy as np
 import copy
 import homogeneous_transformation as homtra
 
-from .. import electric_fields
+from .. import time_series
 from .. import signal
 from . import sine_wave_ramp
 
@@ -248,11 +248,13 @@ def plane_wave_in_far_field(
         )
     )
 
-    E = electric_fields.init_zeros(
+    E = time_series.zeros(
         time_slice_duration_s=time_slice_duration_s,
         num_time_slices=num_time_slices,
-        num_antennas=num_antennas,
+        num_channels=num_antennas,
+        num_components=3,
         global_start_time_s=start_time_of_sampling_s,
+        si_unit="V_per_m",
     )
 
     assert 0.99 < np.linalg.norm(geom["E_field_vector_in_asl_frame"]) < 1.01
@@ -260,7 +262,7 @@ def plane_wave_in_far_field(
 
     E_field_vector_in_asl_frame = Nx3_from_stacked_1x3(
         v=geom["E_field_vector_in_asl_frame"],
-        size=E["num_time_slices"],
+        size=E.num_time_slices,
     )
 
     for a in range(num_antennas):
@@ -279,21 +281,19 @@ def plane_wave_in_far_field(
             emission_ramp_down_duration_s=sine_wave[
                 "emission_ramp_down_duration_s"
             ],
-            global_start_time_s=E["global_start_time_s"],
-            time_slice_duration_s=E["time_slice_duration_s"],
-            num_time_slices=E["num_time_slices"],
+            global_start_time_s=E.global_start_time_s,
+            time_slice_duration_s=E.time_slice_duration_s,
+            num_time_slices=E.num_time_slices,
         )
         assert not np.all(sine_wave_amplitude == 0)
 
-        E["electric_fields_V_per_m"][a] = copy.copy(
-            E_field_vector_in_asl_frame
-        )
-        E["electric_fields_V_per_m"][a] = Nx3_multiply_elementwise_Nx1(
-            nx3=E["electric_fields_V_per_m"][a],
+        E[a] = copy.copy(E_field_vector_in_asl_frame)
+        E[a] = Nx3_multiply_elementwise_Nx1(
+            nx3=E[a],
             nx1=sine_wave_amplitude,
         )
-        E["electric_fields_V_per_m"][a] = Nx3_multiply_elementwise_scalar(
-            nx3=E["electric_fields_V_per_m"][a],
+        E[a] = Nx3_multiply_elementwise_scalar(
+            nx3=E[a],
             scalar=pows["electric_field_amplitue_V_per_m"],
         )
 

@@ -8,7 +8,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "run2"
+work_dir = "run3"
 
 if not os.path.exists(work_dir):
     iaat.init(
@@ -115,16 +115,16 @@ for part in ["probe", "mirror", "feed_horns"]:
     fig_path = os.path.join(plot_dir, f"{part:s}_electric_fields.jpg")
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
-        field = iaat.electric_fields.read_tar(field_path)
+        E_field = iaat.time_series.read(field_path)
         iaat_plot.write_figure_electric_fields_overview(
-            electric_fields=field,
+            electric_fields=E_field,
             path=fig_path,
             component_mask=[1, 1, 0],
             channels_label=channels_label,
             figsize={"rows": 2160, "cols": 3840, "fontsize": 3.0},
             norm=None,
-            vmin=np.max(field["electric_fields_V_per_m"]),
-            vmax=1e6 * np.max(field["electric_fields_V_per_m"]),
+            vmin=np.max(E_field[:]),
+            vmax=1e6 * np.max(E_field[:]),
         )
 
     # Areal power density
@@ -132,23 +132,20 @@ for part in ["probe", "mirror", "feed_horns"]:
     fig_path = os.path.join(out_dir, "plot", f"{part}_power_density.jpg")
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
-        field = iaat.electric_fields.read_tar(field_path)
-
-        field_norm = np.linalg.norm(field["electric_fields_V_per_m"], axis=2)
-        assert field_norm.shape[0] == field["num_antennas"]
-        assert field_norm.shape[1] == field["num_time_slices"]
+        E_field = iaat.time_series.read(field_path)
+        E_field_norm = E_field.norm_components()
 
         _power = iaat.signal.calculate_antenna_power_W(
             effective_area_m2=A_effective_m2,
-            electric_field_V_per_m=field_norm,
+            electric_field_V_per_m=E_field_norm[:],
         )
         _power_density = _power / A_effective_m2
 
         iaat_plot.write_matrix(
             path=fig_path,
             matrix=_power_density,
-            x_bin_edges=1e9 * iaat.electric_fields.make_time_bin_edges(field),
-            y_bin_edges=iaat.electric_fields.make_antenna_bin_edges(field),
+            x_bin_edges=1e9 * E_field.make_time_bin_edges(),
+            y_bin_edges=E_field.make_channel_bin_edges(),
             x_label="time / ns",
             y_label=channels_label,
             z_label=r"areal power density / Wm$^{-2}$",
@@ -166,10 +163,10 @@ for part in ["probe", "mirror", "feed_horns"]:
     )
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
-        field = iaat.electric_fields.read_tar(field_path)
+        E_field = iaat.time_series.read(field_path)
 
         Prho_W_per_Hz_per_m2 = iaat.electric_fields.estimate_power_spectrum_density_W_per_Hz_per_m2(
-            electric_fields=field,
+            electric_fields=E_field,
             antenna_effective_area_m2=A_effective_m2,
             frequency_bin_edges_Hz=frequency_bin_edges_Hz,
         )
@@ -177,7 +174,7 @@ for part in ["probe", "mirror", "feed_horns"]:
             path=fig_path,
             matrix=Prho_W_per_Hz_per_m2.T,
             x_bin_edges=1e-9 * frequency_bin_edges_Hz,
-            y_bin_edges=iaat.electric_fields.make_antenna_bin_edges(field),
+            y_bin_edges=E_field.make_channel_bin_edges(),
             x_label=r"frequency $\nu$ / GHz",
             y_label=channels_label,
             z_label=r"power density / W m$^{-2}$ (Hz)$^{-1}$",
@@ -193,12 +190,12 @@ for part in ["probe", "mirror", "feed_horns"]:
 # -------------------------
 if True:
     E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
-    E_mirror = iaat.electric_fields.read_tar(E_mirror_path)
+    E_mirror = iaat.time_series.read(E_mirror_path)
 
     E_feed_horns_path = os.path.join(
         out_dir, "feed_horns", "electric_fields.tar"
     )
-    E_feed_horns = iaat.electric_fields.read_tar(E_feed_horns_path)
+    E_feed_horns = iaat.time_series.read(E_feed_horns_path)
 
     A_eff_mirror_scatter_center_m2 = telescope["mirror"][
         "scatter_center_area_m2"
@@ -206,40 +203,26 @@ if True:
     A_eff_sensor_feed_horn_m2 = telescope["sensor"]["feed_horn_area_m2"]
 
     P_mirror_W = np.zeros(
-        shape=(E_mirror["num_antennas"], E_mirror["num_time_slices"])
+        shape=(E_mirror.num_channels, E_mirror.num_time_slices)
     )
     P_sensor_W = np.zeros(
-        shape=(E_feed_horns["num_antennas"], E_feed_horns["num_time_slices"])
+        shape=(E_feed_horns.num_channels, E_feed_horns.num_time_slices)
     )
 
-    E_mirror_magnitude_V_per_m = np.linalg.norm(
-        E_mirror["electric_fields_V_per_m"], axis=2
-    )
-    assert (
-        E_mirror_magnitude_V_per_m.shape[0]
-        == E_mirror["electric_fields_V_per_m"].shape[0]
-    )
-    assert (
-        E_mirror_magnitude_V_per_m.shape[1]
-        == E_mirror["electric_fields_V_per_m"].shape[1]
-    )
-    assert len(E_mirror_magnitude_V_per_m.shape) == 2
-
+    E_mirror_magnitude_V_per_m = E_mirror.norm_components()
     P_mirror_W = iaat.signal.calculate_antenna_power_W(
         effective_area_m2=A_eff_mirror_scatter_center_m2,
-        electric_field_V_per_m=E_mirror_magnitude_V_per_m,
+        electric_field_V_per_m=E_mirror_magnitude_V_per_m[:],
     )
 
-    E_feed_horns_magnitude_V_per_m = np.linalg.norm(
-        E_feed_horns["electric_fields_V_per_m"], axis=2
-    )
+    E_feed_horns_magnitude_V_per_m = E_feed_horns.norm_components()
     P_sensor_W = iaat.signal.calculate_antenna_power_W(
         effective_area_m2=A_eff_sensor_feed_horn_m2,
-        electric_field_V_per_m=E_feed_horns_magnitude_V_per_m,
+        electric_field_V_per_m=E_feed_horns_magnitude_V_per_m[:],
     )
 
-    En_mirror_J = np.sum(P_mirror_W) * E_mirror["time_slice_duration_s"]
-    En_sensor_J = np.sum(P_sensor_W) * E_feed_horns["time_slice_duration_s"]
+    En_mirror_J = np.sum(P_mirror_W) * E_mirror.time_slice_duration_s
+    En_sensor_J = np.sum(P_sensor_W) * E_feed_horns.time_slice_duration_s
 
     En_mirror_eV = En_mirror_J / iaat.signal.ELECTRON_VOLT_J
     En_sensor_eV = En_sensor_J / iaat.signal.ELECTRON_VOLT_J
@@ -326,18 +309,18 @@ if not os.path.exists(fig_path):
     )
 
 
-E_feed_horns = iaat.electric_fields.read_tar(
+E_feed_horns = iaat.time_series.read(
     os.path.join(out_dir, "feed_horns", "electric_fields.tar")
 )
 
-E_lnb_output = iaat.electric_fields.read_tar(
+E_lnb_output = iaat.time_series.read(
     os.path.join(out_dir, "lnb_signal_and_noise_output", "electric_fields.tar")
 )
 
 # efield to power
 total_power_leaving_lnb = iaat.signal.calculate_antenna_power_W(
     effective_area_m2=telescope["lnb"]["effective_area_m2"],
-    electric_field_V_per_m=E_lnb_output["electric_fields_V_per_m"],
+    electric_field_V_per_m=E_lnb_output[:],
 )
 
 
@@ -346,22 +329,17 @@ total_power_leaving_lnb = iaat.signal.calculate_antenna_power_W(
 fig_path_power_leaving_lnb = os.path.join(plot_dir, "lnb_output.jpg")
 if not os.path.exists(fig_path_power_leaving_lnb):
     total_power_leaving_lnb_xy = np.sum(
-        total_power_leaving_lnb[:, E_feed_horns["num_time_slices"] :, 0:2],
+        total_power_leaving_lnb[:, E_feed_horns.num_time_slices :, 0:2],
         axis=2,
     )
-    pixel_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
-        electric_fields=E_feed_horns,
-    )
-    time_bin_edges = iaat.electric_fields.make_time_bin_edges(
-        electric_fields=E_feed_horns,
-        global_time=False,
-    )
+    pixel_bin_edges = E_feed_horns.make_channel_bin_edges()
+    time_bin_edges = E_feed_horns.make_time_bin_edges(global_time=False)
     iaat_plot.write_figure_lnb_power(
         path=fig_path_power_leaving_lnb,
         lnb_power_W=total_power_leaving_lnb_xy,
         channels_bin_edges=pixel_bin_edges,
         relative_time_bin_edges_s=time_bin_edges,
-        global_start_time_s=E_feed_horns["global_start_time_s"],
+        global_start_time_s=E_feed_horns.global_start_time_s,
         lnb_power_min_fraction_of_max=1e-3,
         norm=None,
         lnb_power_min_W=1e-6 * np.max(total_power_leaving_lnb_xy),
@@ -400,8 +378,11 @@ if not os.path.exists(fig_path_readout_gain):
         )
         _Aout = iaat.signal.integrate_sliding_window(
             signal=_Ain,
-            time_slice_duration=1 / numT,
-            window_num_slices=numT,
+            time_slice_duration=1
+            / timing["readout"]["integrates_num_simulation_time_slices"],
+            window_num_slices=timing["readout"][
+                "integrates_num_simulation_time_slices"
+            ],
         )
         _r = np.sum(_Aout**2) / np.sum(_Ain**2)
         _readout_bench_gain[_i] = _r

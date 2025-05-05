@@ -3,6 +3,7 @@ import os
 import copy
 import builtins
 from .utils import tarstream
+from .signal import add_first_to_second_at
 
 
 def zeros(
@@ -25,20 +26,76 @@ def zeros(
     )
 
 
-def zeros_like(other, num_components=None):
-
+def zeros_like(other, num_components=None, si_unit=None):
     if num_components is None:
         num_components = other.num_components
+
+    if si_unit is None:
+        si_unit = other.si_unit
 
     return zeros(
         time_slice_duration_s=other.time_slice_duration_s,
         num_time_slices=other.num_time_slices,
         num_channels=other.num_channels,
-        num_components=other.num_components,
+        num_components=num_components,
         global_start_time_s=other.global_start_time_s,
+        si_unit=si_unit,
+        dtype=other.dtype,
+    )
+
+
+def zeros_like_other_but_with_overhead_in_time(
+    other,
+    leading_overhead_num_time_slices=None,
+    leading_overhead_duration_s=None,
+    trailing_overhead_num_time_slices=None,
+    trailing_overhead_duration_s=None,
+):
+    leading_overhead_num_time_slices = _num_time_slices_from_duration(
+        time_slice_duration_s=other.time_slice_duration_s,
+        duration_s=leading_overhead_duration_s,
+        num_time_slices=leading_overhead_num_time_slices,
+    )
+    trailing_overhead_num_time_slices = _num_time_slices_from_duration(
+        time_slice_duration_s=other.time_slice_duration_s,
+        duration_s=trailing_overhead_duration_s,
+        num_time_slices=trailing_overhead_num_time_slices,
+    )
+
+    total_num_time_slices = (
+        leading_overhead_num_time_slices
+        + other.num_time_slices
+        + trailing_overhead_num_time_slices
+    )
+
+    leading_overhead_duration_s = (
+        leading_overhead_num_time_slices * other.time_slice_duration_s
+    )
+
+    return zeros(
+        time_slice_duration_s=other.time_slice_duration_s,
+        num_time_slices=total_num_time_slices,
+        num_channels=other.num_channels,
+        num_components=other.num_components,
+        global_start_time_s=other.global_start_time_s
+        - leading_overhead_duration_s,
         si_unit=other.si_unit,
         dtype=other.dtype,
     )
+
+
+def _num_time_slices_from_duration(
+    time_slice_duration_s, duration_s=None, num_time_slices=None
+):
+    assert time_slice_duration_s > 0
+    if duration_s is None:
+        assert num_time_slices is not None
+        assert num_time_slices >= 0
+    else:
+        assert num_time_slices is None
+        assert duration_s >= 0.0
+        num_time_slices = int(np.round(duration_s / time_slice_duration_s))
+    return num_time_slices
 
 
 def copy(other):
@@ -82,21 +139,22 @@ class TimeSeries:
             dtype=dtype,
         )
 
-    def __getitem__(self, subscript):
-        return self._x[subscript]
+    def __getitem__(self, idx):
+        return self._x[idx]
 
-    def __setitem__(self, subscript):
-        self._x[subscript]
+    def __setitem__(self, idx, value):
+        self._x[idx] = value
 
     @property
     def dtype(self):
         return self._x.dtype
 
+    @property
     def exposure_duration_s(self):
         return self.time_slice_duration_s * self.num_time_slices
 
     def make_channel_bin_edges(self):
-        N = self.num_antennas
+        N = self.num_channels
         return np.linspace(0.0, N, N + 1) - 0.5
 
     def make_time_bin_centers(self, global_time=True):
@@ -119,17 +177,27 @@ class TimeSeries:
             time_bin_edges_s = time_bin_edges_s + self.global_start_time_s
         return time_bin_edges_s
 
-    def norm_components(self):
+    def norm_components(self, component_mask=None):
         """
         Returns the norm along the channel components.
         """
+        if component_mask is None:
+            component_mask = np.ones(self.num_components, dtype=bool)
+        else:
+            _assert_component_mask(component_mask, self.num_components)
+
         out = zeros_like(self, num_components=1)
-        out._x = np.linalg.norm(self._x[:, :, :], axis=2)
+        out._x = np.linalg.norm(self._x[:, :, component_mask], axis=2)
         return out
 
-    def sum_components(self):
+    def sum_components(self, component_mask=None):
+        if component_mask is None:
+            component_mask = np.ones(self.num_components, dtype=bool)
+        else:
+            _assert_component_mask(component_mask, self.num_components)
+
         out = zeros_like(self, num_components=1)
-        out._x = np.sum(self._x[:, :, :], axis=2)
+        out._x = np.sum(self._x[:, :, component_mask], axis=2)
         return out
 
     def add(self, other):
@@ -163,9 +231,9 @@ class TimeSeries:
 
         out = copy(self)
         for channel in range(other.num_channels):
-            signal.add_first_to_second_at(
-                first=other._x[channel],
-                second=out.x[channel],
+            add_first_to_second_at(
+                first=other[channel],
+                second=out[channel],
                 at=at_time_slice_in_second,
             )
 
@@ -185,6 +253,13 @@ def assert_valid(time_series):
     assert E._x.shape[0] == E.num_channels
     assert E._x.shape[1] == E.num_time_slices
     assert E._x.shape[2] == E.num_components
+
+
+def _assert_component_mask(component_mask, num_components):
+    assert len(component_mask) == num_components
+    _int_mask = np.array(component_mask, dtype=int)
+    for component_flag in _int_mask:
+        assert component_flag in [0, 1]
 
 
 def assert_almost_equal(actual, desired, **kwargs):
