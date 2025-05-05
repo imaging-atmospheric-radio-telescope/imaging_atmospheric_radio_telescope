@@ -8,7 +8,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "run"
+work_dir = "run2"
 
 if not os.path.exists(work_dir):
     iaat.init(
@@ -90,16 +90,12 @@ for component in ["mirror", "sensor"]:
 for component in ["probe", "mirror", "feed_horns"]:
     if component == "feed_horns":
         channels_label = "feed horns / 1"
-        A_effective_m2 = (
-            1 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
-        )
+        A_effective_m2 = telescope["sensor"]["feed_horn_area_m2"]
         roi_frequency = [2.5e9, 25e9]
     elif component == "mirror":
         channels_label = "scatter centers / 1"
         roi_frequency = [2.5e9, 25e9]
-        A_effective_m2 = (
-            1 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
-        )
+        A_effective_m2 = telescope["mirror"]["scatter_center_area_m2"]
     else:
         channels_label = "channels / 1"
         roi_time = None
@@ -203,12 +199,10 @@ if True:
     )
     E_feed_horns = iaat.electric_fields.read_tar(E_feed_horns_path)
 
-    A_eff_mirror_scatter_center_m2 = (
-        1.0 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
-    )
-    A_eff_sensor_feed_horn_m2 = (
-        1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
-    )
+    A_eff_mirror_scatter_center_m2 = telescope["mirror"][
+        "scatter_center_area_m2"
+    ]
+    A_eff_sensor_feed_horn_m2 = telescope["sensor"]["feed_horn_area_m2"]
 
     P_mirror_W = np.zeros(
         shape=(E_mirror["num_antennas"], E_mirror["num_time_slices"])

@@ -4,6 +4,8 @@ import scipy
 from scipy import spatial
 import scipy.spatial.distance
 import os
+import copy
+import binning_utils
 from . import signal
 from . import electric_fields
 
@@ -34,9 +36,9 @@ def make_probe_positions(
 ):
     """
     Returns the randomly drawn positions of scatter-centers on a parabolic
-    imaging reflector. The x-, y-positions can be limited in an anulus with
-    an innner, and outer radius. The z-position is computed from the
-    focal-lenght.
+    imaging reflector. The x-, y-positions can be limited in an annulus with
+    an inner, and outer radius. The z-position is computed from the
+    focal-length.
 
     Parameters
     ----------
@@ -106,9 +108,6 @@ def make_mirror(
     imre["inner_radius_m"] = inner_radius_m
     imre["diameter_m"] = 2.0 * outer_radius_m
     imre["area_m2"] = np.pi * (outer_radius_m**2 - inner_radius_m**2)
-    imre["scatter_center_areal_density_per_m2"] = (
-        scatter_center_areal_density_per_m2
-    )
     imre["scatter_center_positions_m"] = make_probe_positions(
         random_seed=random_seed,
         focal_length_m=focal_length_m,
@@ -117,6 +116,9 @@ def make_mirror(
         scatter_center_areal_density_per_m2=scatter_center_areal_density_per_m2,
     )
     imre["num_scatter_centers"] = imre["scatter_center_positions_m"].shape[0]
+    imre["scatter_center_area_m2"] = (
+        imre["area_m2"] / imre["num_scatter_centers"]
+    )
     return imre
 
 
@@ -169,14 +171,6 @@ def _area_of_hexagon(inner_radius):
     return 2.0 * np.sqrt(3.0) * inner_radius**2.0
 
 
-def make_feed_horn_areal_density_per_m2(feed_horn_inner_radius_m):
-    """
-    Compute how many feed-horns can be placed in a unit of area.
-    """
-    feed_horn_area = _area_of_hexagon(inner_radius=feed_horn_inner_radius_m)
-    return 1.0 / feed_horn_area
-
-
 def make_sensor(
     sensor_outer_radius_m,
     sensor_distance_m,
@@ -184,23 +178,68 @@ def make_sensor(
     feed_horn_transmission,
 ):
     imse = {}
-    imse["outer_radius_m"] = sensor_outer_radius_m
-    imse["outer_diameter_m"] = 2 * sensor_outer_radius_m
+    imse["__type__"] = "camera"
+    imse["camera"] = {}
 
-    imse["feed_horn_inner_radius_m"] = feed_horn_inner_radius_m
+    imse["camera"]["outer_radius_m"] = sensor_outer_radius_m
+    imse["camera"]["outer_diameter_m"] = 2 * sensor_outer_radius_m
+    imse["camera"]["feed_horn_inner_radius_m"] = feed_horn_inner_radius_m
+
     imse["feed_horn_positions_m"] = make_feed_horn_positions(
         sensor_outer_radius_m=sensor_outer_radius_m,
         sensor_distance_m=sensor_distance_m,
-        feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
-    )
-    imse["feed_horn_areal_density_per_m2"] = (
-        make_feed_horn_areal_density_per_m2(
-            feed_horn_inner_radius_m=imse["feed_horn_inner_radius_m"],
-        )
+        feed_horn_inner_radius_m=imse["camera"]["feed_horn_inner_radius_m"],
     )
     imse["feed_horn_transmission"] = feed_horn_transmission
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
-    imse["feed_horn_area_m2"] = 1.0 / imse["feed_horn_areal_density_per_m2"]
+    imse["feed_horn_area_m2"] = _area_of_hexagon(
+        inner_radius=imse["camera"]["feed_horn_inner_radius_m"]
+    )
+
+    imse["sensor_distance_m"] = sensor_distance_m
+    return imse
+
+
+def _assert_almost_linear_spacing(x, relative_epsilon=1e-6):
+    dx = np.gradient(x)
+    assert np.std(dx) < relative_epsilon * np.mean(dx)
+
+
+def make_sensor_in_region_of_interest(
+    x_bin_edges_m,
+    y_bin_edges_m,
+    sensor_distance_m,
+    feed_horn_transmission,
+):
+    _assert_almost_linear_spacing(x_bin_edges_m)
+    _assert_almost_linear_spacing(y_bin_edges_m)
+
+    x_bin_width_m = np.mean(np.gradient(x_bin_edges_m))
+    y_bin_width_m = np.mean(np.gradient(y_bin_edges_m))
+    bin_area_m2 = x_bin_width_m * y_bin_width_m
+
+    xbin = binning_utils.Binning(x_bin_edges_m)
+    ybin = binning_utils.Binning(y_bin_edges_m)
+
+    imse = {}
+    imse["__type__"] = "region_of_interest"
+    imse["region_of_interest"] = {}
+    imse["region_of_interest"]["x_bin_edges_m"] = np.array(x_bin_edges_m)
+    imse["region_of_interest"]["y_bin_edges_m"] = np.array(y_bin_edges_m)
+
+    imse["feed_horn_positions_m"] = []
+    for ix in range(xbin["num"]):
+        for iy in range(ybin["num"]):
+            _x = xbin["centers"][ix]
+            _y = ybin["centers"][iy]
+            _z = sensor_distance_m
+            imse["feed_horn_positions_m"].append([_x, _y, _z])
+    imse["feed_horn_positions_m"] = np.asarray(imse["feed_horn_positions_m"])
+
+    imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
+    imse["feed_horn_transmission"] = feed_horn_transmission
+    imse["feed_horn_area_m2"] = bin_area_m2
+    imse["sensor_distance_m"] = sensor_distance_m
     return imse
 
 
@@ -253,13 +292,26 @@ def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
         sensor=sensor,
         speed_of_light_m_per_s=speed_of_light_m_per_s,
     )
-    tele["trigger"] = {}
-    tele["trigger"]["pixel_summation"] = find_neighbors(
-        positions_xy=tele["sensor"]["feed_horn_positions_m"][:, 0:2],
-        max_num_neighbors=7,
-        integration_radius=tele["sensor"]["feed_horn_inner_radius_m"] * 2.1,
-    )
+    if tele["sensor"]["__type__"] == "camera":
+        tele["trigger"] = {}
+        tele["trigger"]["pixel_summation"] = find_neighbors(
+            positions_xy=tele["sensor"]["feed_horn_positions_m"][:, 0:2],
+            max_num_neighbors=7,
+            integration_radius=tele["sensor"]["camera"][
+                "feed_horn_inner_radius_m"
+            ]
+            * 2.1,
+        )
     return tele
+
+
+def make_telescope_like_other_but_different_sensor(telescope, sensor):
+    return make_telescope(
+        mirror=copy.copy(telescope["mirror"]),
+        sensor=sensor,
+        lnb=copy.copy(telescope["lnb"]),
+        speed_of_light_m_per_s=copy.copy(telescope["speed_of_light_m_per_s"]),
+    )
 
 
 def propagate_electric_field_from_mirror_to_sensor(
@@ -286,12 +338,8 @@ def propagate_electric_field_from_mirror_to_sensor(
         + np.mean(telescope["matrix"]["absolute_time_delays_s"]),
     )
 
-    feed_horn_area_m2 = (
-        1.0 / telescope["sensor"]["feed_horn_areal_density_per_m2"]
-    )
-    mirror_scatter_area_m2 = (
-        1.0 / telescope["mirror"]["scatter_center_areal_density_per_m2"]
-    )
+    feed_horn_area_m2 = telescope["sensor"]["feed_horn_area_m2"]
+    mirror_scatter_area_m2 = telescope["mirror"]["scatter_center_area_m2"]
 
     N_scatter = telescope["mirror"]["num_scatter_centers"]
 
