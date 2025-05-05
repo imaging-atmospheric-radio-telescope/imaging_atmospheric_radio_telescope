@@ -8,6 +8,7 @@ import json
 import rename_after_writing as rnw
 
 from .. import telescope as simtelescope
+from .. import time_series
 from .. import electric_fields
 from .. import timing_and_sampling
 from .. import corsika
@@ -184,9 +185,9 @@ def _simulate_mirror_electric_fields_manual(
                 coreas_electric_fields=coreas_electric_fields
             )
         )
-        electric_fields.write_tar(
+        time_series.write(
             path=antenna_path,
-            electric_fields=unified_electric_field,
+            time_series=unified_electric_field,
         )
 
         # input('wait to inspect the tmp directory')
@@ -226,13 +227,13 @@ def simulate_mirror_electric_fields(
             },
         )
 
-        probe_electric_fields = electric_fields.read_tar(
+        probe_electric_fields = time_series.read(
             path=os.path.join(probe_dir, "electric_fields.tar")
         )
 
         start_time_based_on_probe = (
-            electric_fields.estimate_time_of_first_non_zero_amplitudes(
-                electric_fields=probe_electric_fields
+            time_series.estimate_time_of_first_non_zero_amplitudes(
+                time_series=probe_electric_fields
             )
         )
 

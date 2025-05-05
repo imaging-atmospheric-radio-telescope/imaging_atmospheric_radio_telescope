@@ -8,7 +8,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "run3"
+work_dir = "run"
 
 if not os.path.exists(work_dir):
     iaat.init(
@@ -397,7 +397,7 @@ if not os.path.exists(fig_path_readout_gain):
 # plot images seen by readout
 # ---------------------------
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
-    plot_sensor_dir = os.path.join(plot_dir, "readout2", units)
+    plot_sensor_dir = os.path.join(plot_dir, "readout", units)
     if not os.path.exists(plot_sensor_dir):
         iaat_plot.save_image_slices_energy_deposite(
             readout_energy_J=readout_energy._x,

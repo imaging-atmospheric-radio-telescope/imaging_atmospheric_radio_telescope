@@ -429,16 +429,21 @@ def print(time_series, num_samples_to_be_integrated=20, channels=None):
         builtins.print(line)
 
 
-def random(seed):
+def random(seed, si_unit=None, num_components=None):
     prng = prng = np.random.Generator(np.random.PCG64(seed))
+
+    if si_unit is None:
+        si_unit = _draw_random_printable_string(prng=prng, size=6)
+    if num_components is None:
+        num_components = prng.integers(low=1, high=3)
 
     E = zeros(
         time_slice_duration_s=prng.uniform(low=1e-9, high=1e-6),
         num_time_slices=prng.integers(low=100, high=1_000),
         num_channels=prng.integers(low=10, high=1_000),
-        num_components=prng.integers(low=1, high=3),
+        num_components=num_components,
         global_start_time_s=prng.uniform(low=-5e-6, high=5e-6),
-        si_unit=_draw_random_printable_string(prng=prng, size=6),
+        si_unit=si_unit,
     )
     E._x = (
         prng.uniform(
@@ -454,3 +459,33 @@ def random(seed):
 
 def _draw_random_printable_string(prng, size):
     return prng.integers(65, 90, size).astype(np.uint8).tobytes().decode()
+
+
+def estimate_time_of_first_non_zero_amplitudes(time_series):
+    """
+    Estimates the time when the amplitudes start do differ from zero.
+
+    Parameters
+    ----------
+    time_series : class
+
+    Returns
+    -------
+    start_time_s : float
+    """
+    ts = time_series
+    first_slices = []
+    for ant in range(ts.num_channels):
+        for dim in range(3):
+            _nonzero = np.nonzero(ts[ant, :, dim])[0]
+            if len(_nonzero) > 0:
+                first_slice = np.min(_nonzero)
+                first_slices.append(first_slice)
+
+    if len(first_slices) == 0:
+        return float("nan")
+    else:
+        start_slice = np.median(first_slices)
+        start_time_relative = start_slice * ts.time_slice_duration_s
+        start_time_s = start_time_relative + ts.global_start_time_s
+        return start_time_s

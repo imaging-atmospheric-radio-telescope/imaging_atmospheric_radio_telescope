@@ -53,7 +53,6 @@ def simulate_mixer(
         frequency=local_oscillator_frequency,
         time_slice_duration=E_input.time_slice_duration_s,
         num_time_slices=E_input.num_time_slices,
-        dtype=E_input.dtype,
     )
     sine_ampl = sine_ampl.astype(E_input.dtype)
 

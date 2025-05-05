@@ -35,15 +35,15 @@ def test_simulate_mirror_electric_fields_manual():
             antenna_positions_obslvl_m=antenna_positions_obslvl_m,
             coreas_time_boundaries=coreas_time_boundaries,
         )
-        electric_fields = iaat.electric_fields.read_tar(
+        electric_fields = iaat.time_series.read(
             os.path.join(tmp, "electric_fields.tar")
         )
 
     np.testing.assert_almost_equal(
-        actual=electric_fields["time_slice_duration_s"],
+        actual=electric_fields.time_slice_duration_s,
         desired=time_slice_duration_s,
     )
-    assert electric_fields["num_antennas"] == 2
+    assert electric_fields.num_channels == 2
 
     output_duration_s = (
         coreas_time_boundaries["time_upper_boundary_s"]
@@ -51,23 +51,23 @@ def test_simulate_mirror_electric_fields_manual():
     )
 
     assert (
-        electric_fields["num_time_slices"]
+        electric_fields.num_time_slices
         > 0.9 * output_duration_s / time_slice_duration_s
     )
     assert (
-        electric_fields["num_time_slices"]
+        electric_fields.num_time_slices
         < 1.1 * output_duration_s / time_slice_duration_s
     )
 
     np.testing.assert_almost_equal(
-        actual=electric_fields["global_start_time_s"],
+        actual=electric_fields.global_start_time_s,
         desired=coreas_time_boundaries["time_lower_boundary_s"],
     )
 
-    assert not np.any(np.isnan(electric_fields["electric_fields_V_per_m"]))
-    assert np.any(electric_fields["electric_fields_V_per_m"] != 0)
+    assert not np.any(np.isnan(electric_fields[:]))
+    assert np.any(electric_fields[:] != 0)
 
-    a0 = np.argmax(np.abs(electric_fields["electric_fields_V_per_m"][0, :]))
-    a1 = np.argmax(np.abs(electric_fields["electric_fields_V_per_m"][1, :]))
+    a0 = np.argmax(np.abs(electric_fields[0, :]))
+    a1 = np.argmax(np.abs(electric_fields[1, :]))
 
     assert np.abs(a0 - a1) < (20e-9 / time_slice_duration_s)

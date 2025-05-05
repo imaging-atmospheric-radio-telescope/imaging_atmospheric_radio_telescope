@@ -100,17 +100,17 @@ def test_plane_wave():
     # testing and asserting
     # ---------------------
 
-    iaat.electric_fields.assert_valid(E)
-    iaat.electric_fields.print_amplitudes(electric_fields=E)
+    iaat.time_series.assert_valid(E)
+    iaat.time_series.print(E)
 
     # test the phase of the sine wave
     # -------------------------------
-    time_s = iaat.electric_fields.make_time_bin_centers(E)
+    time_s = E.make_time_bin_centers()
     phase_shifts_rad = []
-    for a in range(E["num_antennas"]):
+    for a in range(E.num_channels):
         phase_shift_rad = iaat.signal.estimate_phase_angle_of_sine_wave(
             time_s=time_s,
-            signal=np.linalg.norm(E["electric_fields_V_per_m"][a], axis=1),
+            signal=np.linalg.norm(E[a], axis=1),
             sine_wave_frequency_Hz=plane_wave_frequency_Hz,
         )
         phase_shifts_rad.append(phase_shift_rad)
@@ -120,7 +120,7 @@ def test_plane_wave():
     phase_shifts_s = phase_shifts_1 / plane_wave_frequency_Hz
     phase_shifts_m = phase_shifts_s * iaat.signal.SPEED_OF_LIGHT_M_PER_S
 
-    for a in range(E["num_antennas"]):
+    for a in range(E.num_channels):
         antenna_z_m = antenna_position_vectors_in_asl_frame_m[a, 2]
         antenna_phase_shift_m = phase_shifts_m[a]
 
