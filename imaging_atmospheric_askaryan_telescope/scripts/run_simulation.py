@@ -338,7 +338,6 @@ total_power_leaving_lnb = iaat.signal.calculate_antenna_power(
     effective_area=telescope["lnb"]["effective_area_m2"],
     electric_field=E_lnb_output["electric_fields_V_per_m"],
 )
-numS = E_feed_horns["num_time_slices"]
 
 
 # plot power_leaving_lnb
@@ -346,7 +345,7 @@ numS = E_feed_horns["num_time_slices"]
 fig_path_power_leaving_lnb = os.path.join(plot_dir, "lnb_output.jpg")
 if not os.path.exists(fig_path_power_leaving_lnb):
     total_power_leaving_lnb_xy = np.sum(
-        total_power_leaving_lnb[:, numS:, 0:2],
+        total_power_leaving_lnb[:, E_feed_horns["num_time_slices"] :, 0:2],
         axis=2,
     )
     pixel_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
