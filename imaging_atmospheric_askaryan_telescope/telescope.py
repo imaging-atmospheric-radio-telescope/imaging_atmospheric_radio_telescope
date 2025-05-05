@@ -255,7 +255,7 @@ def make_matrix(
     Parameters
     ----------
     mirror : dict
-        Positions of the huygenes probes on the imaging mirror.
+        Positions of the Huygens probes on the imaging mirror.
     sensor : dict
         Positions of the feed horns in the image-sensor.
     speed_of_light_m_per_s : float
