@@ -394,14 +394,3 @@ def find_neighbors(positions_xy, max_num_neighbors, integration_radius):
                 nn_out.append(nn[i])
         mask.append(nn_out)
     return mask
-
-
-def apply_pixel_summation(signal, pixel_summation):
-    num_pixel_out = len(pixel_summation)
-    out_shape = list(signal.shape)
-    out_shape[0] = num_pixel_out
-    out = np.zeros(shape=out_shape)
-    for p in range(num_pixel_out):
-        for s in pixel_summation[p]:
-            out[p] += signal[s]
-    return out
