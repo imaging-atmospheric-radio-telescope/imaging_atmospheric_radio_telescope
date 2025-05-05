@@ -418,36 +418,39 @@ for i in range(num_readout_frames):
 
 # plot readout gain
 # -----------------
-_readout_bench_f_stop = 0.9 * (
-    timing["electric_fields"]["sampling_frequency_Hz"]
-    / timing["readout"]["integrates_num_simulation_time_slices"]
-)
-_readout_bench_f_start = 1e-2 * _readout_bench_f_stop
-_readout_bench_frequency = np.geomspace(
-    _readout_bench_f_start, _readout_bench_f_stop, 100
-)
-_readout_bench_gain = np.zeros(_readout_bench_frequency.shape)
-for _i, _ff in enumerate(_readout_bench_frequency):
-    _t, _Ain = iaat.signal.make_sin(
-        frequency=_ff,
-        time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],
-        num_time_slices=1000 * 10,
+fig_path_readout_gain = os.path.join(plot_dir, "readout_gain.jpg")
+if not os.path.exists(fig_path_readout_gain):
+    _readout_bench_f_stop = 0.9 * (
+        timing["electric_fields"]["sampling_frequency_Hz"]
+        / timing["readout"]["integrates_num_simulation_time_slices"]
     )
-    _Aout = iaat.signal.integrate_sliding_window(
-        signal=_Ain,
-        time_slice_duration=1 / numT,
-        window_num_slices=numT,
+    _readout_bench_f_start = 1e-2 * _readout_bench_f_stop
+    _readout_bench_frequency = np.geomspace(
+        _readout_bench_f_start, _readout_bench_f_stop, 100
     )
-    _r = np.sum(_Aout**2) / np.sum(_Ain**2)
-    _readout_bench_gain[_i] = _r
-_fig_path_readout_gain = os.path.join(plot_dir, "readout_gain.jpg")
-if not os.path.exists(_fig_path_readout_gain):
+    _readout_bench_gain = np.zeros(_readout_bench_frequency.shape)
+    for _i, _ff in enumerate(_readout_bench_frequency):
+        _t, _Ain = iaat.signal.make_sin(
+            frequency=_ff,
+            time_slice_duration=timing["electric_fields"][
+                "time_slice_duration_s"
+            ],
+            num_time_slices=1000 * 10,
+        )
+        _Aout = iaat.signal.integrate_sliding_window(
+            signal=_Ain,
+            time_slice_duration=1 / numT,
+            window_num_slices=numT,
+        )
+        _r = np.sum(_Aout**2) / np.sum(_Ain**2)
+        _readout_bench_gain[_i] = _r
     iaat_plot.write_figure_gain(
-        path=_fig_path_readout_gain,
+        path=fig_path_readout_gain,
         frequency=_readout_bench_frequency,
         gain=_readout_bench_gain,
         scale="M",
     )
+
 
 # plot images seen by readout
 # ---------------------------
