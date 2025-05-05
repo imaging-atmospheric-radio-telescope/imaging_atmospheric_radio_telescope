@@ -393,10 +393,6 @@ def read_tar(path):
     return o
 
 
-def rotate_electric_field():
-    pass
-
-
 def make_time_bin_edges(electric_fields, global_time=True):
     ef = electric_fields
     exposure_time = ef["num_time_slices"] * ef["time_slice_duration_s"]
