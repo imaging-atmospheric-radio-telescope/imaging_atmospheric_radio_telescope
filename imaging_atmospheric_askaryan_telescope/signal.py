@@ -134,10 +134,11 @@ def calculate_antenna_effective_area(wavelength, gain):
     return gain * ((wavelength**2) / (4.0 * np.pi))
 
 
-def calculate_antenna_power(effective_area, electric_field):
-    S = (electric_field**2) / VACUUM_IMPEDANCE_OHM
-    Pr = effective_area * S
-    return Pr
+def calculate_antenna_power_W(effective_area_m2, electric_field_V_per_m):
+    areal_power_density_W_per_m2 = (
+        electric_field_V_per_m**2
+    ) / VACUUM_IMPEDANCE_OHM
+    return effective_area_m2 * areal_power_density_W_per_m2
 
 
 def electric_power_of_thermal_noise(

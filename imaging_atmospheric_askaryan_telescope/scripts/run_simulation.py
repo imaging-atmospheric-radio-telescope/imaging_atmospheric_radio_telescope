@@ -137,9 +137,9 @@ for component in ["probe", "mirror", "feed_horns"]:
         assert field_norm.shape[0] == field["num_antennas"]
         assert field_norm.shape[1] == field["num_time_slices"]
 
-        _power = iaat.signal.calculate_antenna_power(
-            effective_area=A_effective_m2,
-            electric_field=field_norm,
+        _power = iaat.signal.calculate_antenna_power_W(
+            effective_area_m2=A_effective_m2,
+            electric_field_V_per_m=field_norm,
         )
         _power_density = _power / A_effective_m2
 
@@ -224,17 +224,17 @@ if True:
     )
     assert len(E_mirror_magnitude_V_per_m.shape) == 2
 
-    P_mirror_W = iaat.signal.calculate_antenna_power(
-        effective_area=A_eff_mirror_scatter_center_m2,
-        electric_field=E_mirror_magnitude_V_per_m,
+    P_mirror_W = iaat.signal.calculate_antenna_power_W(
+        effective_area_m2=A_eff_mirror_scatter_center_m2,
+        electric_field_V_per_m=E_mirror_magnitude_V_per_m,
     )
 
     E_feed_horns_magnitude_V_per_m = np.linalg.norm(
         E_feed_horns["electric_fields_V_per_m"], axis=2
     )
-    P_sensor_W = iaat.signal.calculate_antenna_power(
-        effective_area=A_eff_sensor_feed_horn_m2,
-        electric_field=E_feed_horns_magnitude_V_per_m,
+    P_sensor_W = iaat.signal.calculate_antenna_power_W(
+        effective_area_m2=A_eff_sensor_feed_horn_m2,
+        electric_field_V_per_m=E_feed_horns_magnitude_V_per_m,
     )
 
     En_mirror_J = np.sum(P_mirror_W) * E_mirror["time_slice_duration_s"]
@@ -334,9 +334,9 @@ E_lnb_output = iaat.electric_fields.read_tar(
 )
 
 # efield to power
-total_power_leaving_lnb = iaat.signal.calculate_antenna_power(
-    effective_area=telescope["lnb"]["effective_area_m2"],
-    electric_field=E_lnb_output["electric_fields_V_per_m"],
+total_power_leaving_lnb = iaat.signal.calculate_antenna_power_W(
+    effective_area_m2=telescope["lnb"]["effective_area_m2"],
+    electric_field_V_per_m=E_lnb_output["electric_fields_V_per_m"],
 )
 
 

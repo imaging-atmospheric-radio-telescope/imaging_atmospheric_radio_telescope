@@ -225,9 +225,9 @@ def simulate_telescope_response(
                     3,
                 ),
             )
-            lnb_noise_output_power_W = signal.calculate_antenna_power(
-                effective_area=telescope["lnb"]["effective_area_m2"],
-                electric_field=E_lnb_noise["electric_fields_V_per_m"],
+            lnb_noise_output_power_W = signal.calculate_antenna_power_W(
+                effective_area_m2=telescope["lnb"]["effective_area_m2"],
+                electric_field_V_per_m=E_lnb_noise["electric_fields_V_per_m"],
             )
             assert (
                 0.9

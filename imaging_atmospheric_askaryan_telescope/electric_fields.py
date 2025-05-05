@@ -488,9 +488,9 @@ def estimate_power_spectrum_density_W_per_Hz_per_m2(
                 for nu in range(nu_num_nins):
                     nu_bandwidth_Hz = nu_bin_edges[nu + 1] - nu_bin_edges[nu]
                     _Power_W = np.mean(
-                        signal.calculate_antenna_power(
-                            effective_area=antenna_effective_area_m2,
-                            electric_field=_e_by_nu[nu],
+                        signal.calculate_antenna_power_W(
+                            effective_area_m2=antenna_effective_area_m2,
+                            electric_field_V_per_m=_e_by_nu[nu],
                         )
                     )
                     mat_W_per_Hz_per_m2[nu, antenna] += (

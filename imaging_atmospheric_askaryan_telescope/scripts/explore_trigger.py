@@ -49,9 +49,9 @@ for block in range(10):
         size=noise_num_time_slices,
     )
 
-    _noise_power = iaat.signal.calculate_antenna_power(
-        effective_area=telescope["lnb"]["effective_area_m2"],
-        electric_field=noise_efield_leaving_lnb,
+    _noise_power = iaat.signal.calculate_antenna_power_W(
+        effective_area_m2=telescope["lnb"]["effective_area_m2"],
+        electric_field_V_per_m=noise_efield_leaving_lnb,
     )
 
     assert (
