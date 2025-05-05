@@ -65,6 +65,7 @@ iaat.production.simulate_telescope_response(
     telescope=telescope,
     timing=timing,
     thermal_noise_random_seed=random_seed + 1,
+    readout_random_seed=random_seed + 2,
 )
 
 plot_dir = os.path.join(out_dir, "plot")
@@ -371,49 +372,10 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         roi_time=[5e-9, 10e-9],
     )
 
-# integrate power_leaving_lnb over time for readout
-# -------------------------------------------------
-total_power_sliding_integral = np.zeros(shape=total_power_leaving_lnb.shape)
+readout_energy = iaat.time_series.read(
+    os.path.join(out_dir, "lnb_readout", "energies.ts.tar")
+)
 
-numT = timing["readout"]["integrates_num_simulation_time_slices"]
-simulation_time_slice_duration = timing["electric_fields"][
-    "time_slice_duration_s"
-]
-
-for t in range(E_lnb_output["num_time_slices"] - numT):
-    w = np.sum(total_power_leaving_lnb[:, t : t + numT, :], axis=1)
-    total_power_sliding_integral[:, t, :] = w * simulation_time_slice_duration
-
-simulation_time_slices_which_are_sampled_by_readout = np.arange(
-    0,
-    E_lnb_output["num_time_slices"],
-    numT,
-)
-random_offset_or_readout_wrt_global_time_num_time_slices = int(
-    prng.uniform(low=0, high=numT)
-)
-num_readout_frames = (
-    len(simulation_time_slices_which_are_sampled_by_readout) - 1
-)
-readout_energy = np.zeros(
-    shape=(telescope["sensor"]["num_feed_horns"], num_readout_frames, 2)
-)
-readout_global_start_time_s = (
-    random_offset_or_readout_wrt_global_time_num_time_slices
-    * timing["electric_fields"]["time_slice_duration_s"]
-    + E_lnb_output["global_start_time_s"]
-)
-for i in range(num_readout_frames):
-    simulation_time_slice = (
-        simulation_time_slices_which_are_sampled_by_readout[i]
-    )
-    simulation_time_slice += (
-        random_offset_or_readout_wrt_global_time_num_time_slices
-    )
-    x_comp_energy = total_power_sliding_integral[:, simulation_time_slice, 0]
-    y_comp_energy = total_power_sliding_integral[:, simulation_time_slice, 1]
-    readout_energy[:, i, 0] = x_comp_energy
-    readout_energy[:, i, 1] = y_comp_energy
 
 # plot readout gain
 # -----------------
@@ -454,19 +416,17 @@ if not os.path.exists(fig_path_readout_gain):
 # plot images seen by readout
 # ---------------------------
 for units in ["electron_volt", "black_body_temperature", "jansky"]:
-    plot_sensor_dir = os.path.join(plot_dir, "readout", units)
+    plot_sensor_dir = os.path.join(plot_dir, "readout2", units)
     if not os.path.exists(plot_sensor_dir):
         iaat_plot.save_image_slices_energy_deposite(
-            readout_energy_J=readout_energy,
-            readout_time_slice_duration_s=timing["readout"][
-                "time_slice_duration_s"
-            ],
+            readout_energy_J=readout_energy._x,
+            readout_time_slice_duration_s=readout_energy.time_slice_duration_s,
             antenna_positions=np.rad2deg(
                 telescope["sensor"]["feed_horn_positions_m"]
                 / telescope["mirror"]["focal_length_m"]
             ),
             path=plot_sensor_dir,
-            global_start_time_s=readout_global_start_time_s,
+            global_start_time_s=readout_energy.global_start_time_s,
             units=units,
             bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
             mirror_area_m2=telescope["mirror"]["area_m2"],

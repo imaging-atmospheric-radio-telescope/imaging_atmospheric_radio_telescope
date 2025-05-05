@@ -11,6 +11,7 @@ from . import radio_from_plane_wave
 from .. import telescope as simtelescope
 from .. import electric_fields
 from .. import signal
+from .. import time_series
 
 
 def simulate_telescope_response(
@@ -20,6 +21,7 @@ def simulate_telescope_response(
     telescope,
     timing,
     thermal_noise_random_seed,
+    readout_random_seed,
 ):
     os.makedirs(out_dir, exist_ok=True)
     with rnw.open(os.path.join(out_dir, "source_config.json"), "wt") as f:
@@ -282,6 +284,50 @@ def simulate_telescope_response(
             )
             print("Done.")
 
+    # Lnb Readout
+    # -----------
+    lnb_readout_dir = os.path.join(out_dir, "lnb_readout")
+    if not os.path.exists(lnb_readout_dir):
+        with rnw.Directory(lnb_readout_dir) as tmp_dir:
+            print(
+                "Simulating Readout of LNBs ... ",
+                end="",
+                flush=True,
+            )
+            E_lnb_output = electric_fields.read_tar(
+                path=os.path.join(
+                    out_dir,
+                    "lnb_signal_and_noise_output",
+                    "electric_fields.tar",
+                )
+            )
+            (
+                readout_energy_J,
+                readout_global_start_time_s,
+                readout_time_slice_duration_s,
+            ) = simulate_readout(
+                electric_fields_leaving_lnbs=E_lnb_output,
+                telescope=telescope,
+                timing=timing,
+                random_seed=readout_random_seed,
+            )
+            readout_energy = time_series.TimeSeries(
+                time_slice_duration_s=readout_time_slice_duration_s,
+                global_start_time_s=readout_global_start_time_s,
+                num_time_slices=readout_energy_J.shape[1],
+                num_channels=readout_energy_J.shape[0],
+                num_components=readout_energy_J.shape[2],
+                si_unit="J",
+                dtype="float32",
+            )
+            readout_energy._x = readout_energy_J
+            time_series.write(
+                path=os.path.join(tmp_dir, "energies.ts.tar"),
+                time_series=readout_energy,
+            )
+
+            print("Done.")
+
 
 def simulate_electric_field_leaving_feed_horns(
     electric_fields_entering_feed_horns,
@@ -305,3 +351,82 @@ def simulate_electric_field_leaving_feed_horns(
         * electric_fields_entering_feed_horns["electric_fields_V_per_m"]
     )
     return electric_field_leaving_feed_horns
+
+
+def simulate_readout(
+    electric_fields_leaving_lnbs,
+    telescope,
+    timing,
+    random_seed,
+):
+    E_lnb = electric_fields_leaving_lnbs
+    prng = np.random.Generator(np.random.PCG64(random_seed))
+
+    # E field to power
+    total_power_leaving_lnb = signal.calculate_antenna_power_W(
+        effective_area_m2=telescope["lnb"]["effective_area_m2"],
+        electric_field_V_per_m=E_lnb["electric_fields_V_per_m"],
+    )
+
+    # integrate power_leaving_lnb over time for readout
+    # -------------------------------------------------
+    total_power_sliding_integral = np.zeros(
+        shape=total_power_leaving_lnb.shape
+    )
+
+    numT = timing["readout"]["integrates_num_simulation_time_slices"]
+    simulation_time_slice_duration = timing["electric_fields"][
+        "time_slice_duration_s"
+    ]
+
+    for t in range(E_lnb["num_time_slices"] - numT):
+        w = np.sum(total_power_leaving_lnb[:, t : t + numT, :], axis=1)
+        total_power_sliding_integral[:, t, :] = (
+            w * simulation_time_slice_duration
+        )
+
+    simulation_time_slices_which_are_sampled_by_readout = np.arange(
+        0,
+        E_lnb["num_time_slices"],
+        numT,
+    )
+    random_offset_of_readout_wrt_global_time_num_time_slices = int(
+        prng.uniform(low=0, high=numT)
+    )
+    num_readout_frames = (
+        len(simulation_time_slices_which_are_sampled_by_readout) - 1
+    )
+    readout_energy_J = np.zeros(
+        shape=(telescope["sensor"]["num_feed_horns"], num_readout_frames, 2)
+    )
+    readout_global_start_time_s = (
+        random_offset_of_readout_wrt_global_time_num_time_slices
+        * timing["electric_fields"]["time_slice_duration_s"]
+        + E_lnb["global_start_time_s"]
+    )
+    for i in range(num_readout_frames):
+        simulation_time_slice = (
+            simulation_time_slices_which_are_sampled_by_readout[i]
+        )
+        simulation_time_slice += (
+            random_offset_of_readout_wrt_global_time_num_time_slices
+        )
+        x_comp_energy = total_power_sliding_integral[
+            :, simulation_time_slice, 0
+        ]
+        y_comp_energy = total_power_sliding_integral[
+            :, simulation_time_slice, 1
+        ]
+        readout_energy_J[:, i, 0] = x_comp_energy
+        readout_energy_J[:, i, 1] = y_comp_energy
+
+    readout_time_slice_duration_s = (
+        timing["readout"]["integrates_num_simulation_time_slices"]
+        * timing["electric_fields"]["time_slice_duration_s"]
+    )
+
+    return (
+        readout_energy_J,
+        readout_global_start_time_s,
+        readout_time_slice_duration_s,
+    )
