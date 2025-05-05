@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import copy
+import builtins
 from .utils import tarstream
 
 
@@ -174,6 +175,44 @@ class TimeSeries:
         return write_tar(path=path, time_series=self)
 
 
+def assert_valid(time_series):
+    E = time_series
+    assert not np.isnan(E.global_start_time_s)
+    assert E.time_slice_duration_s > 0.0
+    assert E.num_time_slices >= 0
+    assert E.num_channels >= 0
+    assert E.num_components >= 0
+    assert E._x.shape[0] == E.num_channels
+    assert E._x.shape[1] == E.num_time_slices
+    assert E._x.shape[2] == E.num_components
+
+
+def assert_almost_equal(actual, desired, **kwargs):
+    assert_valid(actual)
+    assert_valid(desired)
+
+    np.testing.assert_almost_equal(
+        actual=actual.global_start_time_s,
+        desired=desired.global_start_time_s,
+        **kwargs,
+    )
+    np.testing.assert_almost_equal(
+        actual=actual.time_slice_duration_s,
+        desired=desired.time_slice_duration_s,
+        **kwargs,
+    )
+    assert actual.num_time_slices == desired.num_time_slices
+    assert actual.num_channels == desired.num_channels
+    assert actual.num_components == desired.num_components
+
+    assert actual.si_unit == desired.si_unit
+    np.testing.assert_almost_equal(
+        actual=actual._x,
+        desired=desired._x,
+        **kwargs,
+    )
+
+
 def write(path, time_series):
     s = time_series
 
@@ -258,3 +297,85 @@ def read(path):
         )
 
     return o
+
+
+def print(time_series, num_samples_to_be_integrated=20, channels=None):
+    """
+    Print the amplitudes with a bar graph.
+
+    Parameters
+    ----------
+    time_series : time_series.TimeSeries
+
+    num_samples_to_be_integrated : int
+        To not print all time slices, we integrate over this many.
+    channels : array like (default: None)
+        List of channel indices to be printed. If None, all channels will
+        be printed.
+    """
+    N = num_samples_to_be_integrated
+    E = time_series
+    if channels is None:
+        channels = np.arange(0, E.num_channels)
+
+    MM = []
+    TT = []
+    for b in range(E.num_time_slices // N):
+        s_start = b * N
+        TT.append(s_start * E.time_slice_duration_s)
+
+    for a in channels:
+        e = np.linalg.norm(E._x[a], axis=1)
+        emax = np.max(e)
+        mm = []
+        for b in range(E.num_time_slices // N):
+            s_start = b * N
+            s_stop = s_start + N
+            m = np.mean(e[s_start:s_stop]) / emax
+            mm.append(m)
+        MM.append(mm)
+    MM = np.array(MM)
+
+    head = "time/ns "
+    for a in channels:
+        head += f"{a: 10d} "
+    builtins.print(head)
+
+    for t in range(len(TT)):
+        line = f"{TT[t]*1e9: 7.1f} "
+        for a in channels:
+            nn = int(MM[a][t] * 10)
+            for i in range(10):
+                if i < nn:
+                    line += "|"
+                else:
+                    line += "."
+            line += " "
+        builtins.print(line)
+
+
+def random(seed):
+    prng = prng = np.random.Generator(np.random.PCG64(seed))
+
+    E = zeros(
+        time_slice_duration_s=prng.uniform(low=1e-9, high=1e-6),
+        num_time_slices=prng.integers(low=100, high=1_000),
+        num_channels=prng.integers(low=10, high=1_000),
+        num_components=prng.integers(low=1, high=3),
+        global_start_time_s=prng.uniform(low=-5e-6, high=5e-6),
+        si_unit=_draw_random_printable_string(prng=prng, size=6),
+    )
+    E._x = (
+        prng.uniform(
+            low=-1.0,
+            high=1.0,
+            size=np.prod(E._x.shape),
+        )
+        .reshape(E._x.shape)
+        .astype(E.dtype)
+    )
+    return E
+
+
+def _draw_random_printable_string(prng, size):
+    return prng.integers(65, 90, size).astype(np.uint8).tobytes().decode()
