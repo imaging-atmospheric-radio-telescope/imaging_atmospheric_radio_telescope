@@ -24,6 +24,7 @@ def simulate_telescope_response(
     timing,
     thermal_noise_random_seed,
     readout_random_seed,
+    stop_after_section=None,
 ):
     os.makedirs(out_dir, exist_ok=True)
     with rnw.open(os.path.join(out_dir, "source_config.json"), "wt") as f:
@@ -69,12 +70,15 @@ def simulate_telescope_response(
                 False
             ), f"Source config __type__: {source_config['__type__']:s} is not known."
 
+    if stop_after_section == "mirror":
+        return
+
     # Electric fields entering feed horns
     # -----------------------------------
     feed_horns_dir = os.path.join(out_dir, "feed_horns")
     if not os.path.exists(feed_horns_dir):
         with rnw.Directory(feed_horns_dir) as tmp_dir, PrintStartStop(
-            "Propagating electric fields from mirror to feed horns ... "
+            "Propagating electric fields from mirror to feed horns"
         ) as _:
             E_mirror = time_series.read(
                 path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
@@ -92,6 +96,9 @@ def simulate_telescope_response(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
                 time_series=E_sensor,
             )
+
+    if stop_after_section == "feed_horns":
+        return
 
     # Electric fields entering lnbs
     # -----------------------------
@@ -117,6 +124,9 @@ def simulate_telescope_response(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
                 time_series=E_lnb_input,
             )
+
+    if stop_after_section == "lnb_input":
+        return
 
     # Signal electric fields leaving lnbs
     # -----------------------------------
@@ -144,6 +154,9 @@ def simulate_telescope_response(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
                 time_series=E_lnb_signal_output,
             )
+
+    if stop_after_section == "lnb_signal_output":
+        return
 
     # Noise electric fields leaving lnbs
     # ----------------------------------
@@ -208,6 +221,9 @@ def simulate_telescope_response(
                 time_series=E_lnb_noise,
             )
 
+    if stop_after_section == "lnb_noise_output":
+        return
+
     # Total electric fields leaving lnbs
     # ----------------------------------
     lnb_signal_and_noise_output_dir = os.path.join(
@@ -238,6 +254,9 @@ def simulate_telescope_response(
                 time_series=E_lnb_noise_and_signal,
             )
 
+    if stop_after_section == "lnb_signal_and_noise_output":
+        return
+
     # Lnb Readout
     # -----------
     lnb_readout_dir = os.path.join(out_dir, "lnb_readout")
@@ -262,6 +281,9 @@ def simulate_telescope_response(
                 path=os.path.join(tmp_dir, "energies.ts.tar"),
                 time_series=Ene_readout,
             )
+
+    if stop_after_section == "lnb_readout":
+        return
 
 
 def simulate_electric_field_leaving_feed_horns(
