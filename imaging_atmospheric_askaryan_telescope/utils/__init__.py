@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class PrintStartStop:
     def __init__(self, start_msg, stop_msg="Done."):
         self.start_msg = start_msg
