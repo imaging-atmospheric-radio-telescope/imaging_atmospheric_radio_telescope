@@ -10,7 +10,7 @@ def make_config():
 
 
 def simulate_mirror_electric_fields(
-    out_dir,
+    mirror_dir,
     plane_wave_config,
     time_slice_duration_s,
     antenna_positions_obslvl_m,
@@ -35,7 +35,6 @@ def simulate_mirror_electric_fields(
         time_slice_duration_s=time_slice_duration_s,
     )
 
-    mirror_dir = os.path.join(out_dir, "mirror")
     os.makedirs(mirror_dir, exist_ok=True)
-    antenna_path = os.path.join(mirror_dir, "electric_fields.tar")
-    time_series.write(path=antenna_path, time_series=E)
+    electric_field_path = os.path.join(mirror_dir, "electric_fields.tar")
+    time_series.write(path=electric_field_path, time_series=E)

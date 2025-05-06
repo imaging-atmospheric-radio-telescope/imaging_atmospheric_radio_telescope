@@ -133,8 +133,8 @@ def _simulate_mirror_electric_fields_manual(
         cor_dir = os.path.join(out_dir, "corsika_coreas")
         os.makedirs(cor_dir)
 
-        cor_o_path = os.path.join(cor_dir, "corsika.o")
-        cor_e_path = os.path.join(cor_dir, "corsika.e")
+        cor_o_path = os.path.join(cor_dir, "corsika.stdout.txt")
+        cor_e_path = os.path.join(cor_dir, "corsika.stderr.txt")
 
         raw_antenna_dir = os.path.join(out_dir, "electric_fields.raw")
         antenna_path = os.path.join(out_dir, "electric_fields.tar")
@@ -194,13 +194,13 @@ def _simulate_mirror_electric_fields_manual(
 
 
 def simulate_mirror_electric_fields(
-    out_dir,
+    mirror_dir,
     airshower_config,
     site,
     antenna_positions_obslvl_m,
     timing,
 ):
-    probe_dir = os.path.join(out_dir, "probe")
+    probe_dir = os.path.join(mirror_dir, "probe")
     if not os.path.exists(probe_dir):
 
         start_time_probe = timing["start_time_probe"]
@@ -256,13 +256,15 @@ def simulate_mirror_electric_fields(
             "time_upper_boundary_s": time_upper_boundary_s,
         }
 
-        with rnw.open(os.path.join(out_dir, "time_window.json"), "wt") as fout:
+        with rnw.open(
+            os.path.join(mirror_dir, "time_window.json"), "wt"
+        ) as fout:
             fout.write(json.dumps(time_window, indent=4))
 
-    mirror_dir = os.path.join(out_dir, "mirror")
-    if not os.path.exists(mirror_dir):
+    electric_field_path = os.path.join(mirror_dir, "electric_fields.tar")
+    if not os.path.exists(electric_field_path):
 
-        with open(os.path.join(out_dir, "time_window.json"), "rt") as f:
+        with open(os.path.join(mirror_dir, "time_window.json"), "rt") as f:
             time_window = json.loads(f.read())
 
         _simulate_mirror_electric_fields_manual(

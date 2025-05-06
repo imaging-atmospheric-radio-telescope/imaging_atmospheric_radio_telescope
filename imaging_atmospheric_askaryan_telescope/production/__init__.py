@@ -40,7 +40,7 @@ def simulate_telescope_response(
             ) as _:
                 radio_from_airshower.assert_config_is_valid(source_config)
                 radio_from_airshower.simulate_mirror_electric_fields(
-                    out_dir=out_dir,
+                    mirror_dir=mirror_dir,
                     airshower_config=source_config,
                     site=site,
                     antenna_positions_obslvl_m=telescope["mirror"][
@@ -54,7 +54,7 @@ def simulate_telescope_response(
                 "Simulating plane wave from calibration source"
             ) as _:
                 radio_from_plane_wave.simulate_mirror_electric_fields(
-                    out_dir=out_dir,
+                    mirror_dir=mirror_dir,
                     plane_wave_config=source_config,
                     time_slice_duration_s=timing["electric_fields"][
                         "time_slice_duration_s"
