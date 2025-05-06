@@ -8,7 +8,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "run"
+work_dir = "run2"
 
 if not os.path.exists(work_dir):
     iaat.init(
@@ -33,22 +33,21 @@ if False:
     source_config["primary_particle"]["zenith_rad"] = np.deg2rad(1.5)
     source_config["primary_particle"]["core_north_m"] = 50.0
     source_config["primary_particle"]["core_west_m"] = 20.0
-    source_config["primary_particle"]["energy_GeV"] = 10_000.0
+    source_config["primary_particle"]["energy_GeV"] = 1_000.0
 else:
     source_config = iaat.production.radio_from_plane_wave.make_config()
-    source_config["geometry"]["azimuth_rad"] = np.deg2rad(220)
-    source_config["geometry"]["zenith_rad"] = np.deg2rad(1.7)
-    source_config["geometry"][
+    s1 = source_config["plane_waves"]["first"]
+    s1["geometry"]["azimuth_rad"] = np.deg2rad(220)
+    s1["geometry"]["zenith_rad"] = np.deg2rad(1.7)
+    s1["geometry"][
         "distance_to_plane_defining_time_zero_m"
     ] = iaat.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
-    source_config["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
-    source_config["power"][
-        "distance_to_isotrop_and_point_like_emitter_m"
-    ] = 100e3
-    source_config["sine_wave"]["emission_frequency_Hz"] = 11.1e9
-    source_config["sine_wave"]["emission_duration_s"] = 5e-9
-    source_config["sine_wave"]["emission_ramp_up_duration_s"] = 1e-9
-    source_config["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
+    s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
+    s1["power"]["distance_to_isotrop_and_point_like_emitter_m"] = 100e3
+    s1["sine_wave"]["emission_frequency_Hz"] = 11.1e9
+    s1["sine_wave"]["emission_duration_s"] = 5e-9
+    s1["sine_wave"]["emission_ramp_up_duration_s"] = 1e-9
+    s1["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
 
 out_dir = os.path.join(
     work_dir, source_config["__type__"], f"{random_seed:06d}"
@@ -230,7 +229,7 @@ if True:
     if source_config["__type__"] == "plane_wave":
         _power_geom = (
             iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
-                **source_config["power"]
+                **s1["power"]
             )
         )
         expected_power_on_mirror_W = (
@@ -238,8 +237,7 @@ if True:
             * _power_geom["pointing_vector_magnitude_W_per_m2"]
         )
         expected_energy_on_mirror_J = (
-            expected_power_on_mirror_W
-            * source_config["sine_wave"]["emission_duration_s"]
+            expected_power_on_mirror_W * s1["sine_wave"]["emission_duration_s"]
         )
         expected_energy_on_mirror_eV = (
             expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J

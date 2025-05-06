@@ -35,12 +35,12 @@ def simulate_telescope_response(
     mirror_dir = os.path.join(out_dir, "mirror")
     if not os.path.exists(mirror_dir):
         if source_config["__type__"] == "airshower":
-            with PrintStartStop(
+            with rnw.Directory(mirror_dir) as tmp_mirror_dir, PrintStartStop(
                 "Simulating air shower using CORSIKA CoREAS"
             ) as _:
                 radio_from_airshower.assert_config_is_valid(source_config)
                 radio_from_airshower.simulate_mirror_electric_fields(
-                    mirror_dir=mirror_dir,
+                    mirror_dir=tmp_mirror_dir,
                     airshower_config=source_config,
                     site=site,
                     antenna_positions_obslvl_m=telescope["mirror"][
@@ -50,12 +50,12 @@ def simulate_telescope_response(
                 )
 
         elif source_config["__type__"] == "plane_wave":
-            with PrintStartStop(
+            with rnw.Directory(mirror_dir) as tmp_mirror_dir, PrintStartStop(
                 "Simulating plane wave from calibration source"
             ) as _:
                 radio_from_plane_wave.simulate_mirror_electric_fields(
-                    mirror_dir=mirror_dir,
-                    plane_wave_config=source_config,
+                    mirror_dir=tmp_mirror_dir,
+                    plane_waves=source_config["plane_waves"],
                     time_slice_duration_s=timing["electric_fields"][
                         "time_slice_duration_s"
                     ],

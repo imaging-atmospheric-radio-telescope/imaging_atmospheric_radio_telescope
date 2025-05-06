@@ -9,8 +9,6 @@ from . import sine_wave_ramp
 
 def make_config():
     c = {}
-    c["__type__"] = "plane_wave"
-
     g = {}
     g["azimuth_rad"] = 0.0
     g["zenith_rad"] = 0.0
