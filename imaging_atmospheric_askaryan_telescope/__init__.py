@@ -13,6 +13,7 @@ from . import lownoiseblock
 from . import theory
 from . import utils
 from . import calibration_source
+from . import investigations
 
 
 import os

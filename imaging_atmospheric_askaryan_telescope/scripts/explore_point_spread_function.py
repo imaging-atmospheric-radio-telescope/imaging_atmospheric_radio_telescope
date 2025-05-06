@@ -30,9 +30,9 @@ random_seed = 1405
 def make_telescope_roi_camera(
     source_azimuth_rad,
     source_zenith_rad,
-    telescope_full_camera,
+    telescope,
     roi_rad=np.deg2rad(0.5),
-    num_bins=21,
+    num_bins=42,
 ):
 
     f = telescope_full_camera["mirror"]["focal_length_m"]
@@ -53,14 +53,49 @@ def make_telescope_roi_camera(
     sensor_roi = iaat.telescope.make_sensor_in_region_of_interest(
         x_bin_edges_m=x_bin_edges_m,
         y_bin_edges_m=y_bin_edges_m,
-        sensor_distance_m=telescope_full_camera["sensor"]["sensor_distance_m"],
+        sensor_distance_m=telescope["sensor"]["sensor_distance_m"],
         feed_horn_transmission=1.0,
     )
 
     return iaat.telescope.make_telescope_like_other_but_different_sensor(
-        telescope=telescope_full_camera,
+        telescope=telescope,
         sensor=sensor_roi,
     )
+
+
+def ax_add_feed_horn_hexagon(ax, x, y, feed_horn_area_m2, **kwargs):
+    inner_radius_m = iaat.telescope._inner_radius_of_hexagon(
+        area=feed_horn_area_m2
+    )
+    outer_radius_m = 2.0 / np.sqrt(3.0) * inner_radius_m
+    sebplt.ax_add_hexagon(
+        ax=ax, x=x, y=y, r_outer=outer_radius_m, **kwargs, orientation_deg=30.0
+    )
+
+
+def ax_add_antenna_area_circle(ax, x, y, area_m2, **kwargs):
+    r = np.sqrt(area_m2 / np.pi)
+    sebplt.ax_add_circle(
+        ax=ax,
+        x=x,
+        y=y,
+        r=r,
+        num_steps=101,
+        **kwargs,
+    )
+
+
+def ax_add_wavelength_axis(ax, x, y, wavelength, **kwargs):
+    w = wavelength
+    ax.plot([x - w * 0.1, x + w * 1.1], [y, y], **kwargs)
+    ax.plot([x, x], [y - w * 0.6, y + 0.6 * w], **kwargs)
+
+
+def ax_add_wavelength_sine(ax, x, y, wavelength, **kwargs):
+    w = wavelength
+    _x = np.linspace(0.0, 1.0, 101)
+    _y = np.sin(_x * 2.0 * np.pi)
+    ax.plot(x + _x * w, y + _y * 0.5 * w, **kwargs)
 
 
 # HEAD ON
@@ -85,7 +120,7 @@ source_config["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
 telescope_roi_camera = make_telescope_roi_camera(
     source_azimuth_rad=source_config["geometry"]["azimuth_rad"],
     source_zenith_rad=source_config["geometry"]["zenith_rad"],
-    telescope_full_camera=telescope_full_camera,
+    telescope=telescope_full_camera,
 )
 
 """
@@ -155,6 +190,41 @@ im = ax.pcolormesh(
     Ene_roi_eV.T,
     cmap="Blues",
     norm=norm,
+)
+ax_add_feed_horn_hexagon(
+    ax=ax,
+    x=telescope_roi_camera["sensor"]["region_of_interest"]["x_bin_edges_m"][
+        17
+    ],
+    y=telescope_roi_camera["sensor"]["region_of_interest"]["y_bin_edges_m"][
+        17
+    ],
+    feed_horn_area_m2=telescope_full_camera["sensor"]["feed_horn_area_m2"],
+    color="black",
+    linewidth=0.7,
+)
+ax_add_antenna_area_circle(
+    ax=ax,
+    x=telescope_roi_camera["sensor"]["region_of_interest"]["x_bin_edges_m"][
+        17
+    ],
+    y=telescope_roi_camera["sensor"]["region_of_interest"]["y_bin_edges_m"][
+        17
+    ],
+    area_m2=iaat.signal.calculate_antenna_effective_area(
+        wavelength=iaat.signal.frequency_to_wavelength(11.1e9), gain=1.0
+    ),
+    color="black",
+    linewidth=0.7,
+)
+w = iaat.signal.frequency_to_wavelength(11.1e9)
+_x = telescope_roi_camera["sensor"]["region_of_interest"]["x_bin_edges_m"][17]
+_y = telescope_roi_camera["sensor"]["region_of_interest"]["y_bin_edges_m"][4]
+ax_add_wavelength_axis(
+    ax=ax, x=_x, y=_y, wavelength=w, color="gray", linewidth=0.5
+)
+ax_add_wavelength_sine(
+    ax=ax, x=_x, y=_y, wavelength=w, color="black", linewidth=0.5
 )
 ax.set_xlabel("x / m")
 ax.set_ylabel("y / m")

@@ -35,6 +35,7 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope.calibration_source",
         "imaging_atmospheric_askaryan_telescope.production",
         "imaging_atmospheric_askaryan_telescope.telescopes",
+        "imaging_atmospheric_askaryan_telescope.investigations",
     ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
