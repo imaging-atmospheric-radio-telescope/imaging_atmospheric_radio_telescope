@@ -1,4 +1,23 @@
-from . import tarstream
+class PrintStartStop:
+    def __init__(self, start_msg, stop_msg="Done."):
+        self.start_msg = start_msg
+        self.stop_msg = stop_msg
+
+    def __enter__(self):
+        print(
+            self.start_msg,
+            " ... ",
+            end="",
+            flush=True,
+        )
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        print(self.stop_msg)
+        return
+
+    def __repr__(self):
+        return f"{self.__class__.__name__:s}()"
 
 
 def strip_dict(obj, strip):
