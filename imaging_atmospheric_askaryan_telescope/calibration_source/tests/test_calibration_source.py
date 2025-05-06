@@ -43,9 +43,16 @@ def test_power_setup():
     assert pows["pointing_vector_magnitude_W_per_m2"] == 3 / (
         4 * np.pi * 100**2
     )
-    assert pows["electric_field_amplitue_V_per_m"] == np.sqrt(
+    assert pows[
+        "electric_field_amplitue_expectation_value_V_per_m"
+    ] == np.sqrt(
         pows["pointing_vector_magnitude_W_per_m2"]
         * iaat.signal.VACUUM_IMPEDANCE_OHM
+    )
+    assert (
+        pows["electric_field_amplitue_V_per_m"]
+        == np.sqrt(2)
+        * pows["electric_field_amplitue_expectation_value_V_per_m"]
     )
 
 
@@ -86,7 +93,7 @@ def test_plane_wave():
         **config["geometry"],
     )
     power_setup = pwiff.make_power_setup(**config["power"])
-
+    # power_setup["electric_field_amplitue_V_per_m"] *= 1/np.sqrt(2)
     # execution
     # ---------
 
@@ -125,5 +132,14 @@ def test_plane_wave():
         antenna_phase_shift_m = phase_shifts_m[a]
 
         delta_m = np.abs(antenna_z_m - antenna_phase_shift_m)
-        # print(a, f"{antenna_phase_shift_m * 1e3: 5.2f}mm")
-        assert delta_m <= expected_spatial_resolution_with_given_oversampling_m
+        print(
+            a,
+            f"antenna_phase_shift: {antenna_phase_shift_m * 1e3: 5.2f}mm, ",
+            f"antenna_z: {antenna_z_m*1e3: 5.2f}mm, ",
+            f"wavelength: {plane_wave_wavelength_m*1e3: 5.2f}mm",
+        )
+        assert (
+            delta_m <= expected_spatial_resolution_with_given_oversampling_m
+            or np.abs(plane_wave_wavelength_m - delta_m)
+            <= expected_spatial_resolution_with_given_oversampling_m
+        )

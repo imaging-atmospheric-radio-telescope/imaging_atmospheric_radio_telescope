@@ -13,13 +13,13 @@ import os
 work_dir = "explore_point_spread_function"
 
 if not os.path.exists(work_dir):
-    iaat.init(
+    iaat.run.init(
         work_dir=work_dir,
         site_key="namibia",
         telescope_key="large_size_telescope",
     )
 
-_askaryan = iaat.from_config(work_dir=work_dir)
+_askaryan = iaat.run.from_config(work_dir=work_dir)
 telescope_full_camera = _askaryan["telescope"]
 timing = _askaryan["timing"]
 site = _askaryan["site"]

@@ -39,8 +39,8 @@ sebplt.matplotlib.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
 args = parser.parse_args()
 out_dir = args.out_dir
 
-iaat.init(work_dir=out_dir, telescope_key=args.telescope_key)
-telescope = iaat.from_config(work_dir=out_dir)["telescope"]
+iaat.run.init(work_dir=out_dir, telescope_key=args.telescope_key)
+telescope = iaat.run.from_config(work_dir=out_dir)["telescope"]
 
 
 def ax_add_telescope_xy(ax, telescope, linewidth, roi):

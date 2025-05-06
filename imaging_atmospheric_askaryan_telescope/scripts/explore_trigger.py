@@ -5,7 +5,7 @@ import math
 
 # setup
 # -----
-config = iaat.from_config("run")
+config = iaat.run.from_config("run")
 telescope = config["telescope"]
 timing = config["timing"]
 

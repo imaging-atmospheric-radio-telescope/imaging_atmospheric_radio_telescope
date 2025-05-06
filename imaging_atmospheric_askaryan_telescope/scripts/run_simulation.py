@@ -11,13 +11,13 @@ import os
 work_dir = "run2"
 
 if not os.path.exists(work_dir):
-    iaat.init(
+    iaat.run.init(
         work_dir=work_dir,
         site_key="namibia",
         telescope_key="large_size_telescope",
     )
 
-askaryan = iaat.from_config(work_dir=work_dir)
+askaryan = iaat.run.from_config(work_dir=work_dir)
 telescope = askaryan["telescope"]
 timing = askaryan["timing"]
 site = askaryan["site"]

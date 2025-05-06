@@ -228,7 +228,8 @@ def correlate_phase_angle_of_sine_wave(
         reference_signal = np.sin(
             time_s * sine_wave_frequency_Hz * TAU + phase_shift_rad
         )
-        correlation = np.sum(np.abs(signal * reference_signal))
+        mixing_square = (signal * reference_signal) ** 2.0
+        correlation = np.sum(mixing_square)
         correlations.append(correlation)
 
     correlations /= np.max(correlations)

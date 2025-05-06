@@ -4,6 +4,19 @@ from ... import telescope
 
 import spherical_coordinates
 import numpy as np
+import os
+import json_utils
+import rename_after_writing as rnw
+
+
+def init_work_dir(work_dir, telescope_key):
+    os.makedirs(work_dir, exist_ok=True)
+    config_dir = os.path.join(work_dir, "config")
+    os.makedirs(config_dir, exist_ok=True)
+
+    scatter = {}
+    with rnw.open(os.path.join(config_dir, "scatter"), "wt") as f:
+        f.write(json_utils.dumps(scatter, indent=4))
 
 
 def make_telescope_like_other_but_with_region_of_interest_camera(
