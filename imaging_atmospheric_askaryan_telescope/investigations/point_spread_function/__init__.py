@@ -57,3 +57,17 @@ def make_telescope_like_other_but_with_region_of_interest_camera(
         telescope=other_telescope,
         sensor=sensor_roi,
     )
+
+
+def calculate_total_energy_in_electric_fields(
+    E,
+    channel_effective_area_m2,
+    component_mask=None,
+):
+    E_magnitude_V_per_m = E.norm_components(component_mask=component_mask)
+    P_W = signal.calculate_antenna_power_W(
+        effective_area_m2=channel_effective_area_m2,
+        electric_field_V_per_m=E_magnitude_V_per_m[:],
+    )
+    Ene_J = np.sum(P_W) * E.time_slice_duration_s
+    return Ene_J
