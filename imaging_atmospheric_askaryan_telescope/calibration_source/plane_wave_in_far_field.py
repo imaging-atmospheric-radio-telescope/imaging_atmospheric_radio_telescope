@@ -109,9 +109,11 @@ def make_power_setup(
         power_of_isotrop_and_point_like_emitter_W
         / (4.0 * np.pi * distance_to_isotrop_and_point_like_emitter_m**2.0)
     )
-
-    p["electric_field_amplitue_V_per_m"] = np.sqrt(
+    p["electric_field_amplitue_expectation_value_V_per_m"] = np.sqrt(
         p["pointing_vector_magnitude_W_per_m2"] * vacuum_impedance_Ohm
+    )
+    p["electric_field_amplitue_V_per_m"] = (
+        np.sqrt(2) * p["electric_field_amplitue_expectation_value_V_per_m"]
     )
     return p
 
