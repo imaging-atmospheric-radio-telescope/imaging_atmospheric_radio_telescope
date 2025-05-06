@@ -171,6 +171,10 @@ def _area_of_hexagon(inner_radius):
     return 2.0 * np.sqrt(3.0) * inner_radius**2.0
 
 
+def _inner_radius_of_hexagon(area):
+    return np.sqrt(area / (2.0 * np.sqrt(3.0)))
+
+
 def make_sensor(
     sensor_outer_radius_m,
     sensor_distance_m,
