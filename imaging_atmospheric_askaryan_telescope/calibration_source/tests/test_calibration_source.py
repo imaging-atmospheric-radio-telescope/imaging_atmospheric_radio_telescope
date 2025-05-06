@@ -93,7 +93,7 @@ def test_plane_wave():
         **config["geometry"],
     )
     power_setup = pwiff.make_power_setup(**config["power"])
-    # power_setup["electric_field_amplitue_V_per_m"] *= 1/np.sqrt(2)
+
     # execution
     # ---------
 
