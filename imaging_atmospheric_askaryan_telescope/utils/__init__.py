@@ -30,3 +30,11 @@ def strip_dict(obj, strip):
             else:
                 out[key] = item
     return out
+
+
+def area_of_hexagon(inner_radius):
+    return 2.0 * np.sqrt(3.0) * inner_radius**2.0
+
+
+def inner_radius_of_hexagon(area):
+    return np.sqrt(area / (2.0 * np.sqrt(3.0)))

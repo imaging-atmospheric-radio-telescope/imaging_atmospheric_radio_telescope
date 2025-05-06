@@ -1,11 +1,11 @@
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
 
-from ... import telescope
+from ... import utils
 
 
 def ax_add_feed_horn_hexagon(ax, x, y, feed_horn_area_m2, **kwargs):
-    inner_radius_m = telescope._inner_radius_of_hexagon(area=feed_horn_area_m2)
+    inner_radius_m = utils.inner_radius_of_hexagon(area=feed_horn_area_m2)
     outer_radius_m = 2.0 / np.sqrt(3.0) * inner_radius_m
     sebplt.ax_add_hexagon(
         ax=ax, x=x, y=y, r_outer=outer_radius_m, **kwargs, orientation_deg=30.0

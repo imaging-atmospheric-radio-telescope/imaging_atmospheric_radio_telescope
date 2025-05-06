@@ -6,6 +6,7 @@ import scipy.spatial.distance
 import os
 import copy
 import binning_utils
+from . import utils
 from . import signal
 from . import time_series
 
@@ -167,14 +168,6 @@ def make_feed_horn_positions(
     return np.array(positions_m)
 
 
-def _area_of_hexagon(inner_radius):
-    return 2.0 * np.sqrt(3.0) * inner_radius**2.0
-
-
-def _inner_radius_of_hexagon(area):
-    return np.sqrt(area / (2.0 * np.sqrt(3.0)))
-
-
 def make_sensor(
     sensor_outer_radius_m,
     sensor_distance_m,
@@ -196,7 +189,7 @@ def make_sensor(
     )
     imse["feed_horn_transmission"] = feed_horn_transmission
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
-    imse["feed_horn_area_m2"] = _area_of_hexagon(
+    imse["feed_horn_area_m2"] = utils.area_of_hexagon(
         inner_radius=imse["camera"]["feed_horn_inner_radius_m"]
     )
 
