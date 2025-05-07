@@ -58,3 +58,7 @@ def normal_approximation(
     return (
         _irwin_hall(prng=prng, size=size, order=irwin_hall_order) * std + mean
     )
+
+
+def argmaxNd(a):
+    return np.unravel_index(np.argmax(a), a.shape)
