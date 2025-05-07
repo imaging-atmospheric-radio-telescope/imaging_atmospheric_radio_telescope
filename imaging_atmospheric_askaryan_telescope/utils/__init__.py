@@ -41,3 +41,20 @@ def area_of_hexagon(inner_radius):
 
 def inner_radius_of_hexagon(area):
     return np.sqrt(area / (2.0 * np.sqrt(3.0)))
+
+
+def _irwin_hall(prng, size=1, order=12):
+    arr = prng.uniform(0, 1, size=order * size).reshape((size, order))
+    return np.sum(arr, axis=1) - order / 2
+
+
+def normal_approximation(
+    prng,
+    mean,
+    std,
+    size,
+    irwin_hall_order=12,
+):
+    return (
+        _irwin_hall(prng=prng, size=size, order=irwin_hall_order) * std + mean
+    )
