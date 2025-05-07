@@ -47,11 +47,11 @@ def make_timing_from_lnb(
         + lnb["intermediate_frequency_stop_Hz"]
     )
 
-    tt["electric_fields"]["sampling_frequency_Hz"] = (
+    tt["electric_fields"]["sampling_rate_per_s"] = (
         _lnb_mixer_sum_frequency * oversampling
     )
     tt["electric_fields"]["time_slice_duration_s"] = (
-        1.0 / tt["electric_fields"]["sampling_frequency_Hz"]
+        1.0 / tt["electric_fields"]["sampling_rate_per_s"]
     )
 
     tt["electric_fields"]["mirror"] = {}
@@ -99,7 +99,7 @@ def make_timing_from_lnb(
     tt["readout"] = {}
     tt["readout"]["integrates_num_simulation_time_slices"] = int(
         np.round(
-            tt["electric_fields"]["sampling_frequency_Hz"]
+            tt["electric_fields"]["sampling_rate_per_s"]
             / readout_sampling_rate_per_s
         )
     )
@@ -109,7 +109,7 @@ def make_timing_from_lnb(
         tt["electric_fields"]["time_slice_duration_s"]
         * tt["readout"]["integrates_num_simulation_time_slices"]
     )
-    tt["readout"]["sampling_frequency_Hz"] = (
+    tt["readout"]["sampling_rate_per_s"] = (
         1.0 / tt["readout"]["time_slice_duration_s"]
     )
 

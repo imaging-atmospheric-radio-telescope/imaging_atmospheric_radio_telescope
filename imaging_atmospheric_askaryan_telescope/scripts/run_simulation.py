@@ -359,7 +359,7 @@ readout_energy = iaat.time_series.read(
 fig_path_readout_gain = os.path.join(plot_dir, "readout_gain.jpg")
 if not os.path.exists(fig_path_readout_gain):
     _readout_bench_f_stop = 0.9 * (
-        timing["electric_fields"]["sampling_frequency_Hz"]
+        timing["electric_fields"]["sampling_rate_per_s"]
         / timing["readout"]["integrates_num_simulation_time_slices"]
     )
     _readout_bench_f_start = 1e-2 * _readout_bench_f_stop

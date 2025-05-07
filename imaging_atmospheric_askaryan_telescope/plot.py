@@ -369,7 +369,7 @@ def write_figure_electric_fields_power_density_spectrum(
     exposure_time_s = (
         ef["time_slice_duration_s"] * ef["electric_fields_V_per_m"].shape[1]
     )
-    sampling_frequency_Hz = 1.0 / ef["time_slice_duration_s"]
+    sampling_rate_per_s = 1.0 / ef["time_slice_duration_s"]
 
     if vmin == None and vmax == None:
         vmax = make_vmax_to_match_decades(v=pds)
@@ -392,7 +392,7 @@ def write_figure_electric_fields_power_density_spectrum(
         norm=norm,
         cmap=cmap,
         title="exposure time: {:.1f}ns, sampling rate: {:.1f}Gsps".format(
-            1e9 * exposure_time_s, 1e-9 * sampling_frequency_Hz
+            1e9 * exposure_time_s, 1e-9 * sampling_rate_per_s
         ),
         figsize=figsize,
     )
