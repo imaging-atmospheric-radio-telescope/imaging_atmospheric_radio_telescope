@@ -32,6 +32,20 @@ def make_config():
     return c
 
 
+def calculate_total_energy_from_config(config, area_m2):
+    """
+    Returns the total energy deposited in 'area_m2'.
+    """
+    _power = make_power_setup(**config["power"])
+    sw = config["sine_wave"]
+    P_W = area_m2 * _power["pointing_vector_magnitude_W_per_m2"]
+    Ene_J = P_W * sw["emission_duration_s"]
+    Ene_ramp_up_J = 0.5 * P_W * sw["emission_ramp_up_duration_s"]
+    Ene_ramp_down_J = 0.5 * P_W * sw["emission_ramp_down_duration_s"]
+
+    return Ene_ramp_up_J + Ene_J + Ene_ramp_down_J
+
+
 def distance_between_plane_and_point(
     plane_support_vector,
     plane_normal_vector,

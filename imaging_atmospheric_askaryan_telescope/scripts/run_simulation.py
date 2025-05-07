@@ -228,17 +228,9 @@ if True:
     En_sensor_eV = En_sensor_J / iaat.signal.ELECTRON_VOLT_J
 
     if source_config["__type__"] == "plane_wave":
-        _power_geom = (
-            iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
-                **s1["power"]
-            )
-        )
-        expected_power_on_mirror_W = (
-            telescope["mirror"]["area_m2"]
-            * _power_geom["pointing_vector_magnitude_W_per_m2"]
-        )
-        expected_energy_on_mirror_J = (
-            expected_power_on_mirror_W * s1["sine_wave"]["emission_duration_s"]
+        expected_energy_on_mirror_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+            config=s1,
+            area_m2=telescope["mirror"]["area_m2"],
         )
         expected_energy_on_mirror_eV = (
             expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J
