@@ -75,9 +75,12 @@ im = iaat_plot.ax_add_hexagonal_pixels(
     v=I_energy_eV,
     x=response.sensor["feed_horn_positions_m"][:, 0],
     y=response.sensor["feed_horn_positions_m"][:, 1],
-    cmap="viridis",
     hexrotation=0,
+    hex_inner_radius=response.sensor["camera"]["feed_horn_inner_radius_m"],
+    cmap="Blues",
     norm=norm,
+    edgecolor="black",
+    linewidth=0.1,
 )
 sebplt.ax_add_circle(
     ax=ax,
@@ -85,6 +88,7 @@ sebplt.ax_add_circle(
     y=0.0,
     r=response.sensor["camera"]["outer_radius_m"],
     color="black",
+    linewidth=0.2,
 )
 ax.set_xlabel("x / m")
 ax.set_ylabel("y / m")

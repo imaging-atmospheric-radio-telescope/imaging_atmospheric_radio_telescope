@@ -87,23 +87,23 @@ def ax_add_hexagonal_pixels(
     v,
     x,
     y,
-    cmap="viridis",
     hexrotation=0,
-    vmin=None,
-    vmax=None,
-    alpha=1,
+    hex_inner_radius=None,
+    **vargs,
 ):
     num_pixels = v.shape[0]
 
-    if vmin is None:
-        vmin = v.min()
-    if vmax is None:
-        vmax = v.max()
-
     fov = np.abs(x).max() * 1.05
     area = fov * fov
-    bin_radius = 1.15 * np.sqrt(area / num_pixels)
-    nfov = fov + bin_radius
+
+    HEX_OUTER_TO_INNER = 2.0 / np.sqrt(3.0)
+
+    if hex_inner_radius is None:
+        hex_outer_radius = HEX_OUTER_TO_INNER * np.sqrt(area / num_pixels)
+    else:
+        hex_outer_radius = HEX_OUTER_TO_INNER * hex_inner_radius
+
+    nfov = fov + hex_outer_radius
     ax.set_xlim([-nfov, nfov])
     ax.set_ylim([-nfov, nfov])
     ax.set_aspect("equal")
@@ -114,18 +114,15 @@ def ax_add_hexagonal_pixels(
             seb.matplotlib.patches.RegularPolygon(
                 (x[d], y[d]),
                 numVertices=6,
-                radius=bin_radius,
+                radius=hex_outer_radius,
                 orientation=orientation,
             )
         )
     p = seb.matplotlib.collections.PatchCollection(
         patches,
-        cmap=cmap,
-        alpha=alpha,
-        edgecolor="none",
+        **vargs,
     )
     p.set_array(v)
-    p.set_clim([vmin, vmax])
     ax.add_collection(p)
     ax.set_aspect("equal")
     return p
@@ -140,6 +137,7 @@ def save_image_slices_energy_deposite(
     units=None,
     bandwidth_Hz=None,
     mirror_area_m2=None,
+    norm=None,
     cmap="viridis",
     image_x_label="x",
     image_y_label="y",
@@ -152,13 +150,9 @@ def save_image_slices_energy_deposite(
         eney = readout_energy_J[:, :, 1]
         estr = "deposited energy / J"
     elif units == "electron_volt":
-        enex = (
-            readout_energy_J[:, :, 0] / iaat.signal.ELECTRON_VOLT_J * 1e6
-        )  # ueV
-        eney = (
-            readout_energy_J[:, :, 1] / iaat.signal.ELECTRON_VOLT_J * 1e6
-        )  # ueV
-        estr = r"deposited energy / $\mu$eV"
+        enex = readout_energy_J[:, :, 0] / iaat.signal.ELECTRON_VOLT_J
+        eney = readout_energy_J[:, :, 1] / iaat.signal.ELECTRON_VOLT_J
+        estr = "deposited energy / eV"
     elif units == "black_body_temperature":
         assert bandwidth_Hz != None
         px_W = readout_energy_J[:, :, 0] / readout_time_slice_duration_s  # W
@@ -191,6 +185,9 @@ def save_image_slices_energy_deposite(
     enes = enex + eney
     energy_max = enes[:, :].max()
 
+    if norm is None:
+        norm = seb.matplotlib.colors.Normalize(vmin=0.0, vmax=energy_max)
+
     pixel_directions_x = antenna_positions[:, 0]
     pixel_directions_y = antenna_positions[:, 1]
     num_readout_time_slices = readout_energy_J.shape[1]
@@ -199,7 +196,7 @@ def save_image_slices_energy_deposite(
 
     fig = seb.figure(style=CB)
     ax_cb = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.3, 0.85])
-    _m = seb.plt.cm.ScalarMappable(norm=None, cmap=cmap)
+    _m = seb.plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     _m.set_clim([0.0, energy_max])
     seb.plt.colorbar(_m, cax=ax_cb, label=estr)
     fig.savefig(
@@ -228,8 +225,7 @@ def save_image_slices_energy_deposite(
             v=enex[:, readout_time_slice],
             x=pixel_directions_x,
             y=pixel_directions_y,
-            vmin=0.0,
-            vmax=energy_max,
+            norm=norm,
             cmap=cmap,
         )
         fig.savefig(
@@ -248,8 +244,7 @@ def save_image_slices_energy_deposite(
             v=eney[:, readout_time_slice],
             x=pixel_directions_x,
             y=pixel_directions_y,
-            vmin=0.0,
-            vmax=energy_max,
+            norm=norm,
             cmap=cmap,
         )
         fig.savefig(
@@ -268,8 +263,7 @@ def save_image_slices_energy_deposite(
             v=enes[:, readout_time_slice],
             x=pixel_directions_x,
             y=pixel_directions_y,
-            vmin=0.0,
-            vmax=energy_max,
+            norm=norm,
             cmap=cmap,
         )
         fig.savefig(
