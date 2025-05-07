@@ -269,14 +269,12 @@ def make_matrix(
     relative_time_delays_s = absolute_time_delays_s - np.min(
         absolute_time_delays_s
     )
-    relative_amplitudes = (1 / distances_m**2) / (1 / distances_m**2).mean()
 
     imma = {}
     imma["speed_of_light_m_per_s"] = speed_of_light_m_per_s
     imma["distances_m"] = distances_m
     imma["absolute_time_delays_s"] = absolute_time_delays_s
     imma["relative_time_delays_s"] = relative_time_delays_s
-    imma["relative_amplitudes"] = relative_amplitudes
     return imma
 
 
