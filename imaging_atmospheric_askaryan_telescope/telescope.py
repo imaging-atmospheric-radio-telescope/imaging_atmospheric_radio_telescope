@@ -265,16 +265,10 @@ def make_matrix(
         mirror["scatter_center_positions_m"],
     ).astype(np.float32)
 
-    absolute_time_delays_s = distances_m / speed_of_light_m_per_s
-    relative_time_delays_s = absolute_time_delays_s - np.min(
-        absolute_time_delays_s
-    )
-
     imma = {}
     imma["speed_of_light_m_per_s"] = speed_of_light_m_per_s
     imma["distances_m"] = distances_m
-    imma["absolute_time_delays_s"] = absolute_time_delays_s
-    imma["relative_time_delays_s"] = relative_time_delays_s
+    imma["time_delays_s"] = distances_m / speed_of_light_m_per_s
     return imma
 
 
@@ -334,9 +328,13 @@ def propagate_electric_field_from_mirror_to_sensor(
         num_channels=telescope["sensor"]["num_feed_horns"],
         num_components=E_mirror.num_components,
         global_start_time_s=E_mirror.global_start_time_s
-        + np.mean(telescope["matrix"]["absolute_time_delays_s"]),
+        + np.min(telescope["matrix"]["time_delays_s"]),
         si_unit=E_mirror.si_unit,
         dtype=E_mirror.dtype,
+    )
+
+    relative_time_delays_s = telescope["matrix"]["time_delays_s"] - np.min(
+        telescope["matrix"]["time_delays_s"]
     )
 
     feed_horn_area_m2 = telescope["sensor"]["feed_horn_area_m2"]
@@ -352,12 +350,10 @@ def propagate_electric_field_from_mirror_to_sensor(
         for imi in range(telescope["mirror"]["num_scatter_centers"]):
             # timing
             # ------
-            time_delay = telescope["matrix"]["relative_time_delays_s"][
-                ise, imi
-            ]
+            time_delay_s = relative_time_delays_s[ise, imi]
 
             slice_delay = int(
-                np.round(time_delay / E_sensor.time_slice_duration_s)
+                np.round(time_delay_s / E_sensor.time_slice_duration_s)
             )
 
             # amplitude
