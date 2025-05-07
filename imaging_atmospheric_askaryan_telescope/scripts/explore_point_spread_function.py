@@ -30,18 +30,21 @@ random_seed = 1405
 # HEAD ON
 # -------
 source_config = iaat.production.radio_from_plane_wave.make_config()
-s1 = source_config["plane_waves"]["first"]
+
+s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
 s1["geometry"]["azimuth_rad"] = np.deg2rad(220)
 s1["geometry"]["zenith_rad"] = np.deg2rad(1.8)
-s1["geometry"][
-    "distance_to_plane_defining_time_zero_m"
-] = iaat.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
 s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
-s1["power"]["distance_to_isotrop_and_point_like_emitter_m"] = 100e3
 s1["sine_wave"]["emission_frequency_Hz"] = 11.1e9
-s1["sine_wave"]["emission_duration_s"] = 5e-9
-s1["sine_wave"]["emission_ramp_up_duration_s"] = 1e-9
-s1["sine_wave"]["emission_ramp_down_duration_s"] = 1e-9
+
+s2 = iaat.calibration_source.plane_wave_in_far_field.make_config()
+s2["geometry"]["azimuth_rad"] = np.deg2rad(45)
+s2["geometry"]["zenith_rad"] = np.deg2rad(0.8)
+s2["power"]["power_of_isotrop_and_point_like_emitter_W"] = 4e-1
+s2["sine_wave"]["emission_frequency_Hz"] = 11.5e9
+
+source_config["plane_waves"]["first"] = s1
+source_config["plane_waves"]["second"] = s2
 
 scenario_dir = os.path.join(work_dir, "response")
 
@@ -102,7 +105,12 @@ sebplt.close(fig)
 for key in response.region_of_interest_keys:
 
     bx, by, Ene_img_J = response.Image_energy_roi(key)
-    ana = iaat.investigations.point_spread_function.analyse_image(Ene_img_J)
+    ana = iaat.investigations.point_spread_function.analyse_image(
+        x_bin_edges_m=bx,
+        y_bin_edges_m=by,
+        image=Ene_img_J,
+        containment_quantile=0.8,
+    )
 
     Ene_img_eV = Ene_img_J / iaat.signal.ELECTRON_VOLT_J
 
@@ -150,6 +158,17 @@ for key in response.region_of_interest_keys:
     iaat.investigations.point_spread_function.plot.ax_add_wavelength_sine(
         ax=ax, x=bx[17], y=by[4], wavelength=w, color="black", linewidth=0.5
     )
+
+    ax.plot(ana["argmax_x_m"], ana["argmax_y_m"], marker="o", color="red")
+    sebplt.ax_add_circle(
+        ax=ax,
+        x=ana["argmax_x_m"],
+        y=ana["argmax_y_m"],
+        r=ana["radius_quantile_m"],
+        linestyle="--",
+        color="red",
+    )
+
     sebplt.ax_add_circle(
         ax=ax,
         x=0.0,
