@@ -189,43 +189,30 @@ for part in ["probe", "mirror", "feed_horns"]:
 # check energy conservation
 # -------------------------
 if True:
-    E_mirror_path = os.path.join(out_dir, "mirror", "electric_fields.tar")
-    E_mirror = iaat.time_series.read(E_mirror_path)
-
-    E_feed_horns_path = os.path.join(
-        out_dir, "feed_horns", "electric_fields.tar"
-    )
-    E_feed_horns = iaat.time_series.read(E_feed_horns_path)
-
-    A_eff_mirror_scatter_center_m2 = telescope["mirror"][
-        "scatter_center_area_m2"
-    ]
-    A_eff_sensor_feed_horn_m2 = telescope["sensor"]["feed_horn_area_m2"]
-
-    P_mirror_W = np.zeros(
-        shape=(E_mirror.num_channels, E_mirror.num_time_slices)
-    )
-    P_sensor_W = np.zeros(
-        shape=(E_feed_horns.num_channels, E_feed_horns.num_time_slices)
+    E_mirror = iaat.time_series.read(
+        os.path.join(out_dir, "mirror", "electric_fields.tar")
     )
 
-    E_mirror_magnitude_V_per_m = E_mirror.norm_components()
-    P_mirror_W = iaat.signal.calculate_antenna_power_W(
-        effective_area_m2=A_eff_mirror_scatter_center_m2,
-        electric_field_V_per_m=E_mirror_magnitude_V_per_m[:],
+    E_feed_horns = iaat.time_series.read(
+        os.path.join(out_dir, "feed_horns", "electric_fields.tar")
     )
 
-    E_feed_horns_magnitude_V_per_m = E_feed_horns.norm_components()
-    P_sensor_W = iaat.signal.calculate_antenna_power_W(
-        effective_area_m2=A_eff_sensor_feed_horn_m2,
-        electric_field_V_per_m=E_feed_horns_magnitude_V_per_m[:],
+    En_mirror_J = iaat.electric_fields.calculate_total_energy(
+        electric_fields=E_mirror,
+        channel_effective_area_m2=telescope["mirror"][
+            "scatter_center_area_m2"
+        ],
     )
-
-    En_mirror_J = np.sum(P_mirror_W) * E_mirror.time_slice_duration_s
-    En_sensor_J = np.sum(P_sensor_W) * E_feed_horns.time_slice_duration_s
+    En_sensor_J = iaat.electric_fields.calculate_total_energy(
+        electric_fields=E_feed_horns,
+        channel_effective_area_m2=telescope["sensor"]["feed_horn_area_m2"],
+    )
 
     En_mirror_eV = En_mirror_J / iaat.signal.ELECTRON_VOLT_J
     En_sensor_eV = En_sensor_J / iaat.signal.ELECTRON_VOLT_J
+
+    print("Energy on mirror", En_mirror_eV, "eV")
+    print("Energy on feed horns", En_sensor_eV, "eV")
 
     if source_config["__type__"] == "plane_wave":
         expected_energy_on_mirror_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
@@ -235,16 +222,9 @@ if True:
         expected_energy_on_mirror_eV = (
             expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J
         )
-
         print(
-            "Energy on mirror",
-            En_mirror_eV,
-            "eV",
-            "expected",
-            expected_energy_on_mirror_eV,
-            "eV",
+            "Energy expected from source", expected_energy_on_mirror_eV, "eV"
         )
-        print("Energy on feed horns", En_sensor_eV, "eV")
 
 
 # plot lnb mixer gain

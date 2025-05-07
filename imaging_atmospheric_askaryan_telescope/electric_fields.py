@@ -84,6 +84,22 @@ def to_coreas_electric_fields(electric_fields):
     return raw
 
 
+def calculate_total_energy(
+    electric_fields,
+    channel_effective_area_m2,
+    component_mask=None,
+):
+    E_magnitude_V_per_m = electric_fields.norm_components(
+        component_mask=component_mask
+    )
+    P_W = signal.calculate_antenna_power_W(
+        effective_area_m2=channel_effective_area_m2,
+        electric_field_V_per_m=E_magnitude_V_per_m[:],
+    )
+    Ene_J = np.sum(P_W) * electric_fields.time_slice_duration_s
+    return Ene_J
+
+
 def estimate_power_spectrum_density_W_per_Hz_per_m2(
     electric_fields,
     antenna_effective_area_m2,

@@ -63,6 +63,7 @@ iaat.production.simulate_telescope_response(
     timing=timing,
     thermal_noise_random_seed=random_seed + 1,
     readout_random_seed=random_seed + 2,
+    camera_lnb_random_seed=random_seed + 3,
     stop_after_section="feed_horns",
 )
 
