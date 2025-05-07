@@ -197,19 +197,19 @@ if True:
         os.path.join(out_dir, "feed_horns", "electric_fields.tar")
     )
 
-    En_mirror_J = iaat.electric_fields.calculate_total_energy(
+    En_mirror_J = iaat.electric_fields.integrate_power_over_time(
         electric_fields=E_mirror,
         channel_effective_area_m2=telescope["mirror"][
             "scatter_center_area_m2"
         ],
     )
-    En_sensor_J = iaat.electric_fields.calculate_total_energy(
+    En_sensor_J = iaat.electric_fields.integrate_power_over_time(
         electric_fields=E_feed_horns,
         channel_effective_area_m2=telescope["sensor"]["feed_horn_area_m2"],
     )
 
-    En_mirror_eV = En_mirror_J / iaat.signal.ELECTRON_VOLT_J
-    En_sensor_eV = En_sensor_J / iaat.signal.ELECTRON_VOLT_J
+    En_mirror_eV = np.sum(En_mirror_J) / iaat.signal.ELECTRON_VOLT_J
+    En_sensor_eV = np.sum(En_sensor_J) / iaat.signal.ELECTRON_VOLT_J
 
     print("Energy on mirror", En_mirror_eV, "eV")
     print("Energy on feed horns", En_sensor_eV, "eV")
