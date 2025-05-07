@@ -10,7 +10,6 @@ def default_config():
     return {
         "oversampling": 6,
         "time_window_duration_s": 3.5e-08,
-        "readout_integrates_num_simulation_time_slices": 234,
         "readout_sampling_rate_per_s": 250e6,
     }
 
@@ -104,7 +103,6 @@ def make_timing_from_lnb(
         )
     )
 
-    readout_integrates_num_simulation_time_slices
     tt["readout"]["time_slice_duration_s"] = (
         tt["electric_fields"]["time_slice_duration_s"]
         * tt["readout"]["integrates_num_simulation_time_slices"]

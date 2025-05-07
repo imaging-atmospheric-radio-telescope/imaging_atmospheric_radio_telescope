@@ -8,7 +8,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "run"
+work_dir = "run3"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
