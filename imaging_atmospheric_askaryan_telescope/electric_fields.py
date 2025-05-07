@@ -84,7 +84,7 @@ def to_coreas_electric_fields(electric_fields):
     return raw
 
 
-def calculate_total_energy(
+def integrate_power_over_time(
     electric_fields,
     channel_effective_area_m2,
     component_mask=None,
@@ -96,7 +96,7 @@ def calculate_total_energy(
         effective_area_m2=channel_effective_area_m2,
         electric_field_V_per_m=E_magnitude_V_per_m[:],
     )
-    Ene_J = np.sum(P_W) * electric_fields.time_slice_duration_s
+    Ene_J = np.sum(P_W, axis=1) * electric_fields.time_slice_duration_s
     return Ene_J
 
 
