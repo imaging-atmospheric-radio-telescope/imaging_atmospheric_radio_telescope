@@ -1,10 +1,5 @@
 {
     "lnb_key": "inverto_40mm_pro_wideband",
-    "timing": {
-        "oversampling": 6,
-        "time_window_duration_s": 35e-9,
-        "readout_integrates_num_simulation_time_slices": 250
-    },
     "mirror": {
         "random_seed": 0,
         "focal_length_m": 32.2,

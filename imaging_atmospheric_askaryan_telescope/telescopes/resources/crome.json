@@ -1,11 +1,5 @@
 {
     "lnb_key": "norsat_8215f_c_band",
-    "timing": {
-        "oversampling": 6,
-        "time_window_duration_s": 35e-9,
-        "readout_integrates_num_simulation_time_slices": 88,
-        "comment": "88 = (oversampling * local-oscillator-freq.) / readout-bandwidths"
-    },
     "mirror": {
         "random_seed": 0,
         "focal_length_m": 1.191,

@@ -11,13 +11,18 @@ def default_config():
         "oversampling": 6,
         "time_window_duration_s": 3.5e-08,
         "readout_integrates_num_simulation_time_slices": 234,
+        "readout_sampling_rate_per_s": 250e6,
     }
+
+
+def is_close_to_integer(x, epsilon=1e-9):
+    return np.mod(x, 1.0) < epsilon
 
 
 def make_timing_from_lnb(
     lnb,
     oversampling,
-    readout_integrates_num_simulation_time_slices,
+    readout_sampling_rate_per_s,
     time_window_duration_s,
 ):
     assert lnb["local_oscillator_frequency_Hz"] > 0.0
@@ -28,8 +33,9 @@ def make_timing_from_lnb(
         < lnb["intermediate_frequency_stop_Hz"]
     )
     assert oversampling > 0
-    assert readout_integrates_num_simulation_time_slices > 0
-    assert np.mod(oversampling, 1.0) < 1e-9
+    assert readout_sampling_rate_per_s > 0
+    assert is_close_to_integer(oversampling)
+    oversampling = int(np.round(oversampling))
 
     tt = {}
     tt["oversampling"] = oversampling
@@ -91,9 +97,14 @@ def make_timing_from_lnb(
     tt["start_time_probe"]["time_upper_boundary_s"] = TIME_TO_TRAVEL_OVERHEAD_S
 
     tt["readout"] = {}
-    tt["readout"][
-        "integrates_num_simulation_time_slices"
-    ] = readout_integrates_num_simulation_time_slices
+    tt["readout"]["integrates_num_simulation_time_slices"] = int(
+        np.round(
+            tt["electric_fields"]["sampling_frequency_Hz"]
+            / readout_sampling_rate_per_s
+        )
+    )
+
+    readout_integrates_num_simulation_time_slices
     tt["readout"]["time_slice_duration_s"] = (
         tt["electric_fields"]["time_slice_duration_s"]
         * tt["readout"]["integrates_num_simulation_time_slices"]
