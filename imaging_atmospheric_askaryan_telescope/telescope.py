@@ -168,11 +168,53 @@ def make_feed_horn_positions(
     return np.array(positions_m)
 
 
+def regular_polygon(n, rotation_rad=0):
+    x = []
+    y = []
+    for phi in np.linspace(0, 2.0 * np.pi, n, endpoint=False):
+        x.append(np.cos(phi + rotation_rad))
+        y.append(np.sin(phi + rotation_rad))
+    return np.array([x, y, np.zeros(n)]).T
+
+
+def make_feed_horn_sub_scatter(num, inner_radius_m):
+    assert inner_radius_m > 0.0
+    assert num > 0
+
+    if num == 1:
+        return np.array([[0, 0, 0]])
+    elif num == 2:
+        assert False, "Not a good idea."
+    elif num == 3:
+        return regular_polygon(num) * inner_radius_m / 2
+    elif num == 4:
+        return (
+            regular_polygon(num, rotation_rad=np.deg2rad(30))
+            * inner_radius_m
+            / 2
+        )
+    elif num == 5:
+        xy = regular_polygon(4)
+        return np.vstack([xy, [0, 0, 0]]) * inner_radius_m * (3 / 5)
+    elif num == 6:
+        return (
+            regular_polygon(num, rotation_rad=np.deg2rad(30))
+            * inner_radius_m
+            / 2
+        )
+    elif num == 7:
+        xy = regular_polygon(6, rotation_rad=np.deg2rad(30))
+        return np.vstack([xy, [0, 0, 0]]) * inner_radius_m * (3 / 5)
+    else:
+        assert False, "Not a good idea."
+
+
 def make_sensor(
     sensor_outer_radius_m,
     sensor_distance_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
+    feed_horn_oversampling=7,
 ):
     imse = {}
     imse["__type__"] = "camera"
@@ -187,6 +229,11 @@ def make_sensor(
         sensor_distance_m=sensor_distance_m,
         feed_horn_inner_radius_m=imse["camera"]["feed_horn_inner_radius_m"],
     )
+    imse["relative_feed_horn_sample_positions_m"] = make_feed_horn_sub_scatter(
+        num=feed_horn_oversampling,
+        inner_radius_m=feed_horn_inner_radius_m,
+    )
+
     imse["feed_horn_transmission"] = feed_horn_transmission
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
     imse["feed_horn_area_m2"] = utils.area_of_hexagon(
@@ -232,6 +279,7 @@ def make_sensor_in_region_of_interest(
             _z = sensor_distance_m
             imse["feed_horn_positions_m"].append([_x, _y, _z])
     imse["feed_horn_positions_m"] = np.asarray(imse["feed_horn_positions_m"])
+    imse["relative_feed_horn_sample_positions_m"] = np.array([[0, 0, 0]])
 
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
     imse["feed_horn_transmission"] = feed_horn_transmission
@@ -364,6 +412,83 @@ def propagate_electric_field_from_mirror_to_sensor(
                     second=E_sensor[ise, :, dim],
                     at=slice_delay,
                 )
+
+        for dim in range(3):
+            E_sensor[ise, :, dim] *= e_field_scaling
+
+    return E_sensor
+
+
+def propagate_electric_field_from_mirror_to_sensor2(
+    telescope,
+    mirror_electric_fields,
+    num_time_slices,
+):
+    """
+    ===
+    """
+    min_time_delay_s = np.min(telescope["matrix"]["time_delays_s"])
+
+    E_mirror = mirror_electric_fields
+    E_sensor = time_series.zeros(
+        time_slice_duration_s=E_mirror.time_slice_duration_s,
+        num_time_slices=num_time_slices,
+        num_channels=telescope["sensor"]["num_feed_horns"],
+        num_components=E_mirror.num_components,
+        global_start_time_s=E_mirror.global_start_time_s + min_time_delay_s,
+        si_unit=E_mirror.si_unit,
+        dtype=E_mirror.dtype,
+    )
+
+    feed_horn_area_m2 = telescope["sensor"]["feed_horn_area_m2"]
+    mirror_scatter_area_m2 = telescope["mirror"]["scatter_center_area_m2"]
+
+    N_scatter = telescope["mirror"]["num_scatter_centers"]
+
+    e_field_scaling = np.sqrt(1.0 / N_scatter) * np.sqrt(
+        mirror_scatter_area_m2 / feed_horn_area_m2
+    )
+
+    num_sub = telescope["sensor"][
+        "relative_feed_horn_sample_positions_m"
+    ].shape[0]
+    e_field_sub_scaling = 1.0 / num_sub
+
+    for ise in range(telescope["sensor"]["num_feed_horns"]):
+        for imi in range(telescope["mirror"]["num_scatter_centers"]):
+            for isu in range(num_sub):
+                # timing
+                # ------
+                sensor_vector_m = (
+                    telescope["sensor"]["feed_horn_positions_m"][ise]
+                    + telescope["sensor"][
+                        "relative_feed_horn_sample_positions_m"
+                    ][isu]
+                )
+                mirror_to_sensor_vector_m = (
+                    sensor_vector_m
+                    - telescope["mirror"]["scatter_center_positions_m"][imi]
+                )
+                distance_m = np.linalg.norm(mirror_to_sensor_vector_m)
+                time_delay_s = (
+                    distance_m / telescope["matrix"]["speed_of_light_m_per_s"]
+                )
+                relative_time_delay_s = time_delay_s - min_time_delay_s
+
+                slice_delay = int(
+                    np.round(
+                        relative_time_delay_s / E_sensor.time_slice_duration_s
+                    )
+                )
+
+                # amplitude
+                # ---------
+                for dim in range(3):
+                    signal.add_first_to_second_at(
+                        first=e_field_sub_scaling * E_mirror[imi, :, dim],
+                        second=E_sensor[ise, :, dim],
+                        at=slice_delay,
+                    )
 
         for dim in range(3):
             E_sensor[ise, :, dim] *= e_field_scaling
