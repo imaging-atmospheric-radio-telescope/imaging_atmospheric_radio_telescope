@@ -342,8 +342,8 @@ def propagate_electric_field_from_mirror_to_sensor(
 
     N_scatter = telescope["mirror"]["num_scatter_centers"]
 
-    e_field_scaling = np.sqrt(
-        mirror_scatter_area_m2 / feed_horn_area_m2 * N_scatter
+    e_field_scaling = np.sqrt(1.0 / N_scatter) * np.sqrt(
+        mirror_scatter_area_m2 / feed_horn_area_m2
     )
 
     for ise in range(telescope["sensor"]["num_feed_horns"]):
@@ -359,9 +359,8 @@ def propagate_electric_field_from_mirror_to_sensor(
             # amplitude
             # ---------
             for dim in range(3):
-                first = (1.0 / N_scatter) * E_mirror[imi, :, dim]
                 signal.add_first_to_second_at(
-                    first=first,
+                    first=E_mirror[imi, :, dim],
                     second=E_sensor[ise, :, dim],
                     at=slice_delay,
                 )
