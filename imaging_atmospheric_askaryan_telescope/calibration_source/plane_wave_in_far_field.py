@@ -13,19 +13,19 @@ def make_config():
     g["azimuth_rad"] = 0.0
     g["zenith_rad"] = 0.0
     g["polarization_angle_rad"] = 0.0
-    g["distance_to_plane_defining_time_zero_m"] = 10e3
+    g["distance_to_plane_defining_time_zero_m"] = 115e3
     c["geometry"] = g
 
     p = {}
-    p["power_of_isotrop_and_point_like_emitter_W"] = 1.0
+    p["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
     p["distance_to_isotrop_and_point_like_emitter_m"] = 100e3
     c["power"] = p
 
     s = {}
     s["emission_frequency_Hz"] = 10e9
-    s["emission_duration_s"] = 10e-9
-    s["emission_ramp_up_duration_s"] = 2e-9
-    s["emission_ramp_down_duration_s"] = 2e-9
+    s["emission_duration_s"] = 5e-9
+    s["emission_ramp_up_duration_s"] = 1e-9
+    s["emission_ramp_down_duration_s"] = 1e-9
     s["emission_overhead_duration_before_and_after_s"] = 1e-9
     c["sine_wave"] = s
 
