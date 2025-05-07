@@ -24,6 +24,7 @@ def simulate_telescope_response(
     timing,
     thermal_noise_random_seed,
     readout_random_seed,
+    camera_lnb_random_seed,
     stop_after_section=None,
 ):
     os.makedirs(out_dir, exist_ok=True)
@@ -140,15 +141,19 @@ def simulate_telescope_response(
             )
             E_lnb_signal_output = lownoiseblock.simulate_mixer(
                 lnb_input_electric_fields=E_lnb_input,
-                local_oscillator_frequency=telescope["lnb"][
+                local_oscillator_frequency_Hz=telescope["lnb"][
                     "local_oscillator_frequency_Hz"
                 ],
-                intermediate_frequency_start=telescope["lnb"][
+                local_oscillator_frequency_std_Hz=telescope["lnb"][
+                    "local_oscillator_frequency_std_Hz"
+                ],
+                intermediate_frequency_start_Hz=telescope["lnb"][
                     "intermediate_frequency_start_Hz"
                 ],
-                intermediate_frequency_stop=telescope["lnb"][
+                intermediate_frequency_stop_Hz=telescope["lnb"][
                     "intermediate_frequency_stop_Hz"
                 ],
+                random_seed=camera_lnb_random_seed,
             )
             time_series.write(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),

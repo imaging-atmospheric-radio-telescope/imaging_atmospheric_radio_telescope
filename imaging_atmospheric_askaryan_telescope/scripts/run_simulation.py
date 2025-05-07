@@ -8,7 +8,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "run2"
+work_dir = "run"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -65,6 +65,7 @@ iaat.production.simulate_telescope_response(
     timing=timing,
     thermal_noise_random_seed=random_seed + 1,
     readout_random_seed=random_seed + 2,
+    camera_lnb_random_seed=random_seed + 3,
 )
 
 plot_dir = os.path.join(out_dir, "plot")
