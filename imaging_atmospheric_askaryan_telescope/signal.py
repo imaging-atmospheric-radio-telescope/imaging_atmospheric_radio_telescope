@@ -79,14 +79,14 @@ def butter_bandpass_filter(
     return y
 
 
-def make_sin(frequency, time_slice_duration, num_time_slices):
+def make_sin(frequency, time_slice_duration, num_time_slices, phase=0.0):
     """
     Returns the moments and amplitudes (2-tuple) of a sine-wave.
     """
     N = num_time_slices
     dt = time_slice_duration
     t = np.linspace(0, N * dt, N, endpoint=False)
-    a = np.sin(t * frequency * (2.0 * np.pi))
+    a = np.sin(t * frequency * (2.0 * np.pi) + phase)
     return t, a
 
 
