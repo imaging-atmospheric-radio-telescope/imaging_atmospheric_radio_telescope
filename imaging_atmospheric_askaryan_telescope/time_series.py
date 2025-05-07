@@ -139,6 +139,19 @@ class TimeSeries:
             dtype=dtype,
         )
 
+    def __repr__(self):
+        smodule = self.__module__
+        sname = self.__class__.__name__
+        out = f"{smodule:s}.{sname:s}(\n"
+        out += f"    time_slice_duration_s={self.time_slice_duration_s:e},\n"
+        out += f"    num_time_slices={self.num_time_slices:d},\n"
+        out += f"    num_channels={self.num_channels:d},\n"
+        out += f"    num_components={self.num_components:d},\n"
+        out += f"    global_start_time_s={self.global_start_time_s:e},\n"
+        out += f"    si_unit='{self.si_unit:s}',\n"
+        out += ")\n"
+        return out
+
     def __getitem__(self, idx):
         return self._x[idx]
 
