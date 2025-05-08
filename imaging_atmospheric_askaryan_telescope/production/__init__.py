@@ -85,7 +85,7 @@ def simulate_telescope_response(
                 path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
             )
             E_sensor = (
-                simtelescope.propagate_electric_field_from_mirror_to_sensor2(
+                simtelescope.propagate_electric_field_from_mirror_to_sensor(
                     telescope=telescope,
                     mirror_electric_fields=E_mirror,
                     num_time_slices=timing["electric_fields"]["sensor"][
