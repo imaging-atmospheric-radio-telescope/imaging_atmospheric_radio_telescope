@@ -67,15 +67,16 @@ def input_frequency_start_stop_Hz(lnb):
     else:
         raise AssertionError(f"mixing_mode '{mixing_mode:s}' is not known.")
 
-    start_Hz = (
+    foo_Hz = (
         lnb["local_oscillator_frequency_Hz"]
         + sign * lnb["intermediate_frequency_start_Hz"]
     )
-    stop_Hz = (
+    bar_Hz = (
         lnb["local_oscillator_frequency_Hz"]
         + sign * lnb["intermediate_frequency_stop_Hz"]
     )
-    return start_Hz, stop_Hz
+    foobar_Hz = [foo_Hz, bar_Hz]
+    return min(foobar_Hz), max(foobar_Hz)
 
 
 def simulate_mixer(
