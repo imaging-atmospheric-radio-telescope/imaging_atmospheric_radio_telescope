@@ -2,6 +2,21 @@ import numpy as np
 import copy
 
 
+class SerialPool:
+    def __init__(self):
+        pass
+
+    def map(self, func, iterable):
+        return [func(item) for item in iterable]
+
+    def starmap(self, func, iterable):
+        return [func(*item) for item in iterable]
+
+    def __repr__(self):
+        out = "{:s}()".format(self.__class__.__name__)
+        return out
+
+
 class PrintStartStop:
     def __init__(self, start_msg, stop_msg="Done."):
         self.start_msg = start_msg
