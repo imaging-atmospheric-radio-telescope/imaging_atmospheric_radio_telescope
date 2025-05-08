@@ -232,16 +232,15 @@ if True:
 fig_path = os.path.join(plot_dir, "lnb_input_gain.jpg")
 if not os.path.exists(fig_path):
     _lnb_bench_frequency_Hz = np.geomspace(8e9, 16e9, 100)
+    _lnb_start_Hz, _lnb_stop_Hz = (
+        iaat.lownoiseblock.input_frequency_start_stop_Hz(lnb=telescope["lnb"])
+    )
     _lnb_bench_gain = iaat.signal.butter_bench(
         frequencies=_lnb_bench_frequency_Hz,
         bandpass=iaat.signal.butter_bandpass_filter,
         filter_config={
-            "frequency_start": telescope["lnb"][
-                "local_oscillator_frequency_Hz"
-            ]
-            + telescope["lnb"]["intermediate_frequency_start_Hz"],
-            "frequency_stop": telescope["lnb"]["local_oscillator_frequency_Hz"]
-            + telescope["lnb"]["intermediate_frequency_stop_Hz"],
+            "frequency_start": _lnb_start_Hz,
+            "frequency_stop": _lnb_stop_Hz,
         },
         num_time_slices=10000,
         time_slice_duration=timing["electric_fields"]["time_slice_duration_s"],

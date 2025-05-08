@@ -55,6 +55,18 @@ def init(key):
     return lnb
 
 
+def input_frequency_start_stop_Hz(lnb):
+    start_Hz = (
+        lnb["local_oscillator_frequency_Hz"]
+        + lnb["intermediate_frequency_start_Hz"]
+    )
+    stop_Hz = (
+        lnb["local_oscillator_frequency_Hz"]
+        + lnb["intermediate_frequency_stop_Hz"]
+    )
+    return start_Hz, stop_Hz
+
+
 def simulate_mixer(
     lnb_input_electric_fields,
     local_oscillator_frequency_Hz,
