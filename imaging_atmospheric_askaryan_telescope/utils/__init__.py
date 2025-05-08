@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 class PrintStartStop:
@@ -17,6 +18,36 @@ class PrintStartStop:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         print(self.stop_msg)
+        return
+
+    def __repr__(self):
+        return f"{self.__class__.__name__:s}()"
+
+
+class PrintProgress:
+    def __init__(self, num_steps, s="."):
+        assert num_steps > 0
+        self.s = s
+        self.num_steps = num_steps
+        self.step = 0
+        self.percent = 0
+
+    def __enter__(self):
+        return self
+
+    def bump(self):
+        self.step += 1
+        percent = int(np.round(100 * self.step / self.num_steps))
+
+        if percent > 100:
+            print("?", end="", flush=True)
+            return
+
+        if percent > self.percent:
+            print(self.s, end="", flush=True)
+            self.percent = copy.copy(percent)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         return
 
     def __repr__(self):
