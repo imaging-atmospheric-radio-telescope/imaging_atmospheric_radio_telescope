@@ -1,10 +1,16 @@
 from . import plot
 
 from ... import telescope
+from ... import telescopes
+from ... import sites
+from ... import signal
 from ... import production
 from ... import time_series
 from ... import electric_fields
 from ... import utils
+from ... import lownoiseblock
+from ... import timing_and_sampling
+from ... import calibration_source
 
 import spherical_coordinates
 import numpy as np
@@ -17,14 +23,186 @@ import scipy
 from astropy.convolution.kernels import Gaussian2DKernel
 
 
-def init_work_dir(work_dir, telescope_key):
+def init(work_dir):
     os.makedirs(work_dir, exist_ok=True)
     config_dir = os.path.join(work_dir, "config")
     os.makedirs(config_dir, exist_ok=True)
 
-    scatter = {}
-    with rnw.open(os.path.join(config_dir, "scatter"), "wt") as f:
-        f.write(json_utils.dumps(scatter, indent=4))
+    # telescopes
+    telescopes_dir = os.path.join(config_dir, "telescopes")
+    os.makedirs(telescopes_dir, exist_ok=True)
+
+    for key in ["crome", "large_size_telescope"]:
+        telescope_config = telescopes.init(key)
+        with rnw.open(
+            os.path.join(telescopes_dir, f"{key:s}.json"), "wt"
+        ) as f:
+            f.write(json_utils.dumps(telescope_config, indent=4))
+
+    with rnw.open(os.path.join(config_dir, "site.json"), "wt") as f:
+        f.write(json_utils.dumps(sites.init("karlsruhe"), indent=4))
+
+    timing = {
+        "oversampling": 6,
+        "time_window_duration_s": 3.5e-08,
+        "readout_sampling_rate_per_s": 250e6,
+    }
+    with rnw.open(
+        os.path.join(config_dir, "timing_and_sampling.json"), "wt"
+    ) as f:
+        f.write(json_utils.dumps(timing, indent=4))
+
+    stars = {
+        "telescopes": ["crome", "large_size_telescope"],
+        "random_seed": 1,
+        "num": 8,
+        "power_density_start_W_per_m2": 1e-12,
+        "power_density_stop_W_per_m2": 3e-12,
+    }
+    with rnw.open(os.path.join(config_dir, "stars.json"), "wt") as f:
+        f.write(json_utils.dumps(stars, indent=4))
+
+
+def run(work_dir, pool=None):
+    pool = _serial_pool_if_None(pool)
+    config = _read_config(work_dir)
+
+    star_jobs = _star_make_jobs(work_dir=work_dir, config=config)
+    star_jobs = _star_drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
+    pool.map(_star_run_job, star_jobs)
+
+
+def _star_make_jobs(work_dir, config):
+    prng = np.random.Generator(np.random.PCG64(4))
+
+    jobs = []
+    for telescope_key in config["stars"]["telescopes"]:
+        tscope, _, _ = _make_telescope_timing_and_site(
+            config=config, telescope_key=telescope_key
+        )
+        nu_start_Hz, nu_stop_Hz = lownoiseblock.input_frequency_start_stop_Hz(
+            lnb=tscope["lnb"]
+        )
+
+        camera_screen_min_radius_m = (
+            tscope["sensor"]["camera"]["outer_radius_m"]
+            - tscope["sensor"]["camera"]["feed_horn_inner_radius_m"]
+        )
+        max_angle_off_axis_rad = np.arctan(
+            camera_screen_min_radius_m / tscope["mirror"]["focal_length_m"]
+        )
+
+        for i in range(config["stars"]["num"]):
+            job = {}
+            job["id"] = i
+            job["telescope_key"] = telescope_key
+            job["work_dir"] = work_dir
+            job["random_seed"] = config["stars"]["random_seed"] + i
+            job["path"] = os.path.join(
+                work_dir, "stars", telescope_key, f"{i:06d}"
+            )
+            az_rad, zd_rad = (
+                spherical_coordinates.random.uniform_az_zd_in_cone(
+                    prng=prng,
+                    azimuth_rad=0.0,
+                    zenith_rad=0.0,
+                    min_half_angle_rad=0.0,
+                    max_half_angle_rad=max_angle_off_axis_rad,
+                )
+            )
+            job["source_azimuth_rad"] = az_rad
+            job["source_zenith_rad"] = zd_rad
+            job["power_density_W_per_m2"] = prng.uniform(
+                low=config["stars"]["power_density_start_W_per_m2"],
+                high=config["stars"]["power_density_stop_W_per_m2"],
+            )
+            job["frequency_Hz"] = prng.uniform(
+                low=nu_start_Hz,
+                high=nu_stop_Hz,
+            )
+            jobs.append(job)
+    return jobs
+
+
+def _star_drop_finished_jobs(work_dir, jobs):
+    out = []
+    for job in jobs:
+        if not os.path.exists(os.path.join(job["path"])):
+            out.append(job)
+    return out
+
+
+def _star_run_job(job):
+    config = _read_config(job["work_dir"])
+
+    tscope, timing, site = _make_telescope_timing_and_site(
+        config=config, telescope_key=job["telescope_key"]
+    )
+
+    nu_Hz = np.mean(lownoiseblock.input_frequency_start_stop_Hz(tscope["lnb"]))
+    wavelength_m = signal.frequency_to_wavelength(nu_Hz)
+    num_waves = 7
+
+    region_of_interest_rad = np.arctan(
+        (num_waves * wavelength_m) / tscope["mirror"]["focal_length_m"]
+    )
+
+    r_100km = 100e3
+    A_sphere_100km = 4.0 * np.pi * r_100km**2
+    P_isotrop_100km_W = job["power_density_W_per_m2"] * A_sphere_100km
+
+    source_config = production.radio_from_plane_wave.make_config()
+    s1 = calibration_source.plane_wave_in_far_field.make_config()
+    s1["geometry"]["azimuth_rad"] = job["source_azimuth_rad"]
+    s1["geometry"]["zenith_rad"] = job["source_zenith_rad"]
+    s1["power"][
+        "power_of_isotrop_and_point_like_emitter_W"
+    ] = P_isotrop_100km_W
+    s1["power"]["distance_to_isotrop_and_point_like_emitter_m"] = r_100km
+    s1["sine_wave"]["emission_frequency_Hz"] = job["frequency_Hz"]
+    source_config["plane_waves"] = {}
+    source_config["plane_waves"]["1"] = s1
+
+    with rnw.Directory(job["path"]) as tmp_dir:
+        make_PlaneWaveResponse(
+            out_dir=tmp_dir,
+            random_seed=job["random_seed"],
+            telescope=tscope,
+            site=site,
+            timing=timing,
+            source_config=source_config,
+            region_of_interest_rad=region_of_interest_rad,
+            region_of_interest_num_bins=substract_one_when_even(
+                num_waves * timing["oversampling"]
+            ),
+        )
+
+
+def substract_one_when_even(x):
+    if np.mod(x, 2) > 0:
+        return x - 1
+    else:
+        return x
+
+
+def _make_telescope_timing_and_site(config, telescope_key):
+    telescope_config = config["telescopes"][telescope_key]
+
+    _lnb = lownoiseblock.init(key=telescope_config["lnb_key"])
+    _mirror = telescope.make_mirror(**telescope_config["mirror"])
+    _sensor = telescope.make_sensor(**telescope_config["sensor"])
+
+    tscope = telescope.make_telescope(
+        sensor=_sensor,
+        mirror=_mirror,
+        lnb=_lnb,
+        speed_of_light_m_per_s=signal.SPEED_OF_LIGHT_M_PER_S,
+    )
+    timing = timing_and_sampling.make_timing_from_lnb(
+        lnb=tscope["lnb"],
+        **config["timing_and_sampling"],
+    )
+    return tscope, timing, config["site"]
 
 
 def make_telescope_like_other_but_with_region_of_interest_camera(
@@ -329,3 +507,13 @@ def find_quantile_bins(x, q):
     cumsum_f = np.cumsum(f)
     idx = np.argmin(np.abs(cumsum_f - fraction))
     return idx
+
+
+def _serial_pool_if_None(pool):
+    return utils.SerialPool() if pool is None else pool
+
+
+def _read_config(work_dir):
+    config = json_utils.tree.read(os.path.join(work_dir, "config"))
+    config = utils.strip_dict(config, "comment")
+    return config
