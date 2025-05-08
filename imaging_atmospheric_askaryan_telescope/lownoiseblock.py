@@ -13,6 +13,7 @@ def init(key):
             "local_oscillator_frequency_std_Hz": 1e6,
             "intermediate_frequency_start_Hz": 950e6,
             "intermediate_frequency_stop_Hz": 1950e6,
+            "mixing_mode": "sum",
             "noise_temperature_K": 100,
         }
     elif key == "norsat_8215f_c_band":
@@ -22,6 +23,7 @@ def init(key):
             "local_oscillator_frequency_std_Hz": 250e3,
             "intermediate_frequency_start_Hz": 950e6,
             "intermediate_frequency_stop_Hz": 1750e6,
+            "mixing_mode": "difference",
             "noise_temperature_K": 45,
         }
     elif key == "inverto_40mm_pro_wideband":
@@ -33,6 +35,7 @@ def init(key):
             "local_oscillator_frequency_std_Hz": 1e6,
             "intermediate_frequency_start_Hz": 230e6,
             "intermediate_frequency_stop_Hz": 2350e6,
+            "mixing_mode": "sum",
             "noise_temperature_K": 100,
         }
     else:
@@ -56,13 +59,21 @@ def init(key):
 
 
 def input_frequency_start_stop_Hz(lnb):
+    mixing_mode = lnb["mixing_mode"]
+    if mixing_mode == "sum":
+        sign = +1
+    elif mixing_mode == "difference":
+        sign = -1
+    else:
+        raise AssertionError(f"mixing_mode '{mixing_mode:s}' is not known.")
+
     start_Hz = (
         lnb["local_oscillator_frequency_Hz"]
-        + lnb["intermediate_frequency_start_Hz"]
+        + sign * lnb["intermediate_frequency_start_Hz"]
     )
     stop_Hz = (
         lnb["local_oscillator_frequency_Hz"]
-        + lnb["intermediate_frequency_stop_Hz"]
+        + sign * lnb["intermediate_frequency_stop_Hz"]
     )
     return start_Hz, stop_Hz
 
