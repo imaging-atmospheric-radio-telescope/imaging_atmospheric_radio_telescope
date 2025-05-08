@@ -106,6 +106,34 @@ sebplt.close(fig)
 
 for key in response.region_of_interest_keys:
 
+    Ene_expected_to_be_collected_by_mirror_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        config=response.source_config["plane_waves"][key],
+        area_m2=telescope["mirror"]["area_m2"],
+    )
+    Ene_mirror_J = iaat.electric_fields.integrate_power_over_time(
+        electric_fields=response.E_mirror,
+        channel_effective_area_m2=telescope["mirror"][
+            "scatter_center_area_m2"
+        ],
+    )
+    Ene_mirror_J = np.sum(Ene_mirror_J)
+    Ene_camera_J = iaat.electric_fields.integrate_power_over_time(
+        electric_fields=response.E_camera,
+        channel_effective_area_m2=response.sensor["feed_horn_area_m2"],
+    )
+    Ene_camera_J = np.sum(Ene_camera_J)
+
+    Ene_expected_to_be_collected_by_mirror_eV = (
+        Ene_expected_to_be_collected_by_mirror_J / iaat.signal.ELECTRON_VOLT_J
+    )
+    Ene_mirror_eV = Ene_mirror_J / iaat.signal.ELECTRON_VOLT_J
+    Ene_camera_eV = Ene_camera_J / iaat.signal.ELECTRON_VOLT_J
+
+    print(f"__source__: {key:s}")
+    print(f"Expected:{Ene_expected_to_be_collected_by_mirror_eV: 5.2f}eV")
+    print(f"Mirror  :{Ene_mirror_eV: 5.2f}eV")
+    print(f"Camera  :{Ene_camera_eV: 5.2f}eV")
+
     bx, by, Ene_img_J = response.Image_energy_roi(key)
     ana = iaat.investigations.point_spread_function.analyse_image(
         x_bin_edges_m=bx,
