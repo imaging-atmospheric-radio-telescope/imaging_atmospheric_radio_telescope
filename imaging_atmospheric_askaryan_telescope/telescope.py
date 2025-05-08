@@ -146,7 +146,6 @@ def make_feed_horn_positions(
         the center of a neighboring feed-horn is 2 * inner radius away.
     """
     assert sensor_outer_radius_m > 0
-    assert sensor_distance_m > 0
     assert feed_horn_inner_radius_m > 0
 
     hex_u_m = 2.0 * feed_horn_inner_radius_m * UNIT_HEX_U
@@ -205,8 +204,15 @@ def make_feed_horn_sub_scatter(num, inner_radius_m):
     elif num == 7:
         xy = regular_polygon(6, rotation_rad=np.deg2rad(30))
         return np.vstack([xy, [0, 0, 0]]) * inner_radius_m * (3 / 5)
-    else:
-        assert False, "Not a good idea."
+    elif num > 7:
+        _A = np.pi * inner_radius_m**2
+        _a = _A / num
+        _r = np.sqrt(_a / np.pi)
+        return make_feed_horn_positions(
+            sensor_outer_radius_m=inner_radius_m,
+            sensor_distance_m=0,
+            feed_horn_inner_radius_m=_r,
+        )
 
 
 def make_sensor(
@@ -454,7 +460,10 @@ def propagate_electric_field_from_mirror_to_sensor2(
     ].shape[0]
     e_field_sub_scaling = 1.0 / num_sub
 
+    progress = utils.PrintProgress(telescope["sensor"]["num_feed_horns"])
+
     for ise in range(telescope["sensor"]["num_feed_horns"]):
+        progress.bump()
         for imi in range(telescope["mirror"]["num_scatter_centers"]):
             for isu in range(num_sub):
                 # timing
