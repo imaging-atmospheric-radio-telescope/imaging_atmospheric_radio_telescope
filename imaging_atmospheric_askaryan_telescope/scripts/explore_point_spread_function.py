@@ -10,7 +10,7 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "explore_point_spread_function_lst"
+work_dir = "explore_point_spread_function_lst1"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -39,17 +39,17 @@ s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
 s1["geometry"]["azimuth_rad"] = np.deg2rad(0)
 s1["geometry"]["zenith_rad"] = np.deg2rad(0)
 s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
-s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz
+s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 1.1
 
 s2 = iaat.calibration_source.plane_wave_in_far_field.make_config()
 s2["geometry"]["azimuth_rad"] = np.deg2rad(60)
 s2["geometry"]["zenith_rad"] = (
-    0.6
+    0.5
     * telescope["sensor"]["camera"]["outer_radius_m"]
     / telescope["mirror"]["focal_length_m"]
 )
 s2["power"]["power_of_isotrop_and_point_like_emitter_W"] = 4e-1
-s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz
+s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 0.9
 
 source_config["plane_waves"]["first"] = s1
 source_config["plane_waves"]["second"] = s2
@@ -72,7 +72,7 @@ iaat.investigations.point_spread_function.make_PlaneWaveResponse(
     timing=timing,
     source_config=source_config,
     region_of_interest_rad=region_of_interest_rad,
-    region_of_interest_num_bins=21,
+    region_of_interest_num_bins=41,
 )
 response = iaat.investigations.point_spread_function.PlaneWaveResponse(
     path=scenario_dir
