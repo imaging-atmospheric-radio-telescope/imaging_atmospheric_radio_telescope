@@ -82,7 +82,7 @@ def make_sine_wave_with_ramp_up_and_ramp_down(
     assert (
         1.0 / time_slice_duration_s
         >= MIN_OVERSAMPLNG_RATIO * emission_frequency_Hz
-    )
+    ), f"f={emission_frequency_Hz:.1f}Hz"
 
     N = num_time_slices
     dt = time_slice_duration_s
