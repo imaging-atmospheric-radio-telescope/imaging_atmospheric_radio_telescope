@@ -220,7 +220,7 @@ def make_sensor(
     sensor_distance_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
-    feed_horn_oversampling=7,
+    feed_horn_oversampling=1,
 ):
     imse = {}
     imse["__type__"] = "camera"
@@ -460,7 +460,35 @@ def propagate_electric_field_from_mirror_to_sensor2(
     ].shape[0]
     e_field_sub_scaling = 1.0 / num_sub
 
+    """
+    mirror_focal_ratio = (
+        telescope["mirror"]["focal_length_m"]
+        / (2.0 * telescope["mirror"]["outer_radius_m"])
+    )
+    print("f/D", mirror_focal_ratio)
+    feed_horn_diameter_m = 2.0 * np.sqrt(feed_horn_area_m2 / np.pi)
+    lnb_distance_to_feed_horn_entrance_plane_m = (
+        feed_horn_diameter_m * mirror_focal_ratio
+    )
+    relative_lnb_position_wrt_feed_horn_m = np.array(
+        [0, 0, lnb_distance_to_feed_horn_entrance_plane_m]
+    )
+    print("D_feed", feed_horn_diameter_m)
+    print("f_feed", lnb_distance_to_feed_horn_entrance_plane_m)
+    """
+
     progress = utils.PrintProgress(telescope["sensor"]["num_feed_horns"])
+
+    """
+    for isu in range(num_sub):
+        sensor_lnb_vector_m = (
+            telescope["sensor"][
+                "relative_feed_horn_sample_positions_m"
+            ][isu] - relative_lnb_position_wrt_feed_horn_m
+        )
+        sensor_lnb_distance_m = np.linalg.norm(sensor_lnb_vector_m)
+        print(isu, "sensor_lnb_distance_mm", sensor_lnb_distance_m*1e3)
+    """
 
     for ise in range(telescope["sensor"]["num_feed_horns"]):
         progress.bump()
@@ -478,9 +506,23 @@ def propagate_electric_field_from_mirror_to_sensor2(
                     sensor_vector_m
                     - telescope["mirror"]["scatter_center_positions_m"][imi]
                 )
-                distance_m = np.linalg.norm(mirror_to_sensor_vector_m)
+                mirror_sensor_distance_m = np.linalg.norm(
+                    mirror_to_sensor_vector_m
+                )
+
+                """
+                sensor_lnb_vector_m = (
+                    telescope["sensor"][
+                        "relative_feed_horn_sample_positions_m"
+                    ][isu] - relative_lnb_position_wrt_feed_horn_m
+                )
+                sensor_lnb_distance_m = np.linalg.norm(sensor_lnb_vector_m)
+                total_distance_m = mirror_sensor_distance_m + sensor_lnb_distance_m
+                """
+
                 time_delay_s = (
-                    distance_m / telescope["matrix"]["speed_of_light_m_per_s"]
+                    mirror_sensor_distance_m
+                    / telescope["matrix"]["speed_of_light_m_per_s"]
                 )
                 relative_time_delay_s = time_delay_s - min_time_delay_s
 
