@@ -30,12 +30,47 @@ def valid_airy_Nus(theta_D_Nu, D_bin_centers, Nu_bin_centers, theta_threshold):
     return np.array(Ds), np.array(Nus)
 
 
-D_bin = binning_utils.Binning(bin_edges=np.linspace(3, 30, 201))
+def ax_add_box_gradient(
+    ax, xlim, ylim, alpha_start, alpha_stop, num=255, **kwargs
+):
+    alphas = np.linspace(alpha_start, alpha_stop, num)
+    x_edges = np.linspace(xlim[0], xlim[1], num + 1)
+    for i in range(num):
+        print(alphas[i])
+        ax.fill_between(
+            x=[x_edges[i], x_edges[i + 1]],
+            y1=[ylim[0], ylim[0]],
+            y2=[ylim[1], ylim[1]],
+            alpha=alphas[i],
+            **kwargs,
+        )
+
+
+D_bin = binning_utils.Binning(bin_edges=np.linspace(1, 30, 201))
 Nu_bin = binning_utils.Binning(bin_edges=np.geomspace(1e9, 100e9, 301))
 
 D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M = 23.0
 
-NU_ASTRA_UNIVERSAL_HZ = 9.75e9
+lst = iaat.telescopes.init("large_size_telescope")
+lst_lnb = iaat.lownoiseblock.init(key=lst["lnb_key"])
+lst_nu_Hz = np.mean(
+    [
+        lst_lnb["local_oscillator_frequency_Hz"]
+        + lst_lnb["intermediate_frequency_start_Hz"],
+        lst_lnb["local_oscillator_frequency_Hz"]
+        + lst_lnb["intermediate_frequency_stop_Hz"],
+    ]
+)
+crome = iaat.telescopes.init("crome")
+crome_lnb = iaat.lownoiseblock.init(key=crome["lnb_key"])
+crome_nu_Hz = np.mean(
+    [
+        crome_lnb["local_oscillator_frequency_Hz"]
+        + crome_lnb["intermediate_frequency_start_Hz"],
+        crome_lnb["local_oscillator_frequency_Hz"]
+        + crome_lnb["intermediate_frequency_stop_Hz"],
+    ]
+)
 
 theta = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
 for iD in range(D_bin["num"]):
@@ -102,15 +137,31 @@ ax.vlines(
     linestyle="--",
     alpha=0.33,
 )
-# ax.plot(vD, vNu, "r")
 ax.plot(
-    D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M,
-    NU_ASTRA_UNIVERSAL_HZ * TO_GIGA,
-    marker="o",
+    2.0 * lst["mirror"]["outer_radius_m"],
+    lst_nu_Hz * TO_GIGA,
+    marker="P",
     color="black",
 )
-ax.fill(poly[:, 0], poly[:, 1] * TO_GIGA, color="black", alpha=0.15)
-ax.set_xlim(D_bin["limits"])
+ax.plot(
+    2.0 * crome["mirror"]["outer_radius_m"],
+    crome_nu_Hz * TO_GIGA,
+    marker="*",
+    color="black",
+)
+fill_alpha = 0.15
+HESS2_MIRROR_D_M = 28
+ax.fill(poly[:, 0], poly[:, 1] * TO_GIGA, color="black", alpha=fill_alpha)
+ax_add_box_gradient(
+    ax=ax,
+    xlim=[D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M, HESS2_MIRROR_D_M],
+    ylim=np.array([min(poly[:, 1]), max(poly[:, 1])]) * TO_GIGA,
+    alpha_start=fill_alpha,
+    alpha_stop=0.0,
+    color="black",
+    linewidth=0.0,
+)
+ax.set_xlim([0.0, D_bin["stop"]])
 ax.set_ylim(Nu_bin["limits"] * TO_GIGA)
 ax.semilogy()
 ax.set_xlabel(r"mirror diameter $D$ / m")
