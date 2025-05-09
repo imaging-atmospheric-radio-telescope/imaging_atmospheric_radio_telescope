@@ -54,7 +54,6 @@ def init(work_dir):
 
     stars = {
         "telescopes": ["crome", "large_size_telescope"],
-        "random_seed": 1,
         "num_representative_guide_stars": 5,
         "num_central_feed_horn_scan": 8,
         "num_fully_inside_field_of_view": 8,
