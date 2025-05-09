@@ -356,7 +356,10 @@ class PlaneWaveResponse:
 
     @property
     def region_of_interest_keys(self):
-        return list(self.source_config["plane_waves"].keys())
+        if not hasattr(self, "_region_of_interest_keys"):
+            _p = glob.glob(os.path.join(self.path, "region_of_interest", "*"))
+            self._region_of_interest_keys = [os.path.basename(p) for p in _p]
+        return self._region_of_interest_keys
 
     @property
     def E_mirror(self):
