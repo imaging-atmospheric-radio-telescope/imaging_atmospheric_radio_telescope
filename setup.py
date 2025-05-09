@@ -46,9 +46,13 @@ setuptools.setup(
     },
     install_requires=[
         # "sebastians_matplotlib_addons>=0.0.17",
-        "json_utils_sebastian-achim-mueller",
-        "rename_after_writing",
-        "homogeneous_transformation",
+        "json_utils_sebastian-achim-mueller>=0.0.5",
+        "rename_after_writing>=0.0.12",
+        "homogeneous_transformation>=0.0.1.1.7.2",
+        "spherical_coordinates>=0.1.8",
+        "binning_utils_sebastian-achim-mueller>=0.0.20",
+        "solid_angle_utils>=0.1.2",
+        "json_line_logger>=0.0.9",
     ],
     license="MIT",
     classifiers=[
