@@ -9,6 +9,8 @@ import spherical_coordinates
 import numpy as np
 import json_utils
 import os
+import scipy.linalg
+
 
 work_dir = "explore_point_spread_function"
 
@@ -229,3 +231,21 @@ for key in response.region_of_interest_keys:
 
     fig.savefig(os.path.join(scenario_dir, f"{key:s}.jpg"))
     sebplt.close(fig)
+
+    E_camera = response.E_camera
+    for channel in range(E_camera.num_channels):
+        factor, vector = (
+            iaat.investigations.point_spread_function.polarization_analysis.analyse_linear_polarization_over_time(
+                E_field_vs_time=E_camera[channel]
+            )
+        )
+        print("camera", channel, "polarization", factor, vector)
+
+    E_mirror = response.E_mirror
+    for channel in range(E_mirror.num_channels):
+        factor, vector = (
+            iaat.investigations.point_spread_function.polarization_analysis.analyse_linear_polarization_over_time(
+                E_field_vs_time=E_mirror[channel]
+            )
+        )
+        print("mirror", channel, "polarization", factor, vector)

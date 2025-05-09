@@ -1,5 +1,6 @@
 from . import plot
 from . import power_image_analysis
+from . import polarization_analysis
 
 from ... import telescope
 from ... import telescopes
@@ -54,7 +55,11 @@ def init(work_dir):
     stars = {
         "telescopes": ["crome", "large_size_telescope"],
         "random_seed": 1,
-        "num": 8,
+        "num_representative_guide_stars": 5,
+        "num_central_feed_horn_scan": 8,
+        "num_fully_inside_field_of_view": 8,
+        "num_on_edge_of_field_of_view": 8,
+        "num_outside_of_field_of_view": 8,
         "power_density_start_W_per_m2": 1e-12,
         "power_density_stop_W_per_m2": 3e-12,
     }
@@ -64,16 +69,41 @@ def init(work_dir):
 
 def run(work_dir, pool=None, logger=None):
     pool = _serial_pool_if_None(pool)
-    logger = _stdout_logger_if_None(logger)
+    logger = utils.stdout_logger_if_None(logger)
     config = _read_config(work_dir)
 
     logger.debug("make jobs for 'stars' ...")
     star_jobs = _star_make_jobs(work_dir=work_dir, config=config)
     star_jobs = _star_drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
-    logger.debug(f"f{len(star_jobs):d} jobs are missing and need to be run.")
+    logger.debug(f"{len(star_jobs):d} jobs are missing and need to be run.")
 
     logger.debug("run jobs for 'stars' ...")
     pool.map(_star_run_job, star_jobs)
+
+
+def _make_field_of_view_region_edges(sensor, focal_length_m):
+    regions = {}
+
+    _inner_radius_m = (
+        sensor["camera"]["outer_radius_m"]
+        - sensor["camera"]["feed_horn_inner_radius_m"]
+    )
+    regions["field_of_view_fully_inside_half_angle_rad"] = np.arctan(
+        _inner_radius_m / focal_length_m
+    )
+
+    _outer_radius_m = (
+        sensor["camera"]["outer_radius_m"]
+        + sensor["camera"]["feed_horn_inner_radius_m"]
+    )
+    regions["field_of_view_fully_outside_half_angle_rad"] = np.arctan(
+        _outer_radius_m / focal_length_m
+    )
+
+    regions["central_feed_horn_half_angle_rad"] = np.arctan(
+        sensor["camera"]["feed_horn_inner_radius_m"] / focal_length_m
+    )
+    return regions
 
 
 def _star_make_jobs(work_dir, config):
@@ -81,53 +111,150 @@ def _star_make_jobs(work_dir, config):
 
     jobs = []
     for telescope_key in config["stars"]["telescopes"]:
+        telescope_jobs = []
+
         tscope, _, _ = _make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
         )
-        nu_start_Hz, nu_stop_Hz = lownoiseblock.input_frequency_start_stop_Hz(
-            lnb=tscope["lnb"]
+        telescope_nu_start_Hz, telescope_nu_stop_Hz = (
+            lownoiseblock.input_frequency_start_stop_Hz(lnb=tscope["lnb"])
+        )
+        field_of_view_edges = _make_field_of_view_region_edges(
+            sensor=tscope["sensor"],
+            focal_length_m=tscope["mirror"]["focal_length_m"],
         )
 
-        camera_screen_min_radius_m = (
-            tscope["sensor"]["camera"]["outer_radius_m"]
-            - tscope["sensor"]["camera"]["feed_horn_inner_radius_m"]
+        # =======
+        field_of_view_scan_zenith_rad = np.linspace(
+            0.0,
+            field_of_view_edges["field_of_view_fully_inside_half_angle_rad"],
+            config["stars"]["num_representative_guide_stars"],
         )
-        max_angle_off_axis_rad = np.arctan(
-            camera_screen_min_radius_m / tscope["mirror"]["focal_length_m"]
-        )
-
-        for i in range(config["stars"]["num"]):
+        for i in range(config["stars"]["num_representative_guide_stars"]):
             job = {}
+            job["key"] = "representative_guide_stars"
             job["id"] = i
-            job["telescope_key"] = telescope_key
-            job["work_dir"] = work_dir
-            job["random_seed"] = config["stars"]["random_seed"] + i
-            job["path"] = os.path.join(
-                work_dir, "stars", telescope_key, f"{i:06d}"
-            )
+            job["region_of_interest"] = True
+            job["source_azimuth_rad"] = 0.0
+            job["source_zenith_rad"] = field_of_view_scan_zenith_rad[i]
+            telescope_jobs.append(job)
+
+        # =======
+        for i in range(config["stars"]["num_central_feed_horn_scan"]):
+            job = {}
+            job["key"] = "central_feed_horn_scan"
+            job["id"] = i
+            job["region_of_interest"] = False
             az_rad, zd_rad = (
                 spherical_coordinates.random.uniform_az_zd_in_cone(
                     prng=prng,
                     azimuth_rad=0.0,
                     zenith_rad=0.0,
                     min_half_angle_rad=0.0,
-                    max_half_angle_rad=max_angle_off_axis_rad,
+                    max_half_angle_rad=4.0
+                    * field_of_view_edges["central_feed_horn_half_angle_rad"],
                 )
             )
             job["source_azimuth_rad"] = az_rad
             job["source_zenith_rad"] = zd_rad
-            job["source_polarization_angle_rad"] = prng.uniform(
-                low=0.0, high=2.0 * np.pi
+            telescope_jobs.append(job)
+
+        # =======
+        for i in range(config["stars"]["num_fully_inside_field_of_view"]):
+            job = {}
+            job["key"] = "fully_inside_field_of_view"
+            job["id"] = i
+            job["region_of_interest"] = False
+            az_rad, zd_rad = (
+                spherical_coordinates.random.uniform_az_zd_in_cone(
+                    prng=prng,
+                    azimuth_rad=0.0,
+                    zenith_rad=0.0,
+                    min_half_angle_rad=0.0,
+                    max_half_angle_rad=field_of_view_edges[
+                        "field_of_view_fully_inside_half_angle_rad"
+                    ],
+                )
             )
-            job["power_density_W_per_m2"] = prng.uniform(
-                low=config["stars"]["power_density_start_W_per_m2"],
-                high=config["stars"]["power_density_stop_W_per_m2"],
+            job["source_azimuth_rad"] = az_rad
+            job["source_zenith_rad"] = zd_rad
+            telescope_jobs.append(job)
+
+        # =======
+        for i in range(config["stars"]["num_on_edge_of_field_of_view"]):
+            job = {}
+            job["key"] = "on_edge_of_field_of_view"
+            job["id"] = i
+            job["region_of_interest"] = False
+            az_rad, zd_rad = (
+                spherical_coordinates.random.uniform_az_zd_in_cone(
+                    prng=prng,
+                    azimuth_rad=0.0,
+                    zenith_rad=0.0,
+                    min_half_angle_rad=field_of_view_edges[
+                        "field_of_view_fully_inside_half_angle_rad"
+                    ],
+                    max_half_angle_rad=field_of_view_edges[
+                        "field_of_view_fully_outside_half_angle_rad"
+                    ],
+                )
+            )
+            job["source_azimuth_rad"] = az_rad
+            job["source_zenith_rad"] = zd_rad
+            telescope_jobs.append(job)
+
+        # =======
+        for i in range(config["stars"]["num_outside_of_field_of_view"]):
+            job = {}
+            job["key"] = "outside_of_field_of_view"
+            job["id"] = i
+            job["region_of_interest"] = False
+            az_rad, zd_rad = (
+                spherical_coordinates.random.uniform_az_zd_in_cone(
+                    prng=prng,
+                    azimuth_rad=0.0,
+                    zenith_rad=0.0,
+                    min_half_angle_rad=field_of_view_edges[
+                        "field_of_view_fully_outside_half_angle_rad"
+                    ],
+                    max_half_angle_rad=4.0
+                    * field_of_view_edges[
+                        "field_of_view_fully_outside_half_angle_rad"
+                    ],
+                )
+            )
+            job["source_azimuth_rad"] = az_rad
+            job["source_zenith_rad"] = zd_rad
+            telescope_jobs.append(job)
+
+        # in all telescope jobs
+        for job in telescope_jobs:
+            job["telescope_key"] = telescope_key
+            job["path"] = os.path.join(
+                work_dir,
+                "stars",
+                job["telescope_key"],
+                job["key"],
+                f"{job['id']:06d}",
             )
             job["frequency_Hz"] = prng.uniform(
-                low=nu_start_Hz,
-                high=nu_stop_Hz,
+                low=telescope_nu_start_Hz,
+                high=telescope_nu_stop_Hz,
             )
-            jobs.append(job)
+
+        jobs += telescope_jobs
+
+    # in all jobs
+    for job in jobs:
+        job["work_dir"] = work_dir
+        job["source_polarization_angle_rad"] = prng.uniform(
+            low=0.0, high=2.0 * np.pi
+        )
+        job["power_density_W_per_m2"] = prng.uniform(
+            low=config["stars"]["power_density_start_W_per_m2"],
+            high=config["stars"]["power_density_stop_W_per_m2"],
+        )
+
     return jobs
 
 
@@ -174,17 +301,23 @@ def _star_run_job(job):
     source_config["plane_waves"]["1"] = s1
 
     with rnw.Directory(job["path"]) as tmp_dir:
+        logger = json_line_logger.LoggerFile(
+            os.path.join(tmp_dir, "log.jsonl")
+        )
+
         make_PlaneWaveResponse(
             out_dir=tmp_dir,
-            random_seed=job["random_seed"],
+            random_seed=job["id"],
             telescope=tscope,
             site=site,
             timing=timing,
             source_config=source_config,
+            region_of_interest=job["region_of_interest"],
             region_of_interest_rad=region_of_interest_rad,
             region_of_interest_num_bins=substract_one_when_even(
                 num_waves * timing["oversampling"]
             ),
+            logger=logger,
         )
 
 
@@ -262,8 +395,10 @@ def make_PlaneWaveResponse(
     site,
     timing,
     source_config,
+    region_of_interest=True,
     region_of_interest_rad=np.deg2rad(0.5),
     region_of_interest_num_bins=42,
+    logger=None,
 ):
     os.makedirs(out_dir, exist_ok=True)
     camera_dir = os.path.join(out_dir, "camera")
@@ -281,56 +416,60 @@ def make_PlaneWaveResponse(
         readout_random_seed=random_seed + 2,
         camera_lnb_random_seed=random_seed + 3,
         stop_after_section="feed_horns",
+        logger=logger,
     )
 
     with rnw.open(os.path.join(camera_dir, "sensor.json"), "wt") as f:
         f.write(json_utils.dumps(telescope["sensor"], indent=4))
 
-    roi_dir = os.path.join(out_dir, "region_of_interest")
+    if region_of_interest:
+        roi_dir = os.path.join(out_dir, "region_of_interest")
 
-    for key in source_config["plane_waves"]:
-        roi_key_dir = os.path.join(roi_dir, key)
+        for key in source_config["plane_waves"]:
+            roi_key_dir = os.path.join(roi_dir, key)
 
-        plane_wave_config = source_config["plane_waves"][key]
+            plane_wave_config = source_config["plane_waves"][key]
 
-        telescope_region_of_interest = (
-            make_telescope_like_other_but_with_region_of_interest_camera(
-                source_azimuth_rad=plane_wave_config["geometry"][
-                    "azimuth_rad"
-                ],
-                source_zenith_rad=plane_wave_config["geometry"]["zenith_rad"],
-                region_of_interest_rad=region_of_interest_rad,
-                num_bins=region_of_interest_num_bins,
-                other_telescope=telescope,
-            )
-        )
-
-        os.makedirs(roi_key_dir, exist_ok=True)
-        shutil.copytree(
-            src=os.path.join(camera_dir, "mirror"),
-            dst=os.path.join(roi_key_dir, "mirror"),
-        )
-
-        production.simulate_telescope_response(
-            out_dir=roi_key_dir,
-            source_config=source_config,
-            site=site,
-            telescope=telescope_region_of_interest,
-            timing=timing,
-            thermal_noise_random_seed=random_seed + 1,
-            readout_random_seed=random_seed + 2,
-            camera_lnb_random_seed=random_seed + 3,
-            stop_after_section="feed_horns",
-        )
-
-        with rnw.open(os.path.join(roi_key_dir, "sensor.json"), "wt") as f:
-            f.write(
-                json_utils.dumps(
-                    telescope_region_of_interest["sensor"], indent=4
+            telescope_region_of_interest = (
+                make_telescope_like_other_but_with_region_of_interest_camera(
+                    source_azimuth_rad=plane_wave_config["geometry"][
+                        "azimuth_rad"
+                    ],
+                    source_zenith_rad=plane_wave_config["geometry"][
+                        "zenith_rad"
+                    ],
+                    region_of_interest_rad=region_of_interest_rad,
+                    num_bins=region_of_interest_num_bins,
+                    other_telescope=telescope,
                 )
             )
 
-        shutil.rmtree(os.path.join(roi_key_dir, "mirror"))
+            os.makedirs(roi_key_dir, exist_ok=True)
+            shutil.copytree(
+                src=os.path.join(camera_dir, "mirror"),
+                dst=os.path.join(roi_key_dir, "mirror"),
+            )
+
+            production.simulate_telescope_response(
+                out_dir=roi_key_dir,
+                source_config=source_config,
+                site=site,
+                telescope=telescope_region_of_interest,
+                timing=timing,
+                thermal_noise_random_seed=random_seed + 1,
+                readout_random_seed=random_seed + 2,
+                camera_lnb_random_seed=random_seed + 3,
+                stop_after_section="feed_horns",
+            )
+
+            with rnw.open(os.path.join(roi_key_dir, "sensor.json"), "wt") as f:
+                f.write(
+                    json_utils.dumps(
+                        telescope_region_of_interest["sensor"], indent=4
+                    )
+                )
+
+            shutil.rmtree(os.path.join(roi_key_dir, "mirror"))
 
 
 class PlaneWaveResponse:
