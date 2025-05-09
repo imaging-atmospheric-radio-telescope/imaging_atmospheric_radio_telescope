@@ -400,10 +400,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         mirror_scatter_area_m2 / feed_horn_area_m2
     )
 
-    progress = utils.PrintProgress(telescope["sensor"]["num_feed_horns"])
-
     for ise in range(telescope["sensor"]["num_feed_horns"]):
-        progress.bump()
         for imi in range(telescope["mirror"]["num_scatter_centers"]):
             # timing
             # ------
@@ -480,8 +477,6 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
     print("f_feed", lnb_distance_to_feed_horn_entrance_plane_m)
     """
 
-    progress = utils.PrintProgress(telescope["sensor"]["num_feed_horns"])
-
     """
     for isu in range(num_sub):
         sensor_lnb_vector_m = (
@@ -494,7 +489,6 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
     """
 
     for ise in range(telescope["sensor"]["num_feed_horns"]):
-        progress.bump()
         for imi in range(telescope["mirror"]["num_scatter_centers"]):
             for isu in range(num_sub):
                 # timing
