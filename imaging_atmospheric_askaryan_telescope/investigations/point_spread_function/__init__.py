@@ -1,4 +1,5 @@
 from . import plot
+from . import defocus
 from . import power_image_analysis
 from . import polarization_analysis
 
@@ -65,6 +66,15 @@ def init(work_dir):
     with rnw.open(os.path.join(config_dir, "stars.json"), "wt") as f:
         f.write(json_utils.dumps(stars, indent=4))
 
+    defocus_config = {
+        "telescopes": ["large_size_telescope"],
+        "start_object_distance_m": 4e3,
+        "stop_object_distance_m": 20e3,
+        "num": 16,
+    }
+    with rnw.open(os.path.join(config_dir, "defocus.json"), "wt") as f:
+        f.write(json_utils.dumps(defocus_config, indent=4))
+
 
 def run(work_dir, pool=None, logger=None):
     pool = _serial_pool_if_None(pool)
@@ -75,9 +85,17 @@ def run(work_dir, pool=None, logger=None):
     star_jobs = _star_make_jobs(work_dir=work_dir, config=config)
     star_jobs = _star_drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
     logger.debug(f"{len(star_jobs):d} jobs are missing and need to be run.")
-
     logger.debug("run jobs for 'stars' ...")
     pool.map(_star_run_job, star_jobs)
+
+    logger.debug("make jobs for 'defocus' ...")
+    defocus_jobs = defocus.make_jobs(work_dir=work_dir, config=config)
+    defocus_jobs = defocus.drop_finished_jobs(
+        work_dir=work_dir, jobs=star_jobs
+    )
+    logger.debug(f"{len(defocus_jobs):d} jobs are missing and need to be run.")
+    logger.debug("run jobs for 'defocus' ...")
+    pool.map(defocus.run_job, defocus_jobs)
 
 
 def _make_field_of_view_region_edges(sensor, focal_length_m):
