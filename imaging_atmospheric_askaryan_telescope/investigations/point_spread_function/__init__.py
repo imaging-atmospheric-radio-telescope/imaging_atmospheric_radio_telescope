@@ -63,12 +63,17 @@ def init(work_dir):
         f.write(json_utils.dumps(stars, indent=4))
 
 
-def run(work_dir, pool=None):
+def run(work_dir, pool=None, logger=None):
     pool = _serial_pool_if_None(pool)
+    logger = _stdout_logger_if_None(logger)
     config = _read_config(work_dir)
 
+    logger.debug("make jobs for 'stars' ...")
     star_jobs = _star_make_jobs(work_dir=work_dir, config=config)
     star_jobs = _star_drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
+    logger.debug(f"f{len(star_jobs):d} jobs are missing and need to be run.")
+
+    logger.debug("run jobs for 'stars' ...")
     pool.map(_star_run_job, star_jobs)
 
 
