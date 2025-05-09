@@ -148,7 +148,7 @@ for key in response.region_of_interest_keys:
     print(f"Camera  :{Ene_camera_eV: 5.2f}eV")
 
     bx, by, Ene_img_J = response.Image_energy_roi(key)
-    ana = iaat.investigations.point_spread_function.analyse_image(
+    ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
         x_bin_edges_m=bx,
         y_bin_edges_m=by,
         image=Ene_img_J,
