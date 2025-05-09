@@ -13,7 +13,7 @@ from .. import electric_fields
 from .. import signal
 from .. import time_series
 from .. import lownoiseblock
-from ..utils import PrintStartStop
+from .. import utils
 
 
 def simulate_telescope_response(
@@ -26,7 +26,9 @@ def simulate_telescope_response(
     readout_random_seed,
     camera_lnb_random_seed,
     stop_after_section=None,
+    logger=None,
 ):
+    logger = utils.stdout_logger_if_None(logger)
     os.makedirs(out_dir, exist_ok=True)
     with rnw.open(os.path.join(out_dir, "source_config.json"), "wt") as f:
         f.write(json_utils.dumps(source_config, indent=4))
@@ -36,8 +38,10 @@ def simulate_telescope_response(
     mirror_dir = os.path.join(out_dir, "mirror")
     if not os.path.exists(mirror_dir):
         if source_config["__type__"] == "airshower":
-            with rnw.Directory(mirror_dir) as tmp_mirror_dir, PrintStartStop(
-                "Simulating air shower using CORSIKA CoREAS"
+            with rnw.Directory(
+                mirror_dir
+            ) as tmp_mirror_dir, utils.LoggerStartStop(
+                logger, "Simulating air shower using CORSIKA CoREAS"
             ) as _:
                 radio_from_airshower.assert_config_is_valid(source_config)
                 radio_from_airshower.simulate_mirror_electric_fields(
@@ -51,8 +55,10 @@ def simulate_telescope_response(
                 )
 
         elif source_config["__type__"] == "plane_wave":
-            with rnw.Directory(mirror_dir) as tmp_mirror_dir, PrintStartStop(
-                "Simulating plane wave from calibration source"
+            with rnw.Directory(
+                mirror_dir
+            ) as tmp_mirror_dir, utils.LoggerStartStop(
+                logger, "Simulating plane wave from calibration source"
             ) as _:
                 radio_from_plane_wave.simulate_mirror_electric_fields(
                     mirror_dir=tmp_mirror_dir,
@@ -78,8 +84,8 @@ def simulate_telescope_response(
     # -----------------------------------
     feed_horns_dir = os.path.join(out_dir, "feed_horns")
     if not os.path.exists(feed_horns_dir):
-        with rnw.Directory(feed_horns_dir) as tmp_dir, PrintStartStop(
-            "Propagating electric fields from mirror to feed horns"
+        with rnw.Directory(feed_horns_dir) as tmp_dir, utils.LoggerStartStop(
+            logger, "Propagating electric fields from mirror to feed horns"
         ) as _:
             E_mirror = time_series.read(
                 path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
@@ -105,8 +111,8 @@ def simulate_telescope_response(
     # -----------------------------
     lnb_input_dir = os.path.join(out_dir, "lnb_input")
     if not os.path.exists(lnb_input_dir):
-        with rnw.Directory(lnb_input_dir) as tmp_dir, PrintStartStop(
-            "Propagating electric fields through feed horns"
+        with rnw.Directory(lnb_input_dir) as tmp_dir, utils.LoggerStartStop(
+            logger, "Propagating electric fields through feed horns"
         ) as _:
             E_sensor = time_series.read(
                 path=os.path.join(
@@ -133,8 +139,10 @@ def simulate_telescope_response(
     # -----------------------------------
     lnb_signal_output_dir = os.path.join(out_dir, "lnb_signal_output")
     if not os.path.exists(lnb_signal_output_dir):
-        with rnw.Directory(lnb_signal_output_dir) as tmp_dir, PrintStartStop(
-            "Simulating signal leaving low noise block converters"
+        with rnw.Directory(
+            lnb_signal_output_dir
+        ) as tmp_dir, utils.LoggerStartStop(
+            logger, "Simulating signal leaving low noise block converters"
         ) as _:
             E_lnb_input = time_series.read(
                 path=os.path.join(out_dir, "lnb_input", "electric_fields.tar"),
@@ -167,8 +175,10 @@ def simulate_telescope_response(
     # ----------------------------------
     lnb_noise_output_dir = os.path.join(out_dir, "lnb_noise_output")
     if not os.path.exists(lnb_noise_output_dir):
-        with rnw.Directory(lnb_noise_output_dir) as tmp_dir, PrintStartStop(
-            "Simulating noise leaving low noise block converters"
+        with rnw.Directory(
+            lnb_noise_output_dir
+        ) as tmp_dir, utils.LoggerStartStop(
+            logger, "Simulating noise leaving low noise block converters"
         ) as _:
             prng = np.random.Generator(
                 np.random.PCG64(thermal_noise_random_seed)
@@ -237,8 +247,9 @@ def simulate_telescope_response(
     if not os.path.exists(lnb_signal_and_noise_output_dir):
         with rnw.Directory(
             lnb_signal_and_noise_output_dir
-        ) as tmp_dir, PrintStartStop(
-            "Adding noise and signal leaving low noise block converters"
+        ) as tmp_dir, utils.LoggerStartStop(
+            logger,
+            "Adding noise and signal leaving low noise block converters",
         ) as _:
             E_lnb_signal = time_series.read(
                 path=os.path.join(
@@ -266,8 +277,8 @@ def simulate_telescope_response(
     # -----------
     lnb_readout_dir = os.path.join(out_dir, "lnb_readout")
     if not os.path.exists(lnb_readout_dir):
-        with rnw.Directory(lnb_readout_dir) as tmp_dir, PrintStartStop(
-            "Simulating Readout of LNBs"
+        with rnw.Directory(lnb_readout_dir) as tmp_dir, utils.LoggerStartStop(
+            logger, "Simulating Readout of LNBs"
         ):
             E_lnb_output = time_series.read(
                 path=os.path.join(
