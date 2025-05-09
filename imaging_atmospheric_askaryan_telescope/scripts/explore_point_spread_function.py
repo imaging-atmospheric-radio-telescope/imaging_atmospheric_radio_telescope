@@ -10,13 +10,13 @@ import numpy as np
 import json_utils
 import os
 
-work_dir = "explore_point_spread_function_lst1"
+work_dir = "explore_point_spread_function"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
         work_dir=work_dir,
         site_key="namibia",
-        telescope_key="large_size_telescope",
+        telescope_key="crome",
     )
 
 _askaryan = iaat.run.from_config(work_dir=work_dir)

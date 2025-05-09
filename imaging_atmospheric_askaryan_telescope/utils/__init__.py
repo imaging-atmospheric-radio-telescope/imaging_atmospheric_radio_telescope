@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 import json_line_logger
+import logging
 
 
 class SerialPool:
@@ -20,7 +21,7 @@ class SerialPool:
 
 class LoggerStartStop:
     def __init__(
-        self, start_msg, logger=None, stop_msg="Done.", level="debug"
+        self, start_msg, logger=None, stop_msg="Done.", level=logging.DEBUG
     ):
         self.logger = stdout_logger_if_None(logger)
         self.level = level
@@ -28,11 +29,11 @@ class LoggerStartStop:
         self.stop_msg = stop_msg
 
     def __enter__(self):
-        logger.log(level=self.level, msg=self.start_msg)
+        self.logger.log(level=self.level, msg=self.start_msg)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        logger.log(level=self.level, msg=self.stop_msg)
+        self.logger.log(level=self.level, msg=self.stop_msg)
         return
 
     def __repr__(self):
