@@ -117,6 +117,9 @@ def _star_make_jobs(work_dir, config):
             )
             job["source_azimuth_rad"] = az_rad
             job["source_zenith_rad"] = zd_rad
+            job["source_polarization_angle_rad"] = prng.uniform(
+                low=0.0, high=2.0 * np.pi
+            )
             job["power_density_W_per_m2"] = prng.uniform(
                 low=config["stars"]["power_density_start_W_per_m2"],
                 high=config["stars"]["power_density_stop_W_per_m2"],
@@ -160,6 +163,9 @@ def _star_run_job(job):
     s1 = calibration_source.plane_wave_in_far_field.make_config()
     s1["geometry"]["azimuth_rad"] = job["source_azimuth_rad"]
     s1["geometry"]["zenith_rad"] = job["source_zenith_rad"]
+    s1["geometry"]["polarization_angle_rad"] = job[
+        "source_polarization_angle_rad"
+    ]
     s1["power"][
         "power_of_isotrop_and_point_like_emitter_W"
     ] = P_isotrop_100km_W
