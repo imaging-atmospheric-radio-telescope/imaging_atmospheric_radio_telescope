@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import json_line_logger
 
 
 class SerialPool:
@@ -17,52 +18,21 @@ class SerialPool:
         return out
 
 
-class PrintStartStop:
-    def __init__(self, start_msg, stop_msg="Done."):
+class LoggerStartStop:
+    def __init__(
+        self, start_msg, logger=None, stop_msg="Done.", level="debug"
+    ):
+        self.logger = stdout_logger_if_None(logger)
+        self.level = level
         self.start_msg = start_msg
         self.stop_msg = stop_msg
 
     def __enter__(self):
-        print(
-            self.start_msg,
-            " ... ",
-            end="",
-            flush=True,
-        )
+        logger.log(level=self.level, msg=self.start_msg)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        print(self.stop_msg)
-        return
-
-    def __repr__(self):
-        return f"{self.__class__.__name__:s}()"
-
-
-class PrintProgress:
-    def __init__(self, num_steps, s="."):
-        assert num_steps > 0
-        self.s = s
-        self.num_steps = num_steps
-        self.step = 0
-        self.percent = 0
-
-    def __enter__(self):
-        return self
-
-    def bump(self):
-        self.step += 1
-        percent = int(np.round(100 * self.step / self.num_steps))
-
-        if percent > 100:
-            print("?", end="", flush=True)
-            return
-
-        if percent > self.percent:
-            print(self.s, end="", flush=True)
-            self.percent = copy.copy(percent)
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+        logger.log(level=self.level, msg=self.stop_msg)
         return
 
     def __repr__(self):
@@ -108,3 +78,7 @@ def normal_approximation(
 
 def argmaxNd(a):
     return np.unravel_index(np.argmax(a), a.shape)
+
+
+def stdout_logger_if_None(logger):
+    return json_line_logger.LoggerStdout() if logger is None else logger
