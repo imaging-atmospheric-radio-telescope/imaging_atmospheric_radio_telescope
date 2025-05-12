@@ -11,14 +11,14 @@ import json_utils
 import os
 import scipy.linalg
 
-
-work_dir = "explore_point_spread_function"
+telescope_key = "large_size_telescope"
+work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
         work_dir=work_dir,
         site_key="namibia",
-        telescope_key="crome",
+        telescope_key=telescope_key,
     )
 
 _askaryan = iaat.run.from_config(work_dir=work_dir)
@@ -66,7 +66,7 @@ region_of_interest_rad = (
 )
 
 
-iaat.investigations.point_spread_function.make_PlaneWaveResponse(
+iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResponse(
     out_dir=scenario_dir,
     random_seed=random_seed,
     telescope=telescope,
@@ -76,7 +76,7 @@ iaat.investigations.point_spread_function.make_PlaneWaveResponse(
     region_of_interest_rad=region_of_interest_rad,
     region_of_interest_num_bins=41,
 )
-response = iaat.investigations.point_spread_function.PlaneWaveResponse(
+response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
     path=scenario_dir
 )
 
@@ -232,6 +232,7 @@ for key in response.region_of_interest_keys:
     fig.savefig(os.path.join(scenario_dir, f"{key:s}.jpg"))
     sebplt.close(fig)
 
+    """
     E_camera = response.E_camera
     for channel in range(E_camera.num_channels):
         factor, vector = (
@@ -249,3 +250,4 @@ for key in response.region_of_interest_keys:
             )
         )
         print("mirror", channel, "polarization", factor, vector)
+    """

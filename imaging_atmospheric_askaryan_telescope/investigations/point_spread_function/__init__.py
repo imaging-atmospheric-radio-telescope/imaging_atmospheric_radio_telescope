@@ -83,8 +83,8 @@ def init(work_dir):
 
     defocus_config = {
         "telescopes": ["large_size_telescope"],
-        "start_object_distance_m": 4e3,
-        "stop_object_distance_m": 20e3,
+        "start_sensor_distance_f": 0.98,
+        "stop_sensor_distance_f": 1.08,
         "num": 16,
     }
     with rnw.open(os.path.join(config_dir, "defocus.json"), "wt") as f:

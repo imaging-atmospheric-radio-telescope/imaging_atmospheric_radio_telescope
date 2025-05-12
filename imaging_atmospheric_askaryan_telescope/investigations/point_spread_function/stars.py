@@ -4,9 +4,11 @@ from . import plane_wave_response
 from ... import lownoiseblock
 from ... import signal
 from ... import production
+from ... import electric_fields
 from ... import calibration_source
 
 import os
+import glob
 import numpy as np
 import spherical_coordinates
 import rename_after_writing as rnw
@@ -59,13 +61,10 @@ def _make_jobs_representative_guide_stars(work_dir, config, telescope):
     prng = np.random.Generator(
         np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
     )
-
     field_of_view_edges = psf_utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
-
-    # =======
     field_of_view_scan_zenith_rad = np.linspace(
         0.0,
         field_of_view_edges["field_of_view_fully_inside_half_angle_rad"],
@@ -289,6 +288,10 @@ def drop_finished_jobs(work_dir, jobs):
     return out
 
 
+def _area_of_sphere(radius):
+    return 4.0 * np.pi * radius**2.0
+
+
 def run_job(job):
     config = psf_utils.read_config(job["work_dir"])
 
@@ -305,7 +308,7 @@ def run_job(job):
     )
 
     r_100km = 100e3
-    A_sphere_100km = 4.0 * np.pi * r_100km**2
+    A_sphere_100km = _area_of_sphere(radius=r_100km)
     P_isotrop_100km_W = job["power_density_W_per_m2"] * A_sphere_100km
 
     source_config = production.radio_from_plane_wave.make_config()
@@ -342,3 +345,67 @@ def run_job(job):
             ),
             logger=logger,
         )
+
+
+def reduce_responses(work_dir, config, telescope_key, scenario_key):
+
+    telescope, _, _ = psf_utils.make_telescope_timing_and_site(
+        config=config,
+        telescope_key=telescope_key,
+    )
+
+    response_path_wildcard = os.path.join(
+        work_dir, "stars", telescope_key, scenario_key, "*"
+    )
+
+    source_key = "1"
+    results = []
+
+    for response_path in glob.glob(response_path_wildcard):
+        response = plane_wave_response.PlaneWaveResponse(response_path)
+        sourcfg = response.source_config["plane_waves"][source_key]
+        result = {}
+        result["id"] = int(os.path.basename(response_path))
+        result["source_azimuth_rad"] = sourcfg["geometry"]["azimuth_rad"]
+        result["source_zenith_rad"] = sourcfg["geometry"]["zenith_rad"]
+        result["source_polarization_angle_rad"] = sourcfg["geometry"][
+            "polarization_angle_rad"
+        ]
+        result["source_areal_power_density_W_per_m2"] = sourcfg["power"][
+            "power_of_isotrop_and_point_like_emitter_W"
+        ] / _area_of_sphere(
+            radius=sourcfg["power"][
+                "distance_to_isotrop_and_point_like_emitter_m"
+            ]
+        )
+        result["source_frequency_Hz"] = sourcfg["sine_wave"][
+            "emission_frequency_Hz"
+        ]
+
+        result["energy_expected_to_be_collected_by_mirror_J"] = (
+            calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+                config=sourcfg,
+                area_m2=telescope["mirror"]["area_m2"],
+            )
+        )
+        result["energy_on_mirror_J"] = (
+            electric_fields.integrate_power_over_time(
+                electric_fields=response.E_mirror,
+                channel_effective_area_m2=telescope["mirror"][
+                    "scatter_center_area_m2"
+                ],
+            )
+        )
+        result["energy_on_mirror_J"] = np.sum(result["energy_on_mirror_J"])
+        result["energy_on_feed_horns_J"] = (
+            electric_fields.integrate_power_over_time(
+                electric_fields=response.E_camera,
+                channel_effective_area_m2=response.sensor["feed_horn_area_m2"],
+            )
+        )
+        result["energy_on_feed_horns_J"] = np.sum(
+            result["energy_on_feed_horns_J"]
+        )
+
+        results.append(result)
+    return results

@@ -1,6 +1,8 @@
 from . import utils as psf_utils
 from ... import calibration_source
 from ... import production
+from ... import time_series
+from ... import electric_fields
 
 import rename_after_writing as rnw
 import os

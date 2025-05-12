@@ -53,8 +53,15 @@ def make_field_of_view_region_edges(sensor, focal_length_m):
     return regions
 
 
-def make_telescope_timing_and_site(config, telescope_key):
+def make_telescope_timing_and_site(
+    config, telescope_key, sensor_distance_m=None
+):
     telescope_config = config["telescopes"][telescope_key]
+
+    if sensor_distance_m is not None:
+        telescope_config["sensor"]["sensor_distance_m"] = copy.copy(
+            sensor_distance_m
+        )
 
     _lnb = lownoiseblock.init(key=telescope_config["lnb_key"])
     _mirror = telescope.make_mirror(**telescope_config["mirror"])
