@@ -54,18 +54,32 @@ def init(work_dir):
     ) as f:
         f.write(json_utils.dumps(timing_config, indent=4))
 
-    stars_config = {
+    sc = {
         "telescopes": ["crome", "large_size_telescope"],
-        "num_representative_guide_stars": 5,
-        "num_central_feed_horn_scan": 8,
-        "num_fully_inside_field_of_view": 8,
-        "num_on_edge_of_field_of_view": 8,
-        "num_outside_of_field_of_view": 8,
         "power_density_start_W_per_m2": 1e-12,
         "power_density_stop_W_per_m2": 3e-12,
+        "scenarios": {},
     }
+    sc["scenarios"]["representative_guide_stars"] = {
+        "num": 5,
+        "random_seed": 100,
+    }
+    sc["scenarios"]["central_feed_horn_scan"] = {"num": 8, "random_seed": 100}
+    sc["scenarios"]["fully_inside_field_of_view"] = {
+        "num": 8,
+        "random_seed": 100,
+    }
+    sc["scenarios"]["on_edge_of_field_of_view"] = {
+        "num": 8,
+        "random_seed": 100,
+    }
+    sc["scenarios"]["outside_of_field_of_view"] = {
+        "num": 8,
+        "random_seed": 100,
+    }
+
     with rnw.open(os.path.join(config_dir, "stars.json"), "wt") as f:
-        f.write(json_utils.dumps(stars_config, indent=4))
+        f.write(json_utils.dumps(sc, indent=4))
 
     defocus_config = {
         "telescopes": ["large_size_telescope"],

@@ -14,145 +14,262 @@ import json_line_logger
 
 
 def make_jobs(work_dir, config):
-    prng = np.random.Generator(np.random.PCG64(4))
-
     jobs = []
     for telescope_key in config["stars"]["telescopes"]:
-        telescope_jobs = []
 
-        tscope, _, _ = psf_utils.make_telescope_timing_and_site(
+        telescope, _, _ = psf_utils.make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
         )
-        telescope_nu_start_Hz, telescope_nu_stop_Hz = (
-            lownoiseblock.input_frequency_start_stop_Hz(lnb=tscope["lnb"])
+
+        jobs += _make_jobs_representative_guide_stars(
+            work_dir=work_dir,
+            config=config,
+            telescope=telescope,
         )
-        field_of_view_edges = psf_utils.make_field_of_view_region_edges(
-            sensor=tscope["sensor"],
-            focal_length_m=tscope["mirror"]["focal_length_m"],
+
+        jobs += _make_jobs_central_feed_horn_scan(
+            work_dir=work_dir,
+            config=config,
+            telescope=telescope,
         )
 
-        # =======
-        field_of_view_scan_zenith_rad = np.linspace(
-            0.0,
-            field_of_view_edges["field_of_view_fully_inside_half_angle_rad"],
-            config["stars"]["num_representative_guide_stars"],
+        jobs += _make_jobs_fully_inside_field_of_view(
+            work_dir=work_dir,
+            config=config,
+            telescope=telescope,
         )
-        for i in range(config["stars"]["num_representative_guide_stars"]):
-            job = {}
-            job["key"] = "representative_guide_stars"
-            job["id"] = i
-            job["region_of_interest"] = True
-            job["source_azimuth_rad"] = 0.0
-            job["source_zenith_rad"] = field_of_view_scan_zenith_rad[i]
-            telescope_jobs.append(job)
 
-        # =======
-        for i in range(config["stars"]["num_central_feed_horn_scan"]):
-            job = {}
-            job["key"] = "central_feed_horn_scan"
-            job["id"] = i
-            job["region_of_interest"] = False
-            az_rad, zd_rad = (
-                spherical_coordinates.random.uniform_az_zd_in_cone(
-                    prng=prng,
-                    azimuth_rad=0.0,
-                    zenith_rad=0.0,
-                    min_half_angle_rad=0.0,
-                    max_half_angle_rad=4.0
-                    * field_of_view_edges["central_feed_horn_half_angle_rad"],
-                )
-            )
-            job["source_azimuth_rad"] = az_rad
-            job["source_zenith_rad"] = zd_rad
-            telescope_jobs.append(job)
+        jobs += _make_jobs_on_edge_of_field_of_view(
+            work_dir=work_dir,
+            config=config,
+            telescope=telescope,
+        )
 
-        # =======
-        for i in range(config["stars"]["num_fully_inside_field_of_view"]):
-            job = {}
-            job["key"] = "fully_inside_field_of_view"
-            job["id"] = i
-            job["region_of_interest"] = False
-            az_rad, zd_rad = (
-                spherical_coordinates.random.uniform_az_zd_in_cone(
-                    prng=prng,
-                    azimuth_rad=0.0,
-                    zenith_rad=0.0,
-                    min_half_angle_rad=0.0,
-                    max_half_angle_rad=field_of_view_edges[
-                        "field_of_view_fully_inside_half_angle_rad"
-                    ],
-                )
-            )
-            job["source_azimuth_rad"] = az_rad
-            job["source_zenith_rad"] = zd_rad
-            telescope_jobs.append(job)
+        jobs += _make_jobs_on_edge_of_field_of_view(
+            work_dir=work_dir,
+            config=config,
+            telescope=telescope,
+        )
 
-        # =======
-        for i in range(config["stars"]["num_on_edge_of_field_of_view"]):
-            job = {}
-            job["key"] = "on_edge_of_field_of_view"
-            job["id"] = i
-            job["region_of_interest"] = False
-            az_rad, zd_rad = (
-                spherical_coordinates.random.uniform_az_zd_in_cone(
-                    prng=prng,
-                    azimuth_rad=0.0,
-                    zenith_rad=0.0,
-                    min_half_angle_rad=field_of_view_edges[
-                        "field_of_view_fully_inside_half_angle_rad"
-                    ],
-                    max_half_angle_rad=field_of_view_edges[
-                        "field_of_view_fully_outside_half_angle_rad"
-                    ],
-                )
-            )
-            job["source_azimuth_rad"] = az_rad
-            job["source_zenith_rad"] = zd_rad
-            telescope_jobs.append(job)
+    return jobs
 
-        # =======
-        for i in range(config["stars"]["num_outside_of_field_of_view"]):
-            job = {}
-            job["key"] = "outside_of_field_of_view"
-            job["id"] = i
-            job["region_of_interest"] = False
-            az_rad, zd_rad = (
-                spherical_coordinates.random.uniform_az_zd_in_cone(
-                    prng=prng,
-                    azimuth_rad=0.0,
-                    zenith_rad=0.0,
-                    min_half_angle_rad=field_of_view_edges[
-                        "field_of_view_fully_outside_half_angle_rad"
-                    ],
-                    max_half_angle_rad=4.0
-                    * field_of_view_edges[
-                        "field_of_view_fully_outside_half_angle_rad"
-                    ],
-                )
-            )
-            job["source_azimuth_rad"] = az_rad
-            job["source_zenith_rad"] = zd_rad
-            telescope_jobs.append(job)
 
-        # in all telescope jobs
-        for job in telescope_jobs:
-            job["telescope_key"] = telescope_key
-            job["path"] = os.path.join(
-                work_dir,
-                "stars",
-                job["telescope_key"],
-                job["key"],
-                f"{job['id']:06d}",
-            )
-            job["frequency_Hz"] = prng.uniform(
-                low=telescope_nu_start_Hz,
-                high=telescope_nu_stop_Hz,
-            )
+def _make_jobs_representative_guide_stars(work_dir, config, telescope):
+    sckey = "representative_guide_stars"
+    prng = np.random.Generator(
+        np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
+    )
 
-        jobs += telescope_jobs
+    field_of_view_edges = psf_utils.make_field_of_view_region_edges(
+        sensor=telescope["sensor"],
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
 
-    # in all jobs
+    # =======
+    field_of_view_scan_zenith_rad = np.linspace(
+        0.0,
+        field_of_view_edges["field_of_view_fully_inside_half_angle_rad"],
+        config["stars"]["scenarios"][sckey]["num"],
+    )
+    jobs = []
+    for i in range(config["stars"]["scenarios"][sckey]["num"]):
+        job = {}
+        job["key"] = sckey
+        job["id"] = i
+        job["region_of_interest"] = True
+        job["source_azimuth_rad"] = 0.0
+        job["source_zenith_rad"] = field_of_view_scan_zenith_rad[i]
+        jobs.append(job)
+
+    jobs = _finish_jobs(
+        work_dir=work_dir,
+        config=config,
+        telescope=telescope,
+        jobs=jobs,
+        prng=prng,
+    )
+    return jobs
+
+
+def _make_jobs_central_feed_horn_scan(work_dir, config, telescope):
+    sckey = "central_feed_horn_scan"
+    prng = np.random.Generator(
+        np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
+    )
+
+    field_of_view_edges = psf_utils.make_field_of_view_region_edges(
+        sensor=telescope["sensor"],
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
+
+    jobs = []
+    for i in range(config["stars"]["scenarios"][sckey]["num"]):
+        job = {}
+        job["key"] = sckey
+        job["id"] = i
+        job["region_of_interest"] = False
+        az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
+            prng=prng,
+            azimuth_rad=0.0,
+            zenith_rad=0.0,
+            min_half_angle_rad=0.0,
+            max_half_angle_rad=4.0
+            * field_of_view_edges["central_feed_horn_half_angle_rad"],
+        )
+        job["source_azimuth_rad"] = az_rad
+        job["source_zenith_rad"] = zd_rad
+        jobs.append(job)
+
+    jobs = _finish_jobs(
+        work_dir=work_dir,
+        config=config,
+        telescope=telescope,
+        jobs=jobs,
+        prng=prng,
+    )
+    return jobs
+
+
+def _make_jobs_fully_inside_field_of_view(work_dir, config, telescope):
+    sckey = "fully_inside_field_of_view"
+    prng = np.random.Generator(
+        np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
+    )
+
+    field_of_view_edges = psf_utils.make_field_of_view_region_edges(
+        sensor=telescope["sensor"],
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
+
+    jobs = []
+    for i in range(config["stars"]["scenarios"][sckey]["num"]):
+        job = {}
+        job["key"] = sckey
+        job["id"] = i
+        job["region_of_interest"] = False
+        az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
+            prng=prng,
+            azimuth_rad=0.0,
+            zenith_rad=0.0,
+            min_half_angle_rad=0.0,
+            max_half_angle_rad=field_of_view_edges[
+                "field_of_view_fully_inside_half_angle_rad"
+            ],
+        )
+        job["source_azimuth_rad"] = az_rad
+        job["source_zenith_rad"] = zd_rad
+        jobs.append(job)
+
+    jobs = _finish_jobs(
+        work_dir=work_dir,
+        config=config,
+        telescope=telescope,
+        jobs=jobs,
+        prng=prng,
+    )
+    return jobs
+
+
+def _make_jobs_on_edge_of_field_of_view(work_dir, config, telescope):
+    sckey = "on_edge_of_field_of_view"
+    prng = np.random.Generator(
+        np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
+    )
+    field_of_view_edges = psf_utils.make_field_of_view_region_edges(
+        sensor=telescope["sensor"],
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
+    jobs = []
+    for i in range(config["stars"]["scenarios"][sckey]["num"]):
+        job = {}
+        job["key"] = sckey
+        job["id"] = i
+        job["region_of_interest"] = False
+        az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
+            prng=prng,
+            azimuth_rad=0.0,
+            zenith_rad=0.0,
+            min_half_angle_rad=field_of_view_edges[
+                "field_of_view_fully_inside_half_angle_rad"
+            ],
+            max_half_angle_rad=field_of_view_edges[
+                "field_of_view_fully_outside_half_angle_rad"
+            ],
+        )
+        job["source_azimuth_rad"] = az_rad
+        job["source_zenith_rad"] = zd_rad
+        jobs.append(job)
+
+    jobs = _finish_jobs(
+        work_dir=work_dir,
+        config=config,
+        telescope=telescope,
+        jobs=jobs,
+        prng=prng,
+    )
+    return jobs
+
+
+def _make_jobs_on_edge_of_field_of_view(work_dir, config, telescope):
+    sckey = "on_edge_of_field_of_view"
+    prng = np.random.Generator(
+        np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
+    )
+    field_of_view_edges = psf_utils.make_field_of_view_region_edges(
+        sensor=telescope["sensor"],
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
+    jobs = []
+    for i in range(config["stars"]["scenarios"][sckey]["num"]):
+        job = {}
+        job["key"] = sckey
+        job["id"] = i
+        job["region_of_interest"] = False
+        az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
+            prng=prng,
+            azimuth_rad=0.0,
+            zenith_rad=0.0,
+            min_half_angle_rad=field_of_view_edges[
+                "field_of_view_fully_outside_half_angle_rad"
+            ],
+            max_half_angle_rad=4.0
+            * field_of_view_edges[
+                "field_of_view_fully_outside_half_angle_rad"
+            ],
+        )
+        job["source_azimuth_rad"] = az_rad
+        job["source_zenith_rad"] = zd_rad
+        jobs.append(job)
+
+    jobs = _finish_jobs(
+        work_dir=work_dir,
+        config=config,
+        telescope=telescope,
+        jobs=jobs,
+        prng=prng,
+    )
+    return jobs
+
+
+def _finish_jobs(work_dir, config, telescope, jobs, prng):
+    telescope_nu_start_Hz, telescope_nu_stop_Hz = (
+        lownoiseblock.input_frequency_start_stop_Hz(lnb=telescope["lnb"])
+    )
+
     for job in jobs:
+        job["telescope_key"] = telescope["key"]
+        job["path"] = os.path.join(
+            work_dir,
+            "stars",
+            job["telescope_key"],
+            job["key"],
+            f"{job['id']:06d}",
+        )
+        job["frequency_Hz"] = prng.uniform(
+            low=telescope_nu_start_Hz,
+            high=telescope_nu_stop_Hz,
+        )
+
         job["work_dir"] = work_dir
         job["source_polarization_angle_rad"] = prng.uniform(
             low=0.0, high=2.0 * np.pi
@@ -161,7 +278,6 @@ def make_jobs(work_dir, config):
             low=config["stars"]["power_density_start_W_per_m2"],
             high=config["stars"]["power_density_stop_W_per_m2"],
         )
-
     return jobs
 
 

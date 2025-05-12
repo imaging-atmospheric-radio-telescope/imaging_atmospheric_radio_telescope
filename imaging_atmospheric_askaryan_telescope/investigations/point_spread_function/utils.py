@@ -7,6 +7,7 @@ from ... import timing_and_sampling
 import numpy as np
 import json_utils
 import os
+import copy
 import spherical_coordinates
 
 
@@ -65,6 +66,7 @@ def make_telescope_timing_and_site(config, telescope_key):
         lnb=_lnb,
         speed_of_light_m_per_s=signal.SPEED_OF_LIGHT_M_PER_S,
     )
+    tscope["key"] = copy.copy(telescope_key)
     timing = timing_and_sampling.make_timing_from_lnb(
         lnb=tscope["lnb"],
         **config["timing_and_sampling"],
