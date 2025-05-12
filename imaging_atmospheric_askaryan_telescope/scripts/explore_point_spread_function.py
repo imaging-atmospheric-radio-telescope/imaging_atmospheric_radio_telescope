@@ -138,16 +138,26 @@ for key in response.region_of_interest_keys:
     )
     Ene_camera_J = np.sum(Ene_camera_J)
 
+    Ene_roi_J = iaat.electric_fields.integrate_power_over_time(
+        electric_fields=response.E_roi(key),
+        channel_effective_area_m2=response.sensor_roi(key)[
+            "feed_horn_area_m2"
+        ],
+    )
+    Ene_roi_J = np.sum(Ene_roi_J)
+
     Ene_expected_to_be_collected_by_mirror_eV = (
         Ene_expected_to_be_collected_by_mirror_J / iaat.signal.ELECTRON_VOLT_J
     )
     Ene_mirror_eV = Ene_mirror_J / iaat.signal.ELECTRON_VOLT_J
     Ene_camera_eV = Ene_camera_J / iaat.signal.ELECTRON_VOLT_J
+    Ene_roi_eV = Ene_roi_J / iaat.signal.ELECTRON_VOLT_J
 
     print(f"__source__: {key:s}")
     print(f"Expected:{Ene_expected_to_be_collected_by_mirror_eV: 5.2f}eV")
     print(f"Mirror  :{Ene_mirror_eV: 5.2f}eV")
     print(f"Camera  :{Ene_camera_eV: 5.2f}eV")
+    print(f"ROI     :{Ene_roi_eV: 5.2f}eV")
 
     bx, by, Ene_img_J = response.Image_energy_roi(key)
     ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(

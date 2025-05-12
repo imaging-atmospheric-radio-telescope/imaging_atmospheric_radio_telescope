@@ -394,6 +394,10 @@ def propagate_electric_field_from_mirror_to_sensor(
     feed_horn_area_m2 = telescope["sensor"]["feed_horn_area_m2"]
     mirror_scatter_area_m2 = telescope["mirror"]["scatter_center_area_m2"]
 
+    print("__propagate_electric_field_from_mirror_to_sensor__")
+    print("feed_horn_area_m2", feed_horn_area_m2)
+    print("mirror_scatter_area_m2", mirror_scatter_area_m2)
+
     N_scatter = telescope["mirror"]["num_scatter_centers"]
 
     e_field_scaling = np.sqrt(1.0 / N_scatter) * np.sqrt(

@@ -36,12 +36,16 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope.production",
         "imaging_atmospheric_askaryan_telescope.telescopes",
         "imaging_atmospheric_askaryan_telescope.investigations",
+        "imaging_atmospheric_askaryan_telescope.investigations.point_spread_function",
     ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
             os.path.join("corsika", "build", "resources", "config.h"),
             os.path.join("telescopes", "resources", "*.json"),
             os.path.join("sites", "resources", "*.json"),
+            os.path.join(
+                "investigations", "point_spread_function", "scripts", "*.py"
+            ),
         ]
     },
     install_requires=[
