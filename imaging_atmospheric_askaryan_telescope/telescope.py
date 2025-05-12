@@ -28,7 +28,7 @@ def make_parabola_surface_height_m(
     return z
 
 
-def make_probe_positions(
+def make_mirror_scatter_center_positions(
     random_seed,
     focal_length_m,
     outer_radius_m,
@@ -109,7 +109,7 @@ def make_mirror(
     imre["inner_radius_m"] = inner_radius_m
     imre["diameter_m"] = 2.0 * outer_radius_m
     imre["area_m2"] = np.pi * (outer_radius_m**2 - inner_radius_m**2)
-    imre["scatter_center_positions_m"] = make_probe_positions(
+    imre["scatter_center_positions_m"] = make_mirror_scatter_center_positions(
         random_seed=random_seed,
         focal_length_m=focal_length_m,
         outer_radius_m=outer_radius_m,
