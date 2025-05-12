@@ -83,3 +83,11 @@ def argmaxNd(a):
 
 def stdout_logger_if_None(logger):
     return json_line_logger.LoggerStdout() if logger is None else logger
+
+
+def hexagon_inner_radius_given_outer_radius(outer_radius):
+    return outer_radius / (2.0 / np.sqrt(3.0))
+
+
+def hexagon_outer_radius_given_inner_radius(inner_radius):
+    return inner_radius * (2.0 / np.sqrt(3.0))
