@@ -1,4 +1,4 @@
-from . import utils
+from . import utils as psf_utils
 from . import plane_wave_response
 
 from ... import lownoiseblock
@@ -20,13 +20,13 @@ def make_jobs(work_dir, config):
     for telescope_key in config["stars"]["telescopes"]:
         telescope_jobs = []
 
-        tscope, _, _ = utils.make_telescope_timing_and_site(
+        tscope, _, _ = psf_utils.make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
         )
         telescope_nu_start_Hz, telescope_nu_stop_Hz = (
             lownoiseblock.input_frequency_start_stop_Hz(lnb=tscope["lnb"])
         )
-        field_of_view_edges = utils.make_field_of_view_region_edges(
+        field_of_view_edges = psf_utils.make_field_of_view_region_edges(
             sensor=tscope["sensor"],
             focal_length_m=tscope["mirror"]["focal_length_m"],
         )
@@ -174,9 +174,9 @@ def drop_finished_jobs(work_dir, jobs):
 
 
 def run_job(job):
-    config = utils.read_config(job["work_dir"])
+    config = psf_utils.read_config(job["work_dir"])
 
-    tscope, timing, site = utils.make_telescope_timing_and_site(
+    tscope, timing, site = psf_utils.make_telescope_timing_and_site(
         config=config, telescope_key=job["telescope_key"]
     )
 
@@ -221,7 +221,7 @@ def run_job(job):
             source_config=source_config,
             region_of_interest=job["region_of_interest"],
             region_of_interest_rad=region_of_interest_rad,
-            region_of_interest_num_bins=utils.substract_one_when_even(
+            region_of_interest_num_bins=psf_utils.substract_one_when_even(
                 num_waves * timing["oversampling"]
             ),
             logger=logger,
