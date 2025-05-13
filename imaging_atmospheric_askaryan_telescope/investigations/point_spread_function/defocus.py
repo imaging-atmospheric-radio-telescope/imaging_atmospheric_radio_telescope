@@ -5,6 +5,7 @@ from ... import lownoiseblock
 from ... import signal
 from ... import production
 from ... import calibration_source
+from ... import utils as iaat_utils
 
 import os
 import numpy as np
@@ -19,19 +20,16 @@ def make_jobs(work_dir, config):
         telescope, _, _ = psf_utils.make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
         )
-
-        sensor_distances_m = np.linspace(
-            telescope["mirror"]["focal_length_m"]
-            * config["defocus"]["start_sensor_distance_f"],
-            telescope["mirror"]["focal_length_m"]
-            * config["defocus"]["stop_sensor_distance_f"],
-            config["defocus"]["num"],
+        f_m = telescope["mirror"]["focal_length_m"]
+        quasi_rng = iaat_utils.SobolScale(
+            low=f_m * config["defocus"]["start_sensor_distance_f"],
+            high=f_m * config["defocus"]["stop_sensor_distance_f"],
         )
-        for i in range(len(sensor_distances_m)):
+        for i in range(config["defocus"]["num"]):
             job = {}
             job["telescope_key"] = telescope_key
             job["id"] = i
-            job["sensor_distance_m"] = sensor_distances_m[i]
+            job["sensor_distance_m"] = quasi_rng.uniform()
             job["work_dir"] = work_dir
             job["path"] = os.path.join(
                 work_dir, "defocus", job["telescope_key"], f"{job['id']:06d}"

@@ -2,6 +2,19 @@ import numpy as np
 import copy
 import json_line_logger
 import logging
+from scipy.stats.qmc import Sobol
+
+
+class SobolScale:
+    def __init__(self, low, high, random_seed=1):
+        self.sobol = Sobol(d=1, rng=random_seed)
+        self.low = low
+        self.high = high
+        self.range = self.high - self.low
+
+    def uniform(self):
+        r = self.sobol.random()
+        return self.low + (r * self.range)
 
 
 def make_parabola_surface_height_m(
