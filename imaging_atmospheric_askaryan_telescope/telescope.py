@@ -407,10 +407,6 @@ def propagate_electric_field_from_mirror_to_sensor(
         * np.sqrt(MAGIC_CONSTANT)
     )
 
-    print(
-        "mirror_to_feed_horn_E_field_scaling",
-        mirror_to_feed_horn_E_field_scaling,
-    )
     E_feed_horn_scatters = time_series.zeros(
         time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
