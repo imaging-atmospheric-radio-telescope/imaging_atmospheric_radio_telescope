@@ -389,7 +389,7 @@ def read(path):
 
 def print(time_series, num_samples_to_be_integrated=20, channels=None):
     """
-    Print the amplitudes with a bar graph.
+    Print the squared amplitudes (the power) with a bar graph.
 
     Parameters
     ----------
@@ -413,16 +413,16 @@ def print(time_series, num_samples_to_be_integrated=20, channels=None):
         TT.append(s_start * E.time_slice_duration_s)
 
     for a in channels:
-        e = np.linalg.norm(E._x[a], axis=1)
-        emax = np.max(e)
+        E2 = np.linalg.norm(E._x[a], axis=1) ** 2
         mm = []
         for b in range(E.num_time_slices // N):
             s_start = b * N
             s_stop = s_start + N
-            m = np.mean(e[s_start:s_stop]) / emax
+            m = np.mean(E2[s_start:s_stop])
             mm.append(m)
         MM.append(mm)
     MM = np.array(MM)
+    MM /= np.max(MM)
 
     head = "time/ns "
     for a in channels:
