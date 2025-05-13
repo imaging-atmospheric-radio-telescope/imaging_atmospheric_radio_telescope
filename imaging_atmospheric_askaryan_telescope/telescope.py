@@ -11,6 +11,8 @@ from . import signal
 from . import time_series
 from . import camera
 from . import electric_fields
+from . import theory
+from . import lownoiseblock
 
 
 def make_mirror_scatter_center_positions(
@@ -388,29 +390,28 @@ def propagate_electric_field_from_mirror_to_sensor(
         dtype=E_mirror.dtype,
     )
 
-    mirror_to_feed_horn_E_field_scaling = np.sqrt(
-        1.0
-        / (
-            mirror["num_scatter_centers"]
-            * camera["num_scatter_centers_per_feed_horn"]
-        )
-    ) * np.sqrt(
-        mirror["scatter_center_area_m2"]
-        / camera["feed_horn_scatter_center_area_m2"]
-    )
+    MAGIC_CONSTANT = 2.5
 
-    feed_horn_to_lnb_E_field_scaling = np.sqrt(
-        camera["feed_horn_scatter_center_area_m2"]
-        / camera["low_noise_block_effective_area_m2"]
+    mirror_to_feed_horn_E_field_scaling = (
+        np.sqrt(
+            1.0
+            / (
+                mirror["num_scatter_centers"]
+                * camera["num_scatter_centers_per_feed_horn"]
+            )
+        )
+        * np.sqrt(
+            mirror["scatter_center_area_m2"]
+            / camera["feed_horn_scatter_center_area_m2"]
+        )
+        * np.sqrt(MAGIC_CONSTANT)
     )
 
     print(
         "mirror_to_feed_horn_E_field_scaling",
         mirror_to_feed_horn_E_field_scaling,
     )
-    print("feed_horn_to_lnb_E_field_scaling", feed_horn_to_lnb_E_field_scaling)
-
-    E_feed_horns = time_series.zeros(
+    E_feed_horn_scatters = time_series.zeros(
         time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
         num_channels=(
@@ -476,51 +477,31 @@ def propagate_electric_field_from_mirror_to_sensor(
                     at=slice_delay,
                 )
 
-        # copy
+        # copy for debug output
+        # ---------------------
         for isu in range(camera["num_scatter_centers_per_feed_horn"]):
             iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
-            E_feed_horns[iii] = E_feed_horn[isu]
+            E_feed_horn_scatters[iii] = E_feed_horn[isu]
 
-        # from feed horn to LNB
-        # ---------------------
-        dist_m = np.mean(
-            camera["lnb_relative_scatter_center_positions_m"][:, 2]
-        )
-        for isl in range(camera["num_scatter_centers_per_feed_horn"]):
-
-            feed_horn_scatter_to_lnb_vector_m = (
-                np.array([0, 0, dist_m])
-                - camera["feed_horn_relative_scatter_center_positions_m"][isl]
-            )
-            feed_horn_scatter_to_lnb_distance_m = np.linalg.norm(
-                feed_horn_scatter_to_lnb_vector_m
-            )
-            feed_horn_time_delay_s = (
-                feed_horn_scatter_to_lnb_distance_m
-                / telescope["matrix"]["speed_of_light_m_per_s"]
-            )
-            feed_horn_slice_delay = int(
-                np.round(
-                    feed_horn_time_delay_s / E_sensor.time_slice_duration_s
-                )
-            )
-
+        # Average feed horn
+        # -----------------
+        NUM_FEED_HORN_SCATTER = camera["num_scatter_centers_per_feed_horn"]
+        for isl in range(NUM_FEED_HORN_SCATTER):
             signal.add_first_to_second_at(
                 first=element_wise_power(
                     x=E_feed_horn[isl],
                     p=2,
                 ),
                 second=E_sensor[ifh],
-                at=feed_horn_slice_delay,
+                at=0,
             )
         E_sensor[ifh] = element_wise_power(
             x=E_sensor[ifh],
             p=0.5,
         )
+        E_sensor[ifh] = np.sqrt(1.0 / NUM_FEED_HORN_SCATTER) * E_sensor[ifh]
 
-        E_sensor[ifh] = feed_horn_to_lnb_E_field_scaling * E_sensor[ifh]
-
-    return E_sensor, E_feed_horns
+    return E_sensor, E_feed_horn_scatters
 
 
 def element_wise_power(x, p):
@@ -550,3 +531,19 @@ def find_neighbors(positions_xy, max_num_neighbors, integration_radius):
                 nn_out.append(nn[i])
         mask.append(nn_out)
     return mask
+
+
+def calculate_airy_angle(telescope):
+    f_Hz = np.mean(
+        lownoiseblock.input_frequency_start_stop_Hz(telescope["lnb"])
+    )
+
+    return theory.airy_angle(
+        mirror_diameter=2.0 * telescope["mirror"]["outer_radius_m"],
+        wavelength=signal.frequency_to_wavelength(f_Hz),
+    )
+
+
+def calculate_airy_disk_radius_in_focal_plane(telescope):
+    theta_rad = calculate_airy_angle(telescope=telescope)
+    return np.arctan(theta_rad) * telescope["mirror"]["focal_length_m"]

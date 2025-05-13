@@ -5,7 +5,7 @@
         "focal_length_m": 15.0,
         "outer_radius_m": 6.0,
         "inner_radius_m": 1.5,
-        "scatter_center_areal_density_per_m2": 10
+        "scatter_center_areal_density_per_m2": 4
     },
     "sensor": {
         "sensor_outer_radius_m": 0.5,

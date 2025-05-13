@@ -5,6 +5,7 @@ from ... import time_series
 from ... import electric_fields
 
 import rename_after_writing as rnw
+import spherical_coordinates
 import os
 import numpy as np
 import json_utils
@@ -178,9 +179,7 @@ class PlaneWaveResponse:
     def Image_energy(self):
         Ene_J = electric_fields.integrate_power_over_time(
             electric_fields=self.E_camera,
-            channel_effective_area_m2=self.sensor[
-                "low_noise_block_effective_area_m2"
-            ],
+            channel_effective_area_m2=self.sensor["feed_horn_area_m2"],
         )
         return Ene_J
 
@@ -201,3 +200,32 @@ class PlaneWaveResponse:
             )
         )
         return x_bin_edges, y_bin_edges, Ene_roi_J
+
+
+def mask_feed_horns(
+    feed_horn_positions_m,
+    containment_radius_m,
+    azimuth_rad,
+    zenith_rad,
+):
+    cx, cy, cz = spherical_coordinates.az_zd_to_cx_cy_cz(
+        azimuth_rad=azimuth_rad,
+        zenith_rad=zenith_rad,
+    )
+    p_xyz = np.array([-cx, -cy, cz])
+
+    feed_horn_z_m = np.mean(feed_horn_positions_m[:, 2])
+    scale_factor = feed_horn_z_m / cz
+
+    expected_spot_in_camera_screen_m = p_xyz * scale_factor
+
+    mask = np.zeros(feed_horn_positions_m.shape[0], dtype=bool)
+    for i in range(feed_horn_positions_m.shape[0]):
+        delta_m = np.linalg.norm(
+            feed_horn_positions_m[i] - expected_spot_in_camera_screen_m
+        )
+        if delta_m <= containment_radius_m:
+            mask[i] = True
+        else:
+            mask[i] = False
+    return mask
