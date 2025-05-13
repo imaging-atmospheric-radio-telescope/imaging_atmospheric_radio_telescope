@@ -11,8 +11,8 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "large_size_telescope"
-work_dir = f"explore_point_spread_function_{telescope_key:s}"
+telescope_key = "crome"
+work_dir = f"explore_point_spread_function_{telescope_key:s}_order2"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -39,20 +39,21 @@ source_config = iaat.production.radio_from_plane_wave.make_config()
 
 s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
 s1["geometry"]["azimuth_rad"] = np.deg2rad(0)
-s1["geometry"]["zenith_rad"] = np.deg2rad(0)
+s1["geometry"]["zenith_rad"] = np.deg2rad(0.1)
 s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
-s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 1.1
+s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 1.01
 
 s2 = iaat.calibration_source.plane_wave_in_far_field.make_config()
-s2["geometry"]["azimuth_rad"] = np.deg2rad(60)
+s2["geometry"]["azimuth_rad"] = np.deg2rad(50)
 s2["geometry"]["zenith_rad"] = (
-    0.5
+    0.45
     * telescope["sensor"]["camera"]["outer_radius_m"]
     / telescope["mirror"]["focal_length_m"]
 )
 s2["power"]["power_of_isotrop_and_point_like_emitter_W"] = 4e-1
-s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 0.9
+s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 0.99
 
+source_config["plane_waves"] = {}
 source_config["plane_waves"]["first"] = s1
 source_config["plane_waves"]["second"] = s2
 
@@ -74,7 +75,7 @@ iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResp
     timing=timing,
     source_config=source_config,
     region_of_interest_rad=region_of_interest_rad,
-    region_of_interest_num_bins=41,
+    region_of_interest_num_bins=21,
 )
 response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
     path=scenario_dir
@@ -88,7 +89,7 @@ ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
 norm = sebplt.matplotlib.colors.PowerNorm(
     vmin=1e-2 * np.max(I_energy_eV),
     vmax=np.max(I_energy_eV),
-    gamma=1 / 2.0,
+    gamma=1,
 )
 im = iaat_plot.ax_add_hexagonal_pixels(
     ax=ax,
@@ -118,6 +119,32 @@ ax_cmap.set_ylabel(r"Energy / eV")
 fig.savefig(os.path.join(scenario_dir, f"camera.jpg"))
 sebplt.close(fig)
 
+_expected_scaling_from_mirror_to_feed_horn = np.sqrt(
+    1.0
+    / (
+        telescope["mirror"]["num_scatter_centers"]
+        * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
+    )
+) * np.sqrt(
+    telescope["mirror"]["scatter_center_area_m2"]
+    / telescope["sensor"]["feed_horn_scatter_center_area_m2"]
+)
+_expected_feed_horn_to_lnb_E_field_scaling = np.sqrt(
+    1.0 / telescope["sensor"]["num_scatter_centers_per_feed_horn"]
+) * np.sqrt(
+    telescope["sensor"]["feed_horn_scatter_center_area_m2"]
+    / telescope["sensor"]["low_noise_block_effective_area_m2"]
+)
+
+fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
+ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
+iaat.camera.ax_add_camera(ax=ax, camera=telescope["sensor"], color="black")
+ax.set_xlabel("x / m")
+ax.set_ylabel("y / m")
+ax.set_aspect("equal")
+fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
+sebplt.close(fig)
+
 
 for key in response.region_of_interest_keys:
 
@@ -134,7 +161,9 @@ for key in response.region_of_interest_keys:
     Ene_mirror_J = np.sum(Ene_mirror_J)
     Ene_camera_J = iaat.electric_fields.integrate_power_over_time(
         electric_fields=response.E_camera,
-        channel_effective_area_m2=response.sensor["feed_horn_area_m2"],
+        channel_effective_area_m2=response.sensor[
+            "low_noise_block_effective_area_m2"
+        ],
     )
     Ene_camera_J = np.sum(Ene_camera_J)
 
@@ -157,7 +186,7 @@ for key in response.region_of_interest_keys:
     print(f"Expected:{Ene_expected_to_be_collected_by_mirror_eV: 5.2f}eV")
     print(f"Mirror  :{Ene_mirror_eV: 5.2f}eV")
     print(f"Camera  :{Ene_camera_eV: 5.2f}eV")
-    print(f"ROI     :{Ene_roi_eV: 5.2f}eV")
+    # print(f"ROI     :{Ene_roi_eV: 5.2f}eV")
 
     bx, by, Ene_img_J = response.Image_energy_roi(key)
     ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(

@@ -178,7 +178,9 @@ class PlaneWaveResponse:
     def Image_energy(self):
         Ene_J = electric_fields.integrate_power_over_time(
             electric_fields=self.E_camera,
-            channel_effective_area_m2=self.sensor["feed_horn_area_m2"],
+            channel_effective_area_m2=self.sensor[
+                "low_noise_block_effective_area_m2"
+            ],
         )
         return Ene_J
 

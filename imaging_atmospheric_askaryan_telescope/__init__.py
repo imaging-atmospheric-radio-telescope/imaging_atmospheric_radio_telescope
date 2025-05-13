@@ -15,3 +15,4 @@ from . import utils
 from . import calibration_source
 from . import investigations
 from . import run
+from . import camera
