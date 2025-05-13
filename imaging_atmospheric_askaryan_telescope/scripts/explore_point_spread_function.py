@@ -99,13 +99,16 @@ def plot_camera(camera, image, path, feed_horn_mask=None):
 
 
 def plot_feed_horn_scatter_centers(camera, fedd_horn_scatter_energy_eV, path):
+
+    vmin, vmax = iaat.plot.log10_limits(fedd_horn_scatter_energy_eV)
+
     scatpos = iaat.camera.get_camera_feed_horn_scatter_centers(
         camera=telescope["sensor"]
     )
 
-    fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
-    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
-    ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
+    fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
+    ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.25, 0.025, 0.65])
     _RRR = 1.05 * camera["camera"]["outer_radius_m"]
     _rrr = 0.5 * np.sqrt(camera["feed_horn_scatter_center_area_m2"])
     norm = sebplt.matplotlib.colors.PowerNorm(
@@ -136,7 +139,24 @@ def plot_feed_horn_scatter_centers(camera, fedd_horn_scatter_energy_eV, path):
     ax.set_aspect("equal")
     ax.set_xlabel("x / m")
     ax.set_ylabel("y / m")
-    ax.set_aspect("equal")
+
+    ax_hist = sebplt.add_axes(fig=fig, span=[0.15, 0.05, 0.65, 0.12])
+    bin_edges_eV = np.geomspace(
+        vmin, vmax, int(np.sqrt(len(fedd_horn_scatter_energy_eV)))
+    )
+    hist = np.histogram(fedd_horn_scatter_energy_eV, bins=bin_edges_eV)[0]
+    sebplt.ax_add_histogram(
+        ax=ax_hist,
+        bin_edges=bin_edges_eV,
+        bincounts=hist,
+        draw_bin_walls=True,
+    )
+    ax_hist.set_xlim([vmin, vmax])
+    ax_hist.set_ylim([0.5, len(fedd_horn_scatter_energy_eV)])
+    ax_hist.loglog()
+    ax_hist.set_xlabel("energy / eV")
+    ax_hist.set_ylabel("num. channels / 1")
+
     fig.savefig(path)
     sebplt.close(fig)
 

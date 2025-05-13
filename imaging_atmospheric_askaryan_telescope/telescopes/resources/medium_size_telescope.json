@@ -11,6 +11,7 @@
         "sensor_outer_radius_m": 0.6,
         "sensor_distance_m": 15.0,
         "feed_horn_inner_radius_m": 0.028,
-        "feed_horn_transmission": 0.5
+        "feed_horn_transmission": 0.5,
+        "feed_horn_oversampling_order": 1
     }
 }

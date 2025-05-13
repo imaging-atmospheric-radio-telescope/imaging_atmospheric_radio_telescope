@@ -13,6 +13,7 @@
         "sensor_distance_m": 1.191,
         "feed_horn_inner_radius_m": 33.3e-3,
         "feed_horn_transmission": 0.5,
+        "feed_horn_oversampling_order": 1,
         "comment": "Felix's phd: (Fig.5.15) and (Sec.5.1.6)."
     }
 }

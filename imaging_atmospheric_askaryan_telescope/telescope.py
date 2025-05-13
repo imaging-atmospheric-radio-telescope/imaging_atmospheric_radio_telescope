@@ -168,14 +168,14 @@ def make_sensor(
     sensor_distance_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
-    feed_horn_oversampling=1,
+    feed_horn_oversampling_order,
 ):
     return camera.make_camera(
         sensor_outer_radius_m=sensor_outer_radius_m,
         sensor_distance_m=sensor_distance_m,
         feed_horn_inner_radius_m=feed_horn_inner_radius_m,
         feed_horn_transmission=feed_horn_transmission,
-        feed_horn_oversampling=feed_horn_oversampling,
+        feed_horn_oversampling_order=feed_horn_oversampling_order,
     )
 
 

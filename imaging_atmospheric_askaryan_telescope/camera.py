@@ -68,18 +68,18 @@ def _elevate_grid_in_parabola_along_z_axis(grid, focal_length_m):
 
 def _make_feed_horn_scatter_centers_only_xy(
     feed_horn_inner_radius_m,
-    feed_horn_oversampling,
+    feed_horn_oversampling_order,
 ):
     feed_horn_outer_radius_m = utils.hexagon_outer_radius_given_inner_radius(
         inner_radius=feed_horn_inner_radius_m
     )
 
     expected_scatter_spacing = (2 * feed_horn_outer_radius_m) / (
-        feed_horn_oversampling + 2
+        feed_horn_oversampling_order + 2
     )
     return oow.geometry.grid.hexagonal.init_from_outer_radius(
         outer_radius=feed_horn_outer_radius_m - 0.5 * expected_scatter_spacing,
-        fn=feed_horn_oversampling,
+        fn=feed_horn_oversampling_order,
         ref="scatter",
     )
 
@@ -93,11 +93,11 @@ def _make_feed_horn_focal_length_m(
 
 def _make_feed_horn_scatter_centers(
     feed_horn_inner_radius_m,
-    feed_horn_oversampling,
+    feed_horn_oversampling_order,
 ):
     scatter_grid = _make_feed_horn_scatter_centers_only_xy(
         feed_horn_inner_radius_m=feed_horn_inner_radius_m,
-        feed_horn_oversampling=feed_horn_oversampling,
+        feed_horn_oversampling_order=feed_horn_oversampling_order,
     )
     scatter_grid = _rotate_grid_in_xy_plane(
         grid=scatter_grid,
@@ -135,12 +135,12 @@ def make_camera(
     sensor_distance_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
-    feed_horn_oversampling,
+    feed_horn_oversampling_order,
 ):
     assert sensor_outer_radius_m > 0.0
     assert sensor_distance_m > 0.0
     assert feed_horn_inner_radius_m > 0.0
-    assert feed_horn_oversampling >= 1
+    assert feed_horn_oversampling_order >= 1
     assert 0.0 <= feed_horn_transmission <= 1.0
 
     c = {}
@@ -149,7 +149,7 @@ def make_camera(
     c["camera"]["outer_radius_m"] = sensor_outer_radius_m
     c["camera"]["outer_diameter_m"] = 2 * sensor_outer_radius_m
     c["camera"]["feed_horn_inner_radius_m"] = feed_horn_inner_radius_m
-    c["camera"]["feed_horn_oversampling"] = feed_horn_oversampling
+    c["camera"]["feed_horn_oversampling_order"] = feed_horn_oversampling_order
 
     feed_horn_positions_grid = _make_feed_horn_center_grid(
         screen_radius_m=sensor_outer_radius_m,
@@ -157,7 +157,7 @@ def make_camera(
     )
     feed_horn_scatter_grid_prototype = _make_feed_horn_scatter_centers(
         feed_horn_inner_radius_m=feed_horn_inner_radius_m,
-        feed_horn_oversampling=feed_horn_oversampling,
+        feed_horn_oversampling_order=feed_horn_oversampling_order,
     )
     feed_horn_voronoi_grid, feed_horn_voronoi_grid_edges = (
         _make_feed_horn_grid_and_edges(
