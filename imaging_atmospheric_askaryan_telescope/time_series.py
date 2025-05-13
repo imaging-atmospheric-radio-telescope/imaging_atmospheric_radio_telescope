@@ -255,8 +255,12 @@ class TimeSeries:
     def write(self, path):
         return write_tar(path=path, time_series=self)
 
-
-    def print(self, num_samples_to_be_integrated=None, channels=None, global_time=True):
+    def print(
+        self,
+        num_samples_to_be_integrated=None,
+        channels=None,
+        global_time=True,
+    ):
         if num_samples_to_be_integrated is None:
             num_samples_to_be_integrated = int(self.num_time_slices / 30)
 
@@ -404,7 +408,12 @@ def read(path):
     return o
 
 
-def print(time_series, num_samples_to_be_integrated=20, channels=None, global_time=False):
+def print(
+    time_series,
+    num_samples_to_be_integrated=20,
+    channels=None,
+    global_time=False,
+):
     """
     Print the squared amplitudes (the power) with a bar graph.
 
