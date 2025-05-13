@@ -7,6 +7,7 @@ from ... import production
 from ... import calibration_source
 
 import os
+import numpy as np
 import rename_after_writing as rnw
 import json_line_logger
 
@@ -16,7 +17,7 @@ def make_jobs(work_dir, config):
     for telescope_key in config["defocus"]["telescopes"]:
 
         telescope, _, _ = psf_utils.make_telescope_timing_and_site(
-            config=config, telescope_key=job["telescope_key"]
+            config=config, telescope_key=telescope_key
         )
 
         sensor_distances_m = np.linspace(
@@ -30,11 +31,12 @@ def make_jobs(work_dir, config):
             job = {}
             job["telescope_key"] = telescope_key
             job["id"] = i
-            job["sensor_distances_m"] = sensor_distances_m
+            job["sensor_distance_m"] = sensor_distances_m[i]
             job["work_dir"] = work_dir
             job["path"] = os.path.join(
                 work_dir, "defocus", job["telescope_key"], f"{job['id']:06d}"
             )
+            jobs.append(job)
     return jobs
 
 
@@ -52,7 +54,7 @@ def run_job(job):
     telescope, timing, site = psf_utils.make_telescope_timing_and_site(
         config=config,
         telescope_key=job["telescope_key"],
-        sensor_distances_m=job["sensor_distances_m"],
+        sensor_distance_m=job["sensor_distance_m"],
     )
     source_frequency_Hz = np.mean(
         lownoiseblock.input_frequency_start_stop_Hz(telescope["lnb"])

@@ -2,6 +2,7 @@ from . import utils
 from . import plot
 from . import defocus
 from . import stars
+from . import multis
 from . import power_image_analysis
 from . import polarization_analysis
 
@@ -90,6 +91,17 @@ def init(work_dir):
     with rnw.open(os.path.join(config_dir, "defocus.json"), "wt") as f:
         f.write(json_utils.dumps(defocus_config, indent=4))
 
+    multis_config = {
+        "telescopes": ["crome", "medium_size_telescope"],
+        "num_sources_per_event": 2,
+        "random_seed": 120,
+        "power_density_start_W_per_m2": 1e-12,
+        "power_density_stop_W_per_m2": 3e-12,
+        "num": 16,
+    }
+    with rnw.open(os.path.join(config_dir, "multis.json"), "wt") as f:
+        f.write(json_utils.dumps(multis_config, indent=4))
+
 
 def run(work_dir, pool=None, logger=None):
     pool = utils.serial_pool_if_None(pool)
@@ -98,6 +110,7 @@ def run(work_dir, pool=None, logger=None):
 
     logger.debug("make jobs for 'stars' ...")
     star_jobs = stars.make_jobs(work_dir=work_dir, config=config)
+    logger.debug(f"{len(star_jobs):d} defocus jobs in total.")
     star_jobs = stars.drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
     logger.debug(f"{len(star_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'stars' ...")
@@ -105,9 +118,20 @@ def run(work_dir, pool=None, logger=None):
 
     logger.debug("make jobs for 'defocus' ...")
     defocus_jobs = defocus.make_jobs(work_dir=work_dir, config=config)
+    logger.debug(f"{len(defocus_jobs):d} defocus jobs in total.")
     defocus_jobs = defocus.drop_finished_jobs(
-        work_dir=work_dir, jobs=star_jobs
+        work_dir=work_dir, jobs=defocus_jobs
     )
     logger.debug(f"{len(defocus_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'defocus' ...")
     pool.map(defocus.run_job, defocus_jobs)
+
+    logger.debug("make jobs for 'multis' ...")
+    multis_jobs = multis.make_jobs(work_dir=work_dir, config=config)
+    logger.debug(f"{len(defocus_jobs):d} multis jobs in total.")
+    multis_jobs = multis.drop_finished_jobs(
+        work_dir=work_dir, jobs=multis_jobs
+    )
+    logger.debug(f"{len(multis_jobs):d} jobs are missing and need to be run.")
+    logger.debug("run jobs for 'multis' ...")
+    pool.map(multis.run_job, multis_jobs)

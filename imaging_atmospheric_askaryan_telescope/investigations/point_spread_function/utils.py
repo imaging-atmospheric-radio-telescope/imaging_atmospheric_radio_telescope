@@ -28,6 +28,24 @@ def substract_one_when_even(x):
         return x
 
 
+def area_of_sphere(radius):
+    return 4.0 * np.pi * radius**2.0
+
+
+def set_power_with_areal_density(plane_wave_config, power_density_W_per_m2):
+    plane_wave_config["power"] = {}
+    r_100km = 100e3
+    A_sphere_100km = area_of_sphere(radius=r_100km)
+    P_isotrop_100km_W = power_density_W_per_m2 * A_sphere_100km
+    plane_wave_config["power"][
+        "power_of_isotrop_and_point_like_emitter_W"
+    ] = P_isotrop_100km_W
+    plane_wave_config["power"][
+        "distance_to_isotrop_and_point_like_emitter_m"
+    ] = r_100km
+    return plane_wave_config
+
+
 def make_field_of_view_region_edges(sensor, focal_length_m):
     regions = {}
 

@@ -288,10 +288,6 @@ def drop_finished_jobs(work_dir, jobs):
     return out
 
 
-def _area_of_sphere(radius):
-    return 4.0 * np.pi * radius**2.0
-
-
 def run_job(job):
     config = psf_utils.read_config(job["work_dir"])
 
@@ -308,7 +304,7 @@ def run_job(job):
     )
 
     r_100km = 100e3
-    A_sphere_100km = _area_of_sphere(radius=r_100km)
+    A_sphere_100km = psf_utils.area_of_sphere(radius=r_100km)
     P_isotrop_100km_W = job["power_density_W_per_m2"] * A_sphere_100km
 
     source_config = production.radio_from_plane_wave.make_config()
