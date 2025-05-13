@@ -82,11 +82,11 @@ response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWa
     path=scenario_dir
 )
 
-I_energy_eV = response.Image_energy / iaat.signal.ELECTRON_VOLT_J
+I_energy_eV = response.energy_feed_horns / iaat.signal.ELECTRON_VOLT_J
 
 iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
-    energy_feed_horn_eV=I_energy_eV,
+    energy_feed_horns_eV=I_energy_eV,
     path=os.path.join(scenario_dir, "camera.jpg"),
 )
 
@@ -131,7 +131,7 @@ Ene_pixel_eV = Ene_pixel_J / iaat.signal.ELECTRON_VOLT_J
 
 iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
-    energy_feed_horn_eV=Ene_pixel_eV,
+    energy_feed_horns_eV=Ene_pixel_eV,
     path=os.path.join(scenario_dir, "camera_from_fine.jpg"),
 )
 
@@ -141,7 +141,7 @@ Ene_feed_horn_scatters_eV = (
 
 iaat.investigations.point_spread_function.plot.plot_feed_horn_scatter_centers(
     camera=telescope["sensor"],
-    energy_feed_horn_scatter_eV=Ene_feed_horn_scatters_eV,
+    energy_feed_horns_scatter_eV=Ene_feed_horn_scatters_eV,
     path=os.path.join(scenario_dir, "camera_fine.jpg"),
 )
 
@@ -160,7 +160,7 @@ for key in response.region_of_interest_keys:
 
     iaat.investigations.point_spread_function.plot.plot_camera(
         camera=telescope["sensor"],
-        energy_feed_horn_eV=np.ones(telescope["sensor"]["num_feed_horns"]),
+        energy_feed_horns_eV=np.ones(telescope["sensor"]["num_feed_horns"]),
         path=os.path.join(scenario_dir, f"{key:s}_mask.jpg"),
         feed_horn_mask=feed_horn_mask,
     )
@@ -179,7 +179,7 @@ for key in response.region_of_interest_keys:
     Ene_mirror_J = np.sum(Ene_mirror_J)
 
     Ene_camera_J = iaat.electric_fields.integrate_power_over_time(
-        electric_fields=response.E_camera,
+        electric_fields=response.E_feed_horns,
         channel_effective_area_m2=response.sensor["feed_horn_area_m2"],
     )
 
@@ -199,7 +199,7 @@ for key in response.region_of_interest_keys:
     # print(f"Camera sum     :{np.sum(Ene_camera_eV): 5.2f}eV")
     print(f"Camera ROI     :{np.sum(Ene_camera_eV[feed_horn_mask]): 5.2f}eV")
 
-    bx, by, Ene_img_J = response.Image_energy_roi(key)
+    bx, by, Ene_img_J = response.energy_roi(key)
     ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
         x_bin_edges_m=bx,
         y_bin_edges_m=by,
@@ -299,11 +299,11 @@ for key in response.region_of_interest_keys:
     sebplt.close(fig)
 
     """
-    E_camera = response.E_camera
-    for channel in range(E_camera.num_channels):
+    E_feed_horns = response.E_feed_horns
+    for channel in range(E_feed_horns.num_channels):
         factor, vector = (
             iaat.investigations.point_spread_function.polarization_analysis.analyse_linear_polarization_over_time(
-                E_field_vs_time=E_camera[channel]
+                E_field_vs_time=E_feed_horns[channel]
             )
         )
         print("camera", channel, "polarization", factor, vector)

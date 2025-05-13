@@ -47,7 +47,7 @@ def make_jobs(work_dir, config):
             telescope=telescope,
         )
 
-        jobs += _make_jobs_on_edge_of_field_of_view(
+        jobs += _make_jobs_fully_outside_field_of_view(
             work_dir=work_dir,
             config=config,
             telescope=telescope,
@@ -209,8 +209,8 @@ def _make_jobs_on_edge_of_field_of_view(work_dir, config, telescope):
     return jobs
 
 
-def _make_jobs_on_edge_of_field_of_view(work_dir, config, telescope):
-    sckey = "on_edge_of_field_of_view"
+def _make_jobs_fully_outside_field_of_view(work_dir, config, telescope):
+    sckey = "fully_outside_field_of_view"
     prng = np.random.Generator(
         np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
     )
@@ -270,9 +270,7 @@ def _finish_jobs(work_dir, config, telescope, jobs, prng):
         )
 
         job["work_dir"] = work_dir
-        job["source_polarization_angle_rad"] = prng.uniform(
-            low=0.0, high=2.0 * np.pi
-        )
+        job["source_polarization_angle_rad"] = 0.0
         job["power_density_W_per_m2"] = prng.uniform(
             low=config["stars"]["power_density_start_W_per_m2"],
             high=config["stars"]["power_density_stop_W_per_m2"],
@@ -339,6 +337,8 @@ def run_job(job):
             ),
             logger=logger,
         )
+        response = plane_wave_response.PlaneWaveResponse(tmp_dir)
+        response.plot()
 
 
 def reduce_responses(work_dir, config, telescope_key, scenario_key):
@@ -355,8 +355,12 @@ def reduce_responses(work_dir, config, telescope_key, scenario_key):
     source_key = "1"
     results = []
 
-    for response_path in glob.glob(response_path_wildcard):
+    response_paths = glob.glob(response_path_wildcard)
+    response_paths = sorted(response_paths)
+    for response_path in response_paths:
         response = plane_wave_response.PlaneWaveResponse(response_path)
+        response.plot()
+
         sourcfg = response.source_config["plane_waves"][source_key]
         result = {}
         result["id"] = int(os.path.basename(response_path))
@@ -393,7 +397,7 @@ def reduce_responses(work_dir, config, telescope_key, scenario_key):
         result["energy_on_mirror_J"] = np.sum(result["energy_on_mirror_J"])
         result["energy_on_feed_horns_J"] = (
             electric_fields.integrate_power_over_time(
-                electric_fields=response.E_camera,
+                electric_fields=response.E_feed_horns,
                 channel_effective_area_m2=response.sensor["feed_horn_area_m2"],
             )
         )

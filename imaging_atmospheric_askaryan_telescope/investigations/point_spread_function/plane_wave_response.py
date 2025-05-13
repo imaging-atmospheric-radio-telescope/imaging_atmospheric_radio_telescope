@@ -134,19 +134,19 @@ class PlaneWaveResponse:
         return self._E_mirror
 
     @property
-    def E_camera(self):
-        if not hasattr(self, "_E_camera"):
-            self._E_camera = time_series.read(
+    def E_feed_horns(self):
+        if not hasattr(self, "_E_feed_horns"):
+            self._E_feed_horns = time_series.read(
                 os.path.join(
                     self.path, "camera", "feed_horns", "electric_fields.tar"
                 )
             )
-        return self._E_camera
+        return self._E_feed_horns
 
     @property
-    def E_feed_horn_scatter(self):
-        if not hasattr(self, "_E_feed_horn_scatter"):
-            self._E_feed_horn_scatter = time_series.read(
+    def E_feed_horns_scatter(self):
+        if not hasattr(self, "_E_feed_horns_scatter"):
+            self._E_feed_horns_scatter = time_series.read(
                 os.path.join(
                     self.path,
                     "camera",
@@ -154,34 +154,43 @@ class PlaneWaveResponse:
                     "feed_horns.electric_fields.tar",
                 )
             )
-        return self._E_feed_horn_scatter
+        return self._E_feed_horns_scatter
 
     @property
-    def energy_feed_horn_scatter(self):
+    def energy_feed_horns_scatter(self):
         return electric_fields.integrate_power_over_time(
-            electric_fields=self.E_feed_horn_scatter,
+            electric_fields=self.E_feed_horns_scatter,
             channel_effective_area_m2=self.sensor[
                 "feed_horn_scatter_center_area_m2"
             ],
         )
 
-    def plot_energy_feed_horn_scatter(self, path):
-        energy_feed_horn_scatter_eV = (
-            self.energy_feed_horn_scatter / signal.ELECTRON_VOLT_J
+    def plot_energy_feed_horns_scatter(self, path):
+        energy_feed_horns_scatter_eV = (
+            self.energy_feed_horns_scatter / signal.ELECTRON_VOLT_J
         )
         psf_plot.plot_feed_horn_scatter_centers(
             camera=self.sensor,
-            energy_feed_horn_scatter_eV=energy_feed_horn_scatter_eV,
+            energy_feed_horns_scatter_eV=energy_feed_horns_scatter_eV,
             path=path,
         )
 
-    def plot_energy_feed_horn(self, path):
-        energy_feed_horn_eV = self.Image_energy / signal.ELECTRON_VOLT_J
+    def plot_energy_feed_horns(self, path):
+        energy_feed_horns_eV = self.energy_feed_horns / signal.ELECTRON_VOLT_J
         psf_plot.plot_camera(
             camera=self.sensor,
-            energy_feed_horn_eV=energy_feed_horn_eV,
+            energy_feed_horns_eV=energy_feed_horns_eV,
             path=path,
         )
+
+    def plot(self):
+        _fig_path = os.path.join(self.path, "feed_horns_scatter.jpg")
+        if not os.path.exists(_fig_path):
+            self.plot_energy_feed_horns_scatter(path=_fig_path)
+
+        _fig_path = os.path.join(self.path, "feed_horns.jpg")
+        if not os.path.exists(_fig_path):
+            self.plot_energy_feed_horns(path=_fig_path)
 
     def E_roi(self, key):
         if key not in self._E_roi:
@@ -218,14 +227,14 @@ class PlaneWaveResponse:
         return self._sensor
 
     @property
-    def Image_energy(self):
+    def energy_feed_horns(self):
         Ene_J = electric_fields.integrate_power_over_time(
-            electric_fields=self.E_camera,
+            electric_fields=self.E_feed_horns,
             channel_effective_area_m2=self.sensor["feed_horn_area_m2"],
         )
         return Ene_J
 
-    def Image_energy_roi(self, key):
+    def energy_roi(self, key):
         E_roi_key = self.E_roi(key)
         sensor_roi_key = self.sensor_roi(key)
         Ene_roi_J = electric_fields.integrate_power_over_time(

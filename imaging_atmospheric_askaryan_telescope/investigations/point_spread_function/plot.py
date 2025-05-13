@@ -39,21 +39,21 @@ def ax_add_wavelength_sine(ax, x, y, wavelength, **kwargs):
     ax.plot(x + _x * w, y + _y * 0.5 * w, **kwargs)
 
 
-def plot_camera(camera, energy_feed_horn_eV, path, feed_horn_mask=None):
+def plot_camera(camera, energy_feed_horns_eV, path, feed_horn_mask=None):
 
-    vmin, vmax = iaat_plot.log10_limits(energy_feed_horn_eV)
+    vmin, vmax = iaat_plot.log10_limits(energy_feed_horns_eV)
 
     fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
     ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.25, 0.025, 0.65])
     norm = sebplt.matplotlib.colors.PowerNorm(
-        vmin=1e-3 * np.max(energy_feed_horn_eV),
-        vmax=np.max(energy_feed_horn_eV),
+        vmin=1e-3 * np.max(energy_feed_horns_eV),
+        vmax=np.max(energy_feed_horns_eV),
         gamma=1.0,
     )
     im = iaat_plot.ax_add_hexagonal_pixels(
         ax=ax,
-        v=energy_feed_horn_eV,
+        v=energy_feed_horns_eV,
         x=camera["feed_horn_positions_m"][:, 0],
         y=camera["feed_horn_positions_m"][:, 1],
         hexrotation=0,
@@ -89,9 +89,9 @@ def plot_camera(camera, energy_feed_horn_eV, path, feed_horn_mask=None):
 
     ax_hist = sebplt.add_axes(fig=fig, span=[0.15, 0.05, 0.65, 0.12])
     bin_edges = np.geomspace(
-        vmin, vmax, int(np.sqrt(len(energy_feed_horn_eV)))
+        vmin, vmax, int(np.sqrt(len(energy_feed_horns_eV)))
     )
-    hist = np.histogram(energy_feed_horn_eV, bins=bin_edges)[0]
+    hist = np.histogram(energy_feed_horns_eV, bins=bin_edges)[0]
     sebplt.ax_add_histogram(
         ax=ax_hist,
         bin_edges=bin_edges,
@@ -99,15 +99,15 @@ def plot_camera(camera, energy_feed_horn_eV, path, feed_horn_mask=None):
         draw_bin_walls=True,
     )
     ax_hist.set_xlim([vmin, vmax])
-    ax_hist.set_ylim([0.5, len(energy_feed_horn_eV)])
+    ax_hist.set_ylim([0.5, len(energy_feed_horns_eV)])
     ax_hist.loglog()
     fig.savefig(path)
     sebplt.close(fig)
 
 
-def plot_feed_horn_scatter_centers(camera, energy_feed_horn_scatter_eV, path):
+def plot_feed_horn_scatter_centers(camera, energy_feed_horns_scatter_eV, path):
 
-    vmin, vmax = iaat_plot.log10_limits(energy_feed_horn_scatter_eV)
+    vmin, vmax = iaat_plot.log10_limits(energy_feed_horns_scatter_eV)
 
     scatpos = iaat_camera.get_camera_feed_horn_scatter_centers(camera=camera)
 
@@ -117,8 +117,8 @@ def plot_feed_horn_scatter_centers(camera, energy_feed_horn_scatter_eV, path):
     _RRR = 1.05 * camera["camera"]["outer_radius_m"]
     _rrr = 0.5 * np.sqrt(camera["feed_horn_scatter_center_area_m2"])
     norm = sebplt.matplotlib.colors.PowerNorm(
-        vmin=1e-3 * np.max(energy_feed_horn_scatter_eV),
-        vmax=np.max(energy_feed_horn_scatter_eV),
+        vmin=1e-3 * np.max(energy_feed_horns_scatter_eV),
+        vmax=np.max(energy_feed_horns_scatter_eV),
         gamma=1.0,
     )
     patches = []
@@ -132,7 +132,7 @@ def plot_feed_horn_scatter_centers(camera, energy_feed_horn_scatter_eV, path):
             )
         )
     p = sebplt.matplotlib.collections.PatchCollection(patches, cmap="Blues")
-    p.set_array(energy_feed_horn_scatter_eV)
+    p.set_array(energy_feed_horns_scatter_eV)
     sebplt.plt.colorbar(p, cax=ax_cmap)
     ax_cmap.set_ylabel(r"Energy / eV")
     iaat_camera.ax_add_camera_feed_horn_edges(
@@ -147,9 +147,9 @@ def plot_feed_horn_scatter_centers(camera, energy_feed_horn_scatter_eV, path):
 
     ax_hist = sebplt.add_axes(fig=fig, span=[0.15, 0.05, 0.65, 0.12])
     bin_edges_eV = np.geomspace(
-        vmin, vmax, int(np.sqrt(len(energy_feed_horn_scatter_eV)))
+        vmin, vmax, int(np.sqrt(len(energy_feed_horns_scatter_eV)))
     )
-    hist = np.histogram(energy_feed_horn_scatter_eV, bins=bin_edges_eV)[0]
+    hist = np.histogram(energy_feed_horns_scatter_eV, bins=bin_edges_eV)[0]
     sebplt.ax_add_histogram(
         ax=ax_hist,
         bin_edges=bin_edges_eV,
@@ -157,7 +157,7 @@ def plot_feed_horn_scatter_centers(camera, energy_feed_horn_scatter_eV, path):
         draw_bin_walls=True,
     )
     ax_hist.set_xlim([vmin, vmax])
-    ax_hist.set_ylim([0.5, len(energy_feed_horn_scatter_eV)])
+    ax_hist.set_ylim([0.5, len(energy_feed_horns_scatter_eV)])
     ax_hist.loglog()
     ax_hist.set_xlabel("energy / eV")
     ax_hist.set_ylabel("num. channels / 1")

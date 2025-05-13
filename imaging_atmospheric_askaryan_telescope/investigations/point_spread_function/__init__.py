@@ -75,7 +75,7 @@ def init(work_dir):
         "num": 8,
         "random_seed": 100,
     }
-    sc["scenarios"]["outside_of_field_of_view"] = {
+    sc["scenarios"]["fully_outside_field_of_view"] = {
         "num": 8,
         "random_seed": 100,
     }

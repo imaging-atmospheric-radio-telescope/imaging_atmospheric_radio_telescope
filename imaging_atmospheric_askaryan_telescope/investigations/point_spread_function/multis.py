@@ -72,7 +72,7 @@ def _draw_source(prng, config, telescope):
         low=config["multis"]["power_density_start_W_per_m2"],
         high=config["multis"]["power_density_stop_W_per_m2"],
     )
-    job["polarization_angle_rad"] = prng.uniform(low=0.0, high=2.0 * np.pi)
+    job["polarization_angle_rad"] = 0.0
     return job
 
 
@@ -121,3 +121,5 @@ def run_job(job):
             region_of_interest_num_bins=None,
             logger=logger,
         )
+        response = plane_wave_response.PlaneWaveResponse(tmp_dir)
+        response.plot()

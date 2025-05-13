@@ -90,3 +90,5 @@ def run_job(job):
             ),
             logger=logger,
         )
+        response = plane_wave_response.PlaneWaveResponse(tmp_dir)
+        response.plot()
