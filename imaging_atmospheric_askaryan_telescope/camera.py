@@ -275,15 +275,6 @@ def ax_add_camera_feed_horn_edges(ax, camera, **kwargs):
             )
 
 
-def ax_add_camera_feed_horn_vertices(ax, camera, **kwargs):
-    for v in camera["feed_horn_edge_vertices_m"]:
-        ax.plot(
-            v[0],
-            v[1],
-            **kwargs,
-        )
-
-
 def ax_add_camera_feed_horn_scatter_centers(ax, camera, **kwargs):
     for i in range(camera["num_feed_horns"]):
         for j in range(camera["num_scatter_centers_per_feed_horn"]):
