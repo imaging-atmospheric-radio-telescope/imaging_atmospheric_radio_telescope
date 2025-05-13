@@ -50,7 +50,6 @@ def from_config(work_dir):
     print("f/D", _mirror_focal_ratio_1)
     _sensor = telescope.make_sensor(
         feed_horn_focal_ratio_1=_mirror_focal_ratio_1,
-        mirror_focal_length_m=_mirror["focal_length_m"],
         low_noise_block_effective_area_m2=_lnb["effective_area_m2"],
         **config["telescope"]["sensor"],
     )
