@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "medium_size_telescope"
+telescope_key = "crome"
 work_dir = f"explore_point_spread_function_{telescope_key:s}_order1-magic"
 
 if not os.path.exists(work_dir):
@@ -32,133 +32,6 @@ lnb_start_Hz, lnb_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
     lnb=telescope["lnb"]
 )
 lnb_input_frequency_Hz = np.mean([lnb_start_Hz, lnb_stop_Hz])
-
-
-def plot_camera(camera, image, path, feed_horn_mask=None):
-
-    vmin, vmax = iaat.plot.log10_limits(image)
-
-    fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
-    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
-    ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.25, 0.025, 0.65])
-    norm = sebplt.matplotlib.colors.PowerNorm(
-        vmin=1e-3 * np.max(image),
-        vmax=np.max(image),
-        gamma=1.0,
-    )
-    im = iaat_plot.ax_add_hexagonal_pixels(
-        ax=ax,
-        v=image,
-        x=camera["feed_horn_positions_m"][:, 0],
-        y=camera["feed_horn_positions_m"][:, 1],
-        hexrotation=0,
-        hex_inner_radius=camera["camera"]["feed_horn_inner_radius_m"],
-        cmap="Blues",
-        norm=norm,
-        edgecolor="black",
-        linewidth=0.1,
-    )
-
-    if feed_horn_mask is not None:
-        for i in range(camera["num_feed_horns"]):
-            if feed_horn_mask[i]:
-                ax.plot(
-                    camera["feed_horn_positions_m"][i, 0],
-                    camera["feed_horn_positions_m"][i, 1],
-                    marker="o",
-                    color="red",
-                )
-    sebplt.ax_add_circle(
-        ax=ax,
-        x=0.0,
-        y=0.0,
-        r=camera["camera"]["outer_radius_m"],
-        color="black",
-        linewidth=0.2,
-    )
-    ax.set_xlabel("x / m")
-    ax.set_ylabel("y / m")
-    ax.set_aspect("equal")
-    sebplt.plt.colorbar(im, cax=ax_cmap)
-    ax_cmap.set_ylabel(r"Energy / eV")
-
-    ax_hist = sebplt.add_axes(fig=fig, span=[0.15, 0.05, 0.65, 0.12])
-    bin_edges = np.geomspace(vmin, vmax, int(np.sqrt(len(image))))
-    hist = np.histogram(image, bins=bin_edges)[0]
-    sebplt.ax_add_histogram(
-        ax=ax_hist,
-        bin_edges=bin_edges,
-        bincounts=hist,
-        draw_bin_walls=True,
-    )
-    ax_hist.set_xlim([vmin, vmax])
-    ax_hist.set_ylim([0.5, len(image)])
-    ax_hist.loglog()
-    fig.savefig(path)
-    sebplt.close(fig)
-
-
-def plot_feed_horn_scatter_centers(camera, fedd_horn_scatter_energy_eV, path):
-
-    vmin, vmax = iaat.plot.log10_limits(fedd_horn_scatter_energy_eV)
-
-    scatpos = iaat.camera.get_camera_feed_horn_scatter_centers(
-        camera=telescope["sensor"]
-    )
-
-    fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
-    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
-    ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.25, 0.025, 0.65])
-    _RRR = 1.05 * camera["camera"]["outer_radius_m"]
-    _rrr = 0.5 * np.sqrt(camera["feed_horn_scatter_center_area_m2"])
-    norm = sebplt.matplotlib.colors.PowerNorm(
-        vmin=1e-3 * np.max(fedd_horn_scatter_energy_eV),
-        vmax=np.max(fedd_horn_scatter_energy_eV),
-        gamma=1.0,
-    )
-    patches = []
-    for d in range(len(scatpos)):
-        patches.append(
-            sebplt.matplotlib.patches.RegularPolygon(
-                (scatpos[d][0], scatpos[d][1]),
-                numVertices=6,
-                radius=_rrr,
-                orientation=0.0,
-            )
-        )
-    p = sebplt.matplotlib.collections.PatchCollection(patches, cmap="Blues")
-    p.set_array(fedd_horn_scatter_energy_eV)
-    sebplt.plt.colorbar(p, cax=ax_cmap)
-    ax_cmap.set_ylabel(r"Energy / eV")
-    iaat.camera.ax_add_camera_feed_horn_edges(
-        ax=ax, camera=camera, color="black", alpha=0.33, linewidth=0.2
-    )
-    ax.add_collection(p)
-    ax.set_xlim([-_RRR, _RRR])
-    ax.set_ylim([-_RRR, _RRR])
-    ax.set_aspect("equal")
-    ax.set_xlabel("x / m")
-    ax.set_ylabel("y / m")
-
-    ax_hist = sebplt.add_axes(fig=fig, span=[0.15, 0.05, 0.65, 0.12])
-    bin_edges_eV = np.geomspace(
-        vmin, vmax, int(np.sqrt(len(fedd_horn_scatter_energy_eV)))
-    )
-    hist = np.histogram(fedd_horn_scatter_energy_eV, bins=bin_edges_eV)[0]
-    sebplt.ax_add_histogram(
-        ax=ax_hist,
-        bin_edges=bin_edges_eV,
-        bincounts=hist,
-        draw_bin_walls=True,
-    )
-    ax_hist.set_xlim([vmin, vmax])
-    ax_hist.set_ylim([0.5, len(fedd_horn_scatter_energy_eV)])
-    ax_hist.loglog()
-    ax_hist.set_xlabel("energy / eV")
-    ax_hist.set_ylabel("num. channels / 1")
-
-    fig.savefig(path)
-    sebplt.close(fig)
 
 
 # HEAD ON
@@ -211,7 +84,7 @@ response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWa
 
 I_energy_eV = response.Image_energy / iaat.signal.ELECTRON_VOLT_J
 
-plot_camera(
+iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
     image=I_energy_eV,
     path=os.path.join(scenario_dir, "camera.jpg"),
@@ -257,7 +130,7 @@ for iii in range(telescope["sensor"]["num_feed_horns"]):
 Ene_pixel_eV = Ene_pixel_J / iaat.signal.ELECTRON_VOLT_J
 
 
-plot_camera(
+iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
     image=Ene_pixel_eV,
     path=os.path.join(scenario_dir, "camera_from_fine.jpg"),
@@ -267,7 +140,7 @@ Ene_feed_horn_scatters_eV = (
     Ene_feed_horn_scatters_J / iaat.signal.ELECTRON_VOLT_J
 )
 
-plot_feed_horn_scatter_centers(
+iaat.investigations.point_spread_function.plot.plot_feed_horn_scatter_centers(
     camera=telescope["sensor"],
     fedd_horn_scatter_energy_eV=Ene_feed_horn_scatters_eV,
     path=os.path.join(scenario_dir, "camera_fine.jpg"),
@@ -286,7 +159,7 @@ for key in response.region_of_interest_keys:
         ],
     )
 
-    plot_camera(
+    iaat.investigations.point_spread_function.plot.plot_camera(
         camera=telescope["sensor"],
         image=np.ones(telescope["sensor"]["num_feed_horns"]),
         path=os.path.join(scenario_dir, f"{key:s}_mask.jpg"),

@@ -367,7 +367,7 @@ def reduce_responses(work_dir, config, telescope_key, scenario_key):
         ]
         result["source_areal_power_density_W_per_m2"] = sourcfg["power"][
             "power_of_isotrop_and_point_like_emitter_W"
-        ] / _area_of_sphere(
+        ] / psf_utils.area_of_sphere(
             radius=sourcfg["power"][
                 "distance_to_isotrop_and_point_like_emitter_m"
             ]
