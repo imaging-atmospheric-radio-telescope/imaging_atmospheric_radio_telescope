@@ -403,7 +403,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         * np.sqrt(MAGIC_CONSTANT)
     )
 
-    E_feed_horn_scatters = time_series.zeros(
+    E_feed_horns_scatters = time_series.zeros(
         time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
         num_channels=(
@@ -473,7 +473,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         # ---------------------
         for isu in range(camera["num_scatter_centers_per_feed_horn"]):
             iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
-            E_feed_horn_scatters[iii] = E_feed_horn[isu]
+            E_feed_horns_scatters[iii] = E_feed_horn[isu]
 
         # Average feed horn
         # -----------------
@@ -493,7 +493,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         )
         E_sensor[ifh] = np.sqrt(1.0 / NUM_FEED_HORN_SCATTER) * E_sensor[ifh]
 
-    return E_sensor, E_feed_horn_scatters
+    return E_sensor, E_feed_horns_scatters
 
 
 def element_wise_power(x, p):
