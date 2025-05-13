@@ -4,6 +4,7 @@ import collections
 import numpy as np
 import optic_object_wavefronts as oow
 import thin_lens
+import copy
 
 
 TOWARDS_MIRROR = -1.0
@@ -209,8 +210,11 @@ def make_camera(
     c["feed_horn_relative_scatter_center_positions_m"], _ = _flatten_grid(
         grid=feed_horn_scatter_grid_prototype
     )
-    c["feed_horn_relative_lnb_position_m"] = np.array(
-        [0, 0, TOWARDS_MIRROR * c["camera"]["feed_horn_sensor_distance_m"]]
+    c["lnb_relative_scatter_center_positions_m"] = copy.copy(
+        c["feed_horn_relative_scatter_center_positions_m"]
+    )
+    c["lnb_relative_scatter_center_positions_m"][:, 2] = (
+        TOWARDS_MIRROR * c["camera"]["feed_horn_sensor_distance_m"]
     )
     c["num_scatter_centers_per_feed_horn"] = len(
         c["feed_horn_relative_scatter_center_positions_m"]
@@ -276,14 +280,18 @@ def ax_add_camera_feed_horn_edges(ax, camera, **kwargs):
 
 
 def ax_add_camera_feed_horn_scatter_centers(ax, camera, **kwargs):
+    poss = get_camera_feed_horn_scatter_centers(camera=camera)
+    for pos in poss:
+        ax.plot(pos[0], pos[1], **kwargs)
+
+
+def get_camera_feed_horn_scatter_centers(camera):
+    positions_m = []
     for i in range(camera["num_feed_horns"]):
         for j in range(camera["num_scatter_centers_per_feed_horn"]):
-            total_x = (
-                camera["feed_horn_positions_m"][i][0]
-                + camera["feed_horn_relative_scatter_center_positions_m"][j][0]
+            position_m = (
+                camera["feed_horn_positions_m"][i]
+                + camera["feed_horn_relative_scatter_center_positions_m"][j]
             )
-            total_y = (
-                camera["feed_horn_positions_m"][i][1]
-                + camera["feed_horn_relative_scatter_center_positions_m"][j][1]
-            )
-            ax.plot(total_x, total_y, **kwargs)
+            positions_m.append(position_m)
+    return np.array(positions_m)

@@ -12,7 +12,7 @@ import os
 import scipy.linalg
 
 telescope_key = "crome"
-work_dir = f"explore_point_spread_function_{telescope_key:s}_order2"
+work_dir = f"explore_point_spread_function_{telescope_key:s}_order1"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -33,13 +33,52 @@ lnb_start_Hz, lnb_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
 )
 lnb_input_frequency_Hz = np.mean([lnb_start_Hz, lnb_stop_Hz])
 
+
+def plot_camera(camera, image, path):
+    fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
+    ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
+    norm = sebplt.matplotlib.colors.PowerNorm(
+        vmin=1e-2 * np.max(image),
+        vmax=np.max(image),
+        gamma=1,
+    )
+    im = iaat_plot.ax_add_hexagonal_pixels(
+        ax=ax,
+        v=image,
+        x=camera["feed_horn_positions_m"][:, 0],
+        y=camera["feed_horn_positions_m"][:, 1],
+        hexrotation=0,
+        hex_inner_radius=camera["camera"]["feed_horn_inner_radius_m"],
+        cmap="Blues",
+        norm=norm,
+        edgecolor="black",
+        linewidth=0.1,
+    )
+    sebplt.ax_add_circle(
+        ax=ax,
+        x=0.0,
+        y=0.0,
+        r=camera["camera"]["outer_radius_m"],
+        color="black",
+        linewidth=0.2,
+    )
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("y / m")
+    ax.set_aspect("equal")
+    sebplt.plt.colorbar(im, cax=ax_cmap)
+    ax_cmap.set_ylabel(r"Energy / eV")
+    fig.savefig(path)
+    sebplt.close(fig)
+
+
 # HEAD ON
 # -------
 source_config = iaat.production.radio_from_plane_wave.make_config()
 
 s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
-s1["geometry"]["azimuth_rad"] = np.deg2rad(0)
-s1["geometry"]["zenith_rad"] = np.deg2rad(0.1)
+s1["geometry"]["azimuth_rad"] = np.deg2rad(0.0)
+s1["geometry"]["zenith_rad"] = np.deg2rad(0.0)
 s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
 s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 1.01
 
@@ -83,58 +122,12 @@ response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWa
 
 I_energy_eV = response.Image_energy / iaat.signal.ELECTRON_VOLT_J
 
-fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
-ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
-ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
-norm = sebplt.matplotlib.colors.PowerNorm(
-    vmin=1e-2 * np.max(I_energy_eV),
-    vmax=np.max(I_energy_eV),
-    gamma=1,
+plot_camera(
+    camera=telescope["sensor"],
+    image=I_energy_eV,
+    path=os.path.join(scenario_dir, "camera.jpg"),
 )
-im = iaat_plot.ax_add_hexagonal_pixels(
-    ax=ax,
-    v=I_energy_eV,
-    x=response.sensor["feed_horn_positions_m"][:, 0],
-    y=response.sensor["feed_horn_positions_m"][:, 1],
-    hexrotation=0,
-    hex_inner_radius=response.sensor["camera"]["feed_horn_inner_radius_m"],
-    cmap="Blues",
-    norm=norm,
-    edgecolor="black",
-    linewidth=0.1,
-)
-sebplt.ax_add_circle(
-    ax=ax,
-    x=0.0,
-    y=0.0,
-    r=response.sensor["camera"]["outer_radius_m"],
-    color="black",
-    linewidth=0.2,
-)
-ax.set_xlabel("x / m")
-ax.set_ylabel("y / m")
-ax.set_aspect("equal")
-sebplt.plt.colorbar(im, cax=ax_cmap)
-ax_cmap.set_ylabel(r"Energy / eV")
-fig.savefig(os.path.join(scenario_dir, f"camera.jpg"))
-sebplt.close(fig)
 
-_expected_scaling_from_mirror_to_feed_horn = np.sqrt(
-    1.0
-    / (
-        telescope["mirror"]["num_scatter_centers"]
-        * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
-    )
-) * np.sqrt(
-    telescope["mirror"]["scatter_center_area_m2"]
-    / telescope["sensor"]["feed_horn_scatter_center_area_m2"]
-)
-_expected_feed_horn_to_lnb_E_field_scaling = np.sqrt(
-    1.0 / telescope["sensor"]["num_scatter_centers_per_feed_horn"]
-) * np.sqrt(
-    telescope["sensor"]["feed_horn_scatter_center_area_m2"]
-    / telescope["sensor"]["low_noise_block_effective_area_m2"]
-)
 
 fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
 ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
@@ -143,6 +136,74 @@ ax.set_xlabel("x / m")
 ax.set_ylabel("y / m")
 ax.set_aspect("equal")
 fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
+sebplt.close(fig)
+
+
+E_feed_horns = iaat.time_series.read(
+    os.path.join(
+        work_dir,
+        "response",
+        "camera",
+        "feed_horns",
+        "feed_horns.electric_fields.tar",
+    )
+)
+Ene_feed_horns_J = iaat.electric_fields.integrate_power_over_time(
+    electric_fields=E_feed_horns,
+    channel_effective_area_m2=telescope["sensor"][
+        "feed_horn_scatter_center_area_m2"
+    ],
+)
+Ene_pixel_J = np.zeros(telescope["sensor"]["num_feed_horns"])
+for iii in range(telescope["sensor"]["num_feed_horns"]):
+    iii_start = iii * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
+    iii_stop = (iii + 1) * telescope["sensor"][
+        "num_scatter_centers_per_feed_horn"
+    ]
+    Ene_pixel_J[iii] = np.sum(Ene_feed_horns_J[iii_start:iii_stop])
+Ene_pixel_eV = Ene_pixel_J / iaat.signal.ELECTRON_VOLT_J
+
+
+plot_camera(
+    camera=telescope["sensor"],
+    image=Ene_pixel_eV,
+    path=os.path.join(scenario_dir, "camera_from_fine.jpg"),
+)
+
+
+Ene_fine_eV = np.sum(Ene_feed_horns_J) / iaat.signal.ELECTRON_VOLT_J
+
+scatpos = iaat.camera.get_camera_feed_horn_scatter_centers(
+    camera=telescope["sensor"]
+)
+
+fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
+ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
+_RRR = 1.05 * telescope["sensor"]["camera"]["outer_radius_m"]
+_rrr = 0.5 * np.sqrt(telescope["sensor"]["feed_horn_scatter_center_area_m2"])
+patches = []
+for d in range(len(scatpos)):
+    patches.append(
+        sebplt.matplotlib.patches.RegularPolygon(
+            (scatpos[d][0], scatpos[d][1]),
+            numVertices=6,
+            radius=_rrr,
+            orientation=0.0,
+        )
+    )
+p = sebplt.matplotlib.collections.PatchCollection(patches, cmap="Blues")
+p.set_array(Ene_feed_horns_J)
+iaat.camera.ax_add_camera_feed_horn_edges(
+    ax=ax, camera=telescope["sensor"], color="black", alpha=0.33
+)
+ax.add_collection(p)
+ax.set_xlim([-_RRR, _RRR])
+ax.set_ylim([-_RRR, _RRR])
+ax.set_aspect("equal")
+ax.set_xlabel("x / m")
+ax.set_ylabel("y / m")
+ax.set_aspect("equal")
+fig.savefig(os.path.join(scenario_dir, "camera_fine.jpg"))
 sebplt.close(fig)
 
 
@@ -185,6 +246,7 @@ for key in response.region_of_interest_keys:
     print(f"__source__: {key:s}")
     print(f"Expected:{Ene_expected_to_be_collected_by_mirror_eV: 5.2f}eV")
     print(f"Mirror  :{Ene_mirror_eV: 5.2f}eV")
+    print(f"Fine    :{Ene_fine_eV: 5.2f}eV")
     print(f"Camera  :{Ene_camera_eV: 5.2f}eV")
     # print(f"ROI     :{Ene_roi_eV: 5.2f}eV")
 
@@ -264,7 +326,10 @@ for key in response.region_of_interest_keys:
     )
     """
     iaat.camera.ax_add_camera_feed_horn_edges(
-        ax=ax, camera=telescope["sensor"], color="black", linewidth=0.5,
+        ax=ax,
+        camera=telescope["sensor"],
+        color="black",
+        linewidth=0.5,
     )
     iaat.camera.ax_add_camera_feed_horn_scatter_centers(
         ax=ax,

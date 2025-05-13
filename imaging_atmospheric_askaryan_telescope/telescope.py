@@ -208,7 +208,7 @@ def make_sensor(
     feed_horn_transmission,
     feed_horn_focal_ratio_1,
     low_noise_block_effective_area_m2,
-    feed_horn_oversampling=2,
+    feed_horn_oversampling=1,
 ):
     return camera.make_camera(
         sensor_outer_radius_m=sensor_outer_radius_m,
@@ -294,6 +294,15 @@ def make_sensor_in_region_of_interest(
     imse["num_feed_horns"] = imse["feed_horn_positions_m"].shape[0]
     imse["feed_horn_transmission"] = feed_horn_transmission
     imse["feed_horn_area_m2"] = bin_area_m2
+
+    imse["num_scatter_centers_per_feed_horn"] = 1
+    imse["feed_horn_relative_scatter_center_positions_m"] = np.array(
+        [[0, 0, 0]]
+    )
+    imse["lnb_relative_scatter_center_positions_m"] = np.array([[0, 0, 0]])
+    imse["feed_horn_scatter_center_area_m2"] = imse["feed_horn_area_m2"]
+    imse["low_noise_block_effective_area_m2"] = imse["feed_horn_area_m2"]
+
     imse["sensor_distance_m"] = sensor_distance_m
     return imse
 
@@ -364,6 +373,7 @@ def make_telescope_like_other_but_different_sensor(telescope, sensor):
     )
 
 
+"""
 def propagate_electric_field_from_mirror_to_sensor(
     telescope,
     mirror_electric_fields,
@@ -385,6 +395,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         )
     else:
         raise AssertionError("Senosr is not known")
+"""
 
 
 def propagate_electric_field_from_mirror_to_region_of_interest_sensor(
@@ -456,7 +467,7 @@ def propagate_electric_field_from_mirror_to_region_of_interest_sensor(
     return E_sensor
 
 
-def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
+def propagate_electric_field_from_mirror_to_sensor(
     telescope,
     mirror_electric_fields,
     num_time_slices,
@@ -464,13 +475,16 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
     """
     ===
     """
+    camera = telescope["sensor"]
+    mirror = telescope["mirror"]
+
     min_time_delay_s = np.min(telescope["matrix"]["time_delays_s"])
 
     E_mirror = mirror_electric_fields
     E_sensor = time_series.zeros(
         time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
-        num_channels=telescope["sensor"]["num_feed_horns"],
+        num_channels=camera["num_feed_horns"],
         num_components=E_mirror.num_components,
         global_start_time_s=E_mirror.global_start_time_s + min_time_delay_s,
         si_unit=E_mirror.si_unit,
@@ -480,18 +494,18 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
     mirror_to_feed_horn_E_field_scaling = np.sqrt(
         1.0
         / (
-            telescope["mirror"]["num_scatter_centers"]
-            * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
+            mirror["num_scatter_centers"]
+            * camera["num_scatter_centers_per_feed_horn"]
         )
     ) * np.sqrt(
-        telescope["mirror"]["scatter_center_area_m2"]
-        / telescope["sensor"]["feed_horn_scatter_center_area_m2"]
+        mirror["scatter_center_area_m2"]
+        / camera["feed_horn_scatter_center_area_m2"]
     )
 
     feed_horn_to_lnb_E_field_scaling = np.sqrt(
-        telescope["sensor"]["feed_horn_scatter_center_area_m2"]
-        / telescope["sensor"]["low_noise_block_effective_area_m2"]
-    ) * np.sqrt(1.0 / telescope["sensor"]["num_scatter_centers_per_feed_horn"])
+        camera["feed_horn_scatter_center_area_m2"]
+        / camera["low_noise_block_effective_area_m2"]
+    ) * (1.0 / camera["num_scatter_centers_per_feed_horn"])
 
     print(
         "mirror_to_feed_horn_E_field_scaling",
@@ -499,15 +513,24 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
     )
     print("feed_horn_to_lnb_E_field_scaling", feed_horn_to_lnb_E_field_scaling)
 
-    Ene_eV = []
+    E_feed_horns = time_series.zeros(
+        time_slice_duration_s=E_mirror.time_slice_duration_s,
+        num_time_slices=num_time_slices,
+        num_channels=(
+            camera["num_feed_horns"]
+            * camera["num_scatter_centers_per_feed_horn"]
+        ),
+        num_components=E_mirror.num_components,
+        global_start_time_s=E_mirror.global_start_time_s + min_time_delay_s,
+        si_unit=E_mirror.si_unit,
+        dtype=E_mirror.dtype,
+    )
 
-    for ifh in range(telescope["sensor"]["num_feed_horns"]):
+    for ifh in range(camera["num_feed_horns"]):
         E_feed_horn = time_series.zeros(
             time_slice_duration_s=E_mirror.time_slice_duration_s,
             num_time_slices=num_time_slices,
-            num_channels=telescope["sensor"][
-                "num_scatter_centers_per_feed_horn"
-            ],
+            num_channels=camera["num_scatter_centers_per_feed_horn"],
             num_components=E_mirror.num_components,
             global_start_time_s=E_mirror.global_start_time_s
             + min_time_delay_s,
@@ -517,22 +540,20 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
 
         # from mirror to feed horn
         # ------------------------
-        for isu in range(
-            telescope["sensor"]["num_scatter_centers_per_feed_horn"]
-        ):
-            for imi in range(telescope["mirror"]["num_scatter_centers"]):
+        for isu in range(camera["num_scatter_centers_per_feed_horn"]):
+            for imi in range(mirror["num_scatter_centers"]):
 
                 # timing
                 # ------
                 feed_horn_scatter_center_position_vector_m = (
-                    telescope["sensor"]["feed_horn_positions_m"][ifh]
-                    + telescope["sensor"][
-                        "feed_horn_relative_scatter_center_positions_m"
-                    ][isu]
+                    camera["feed_horn_positions_m"][ifh]
+                    + camera["feed_horn_relative_scatter_center_positions_m"][
+                        isu
+                    ]
                 )
                 mirror_to_feed_horn_vector_m = (
                     feed_horn_scatter_center_position_vector_m
-                    - telescope["mirror"]["scatter_center_positions_m"][imi]
+                    - mirror["scatter_center_positions_m"][imi]
                 )
                 mirror_sensor_distance_m = np.linalg.norm(
                     mirror_to_feed_horn_vector_m
@@ -558,27 +579,68 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
                     at=slice_delay,
                 )
 
-        Ene_feed_horn_J_ = electric_fields.integrate_power_over_time(
-            electric_fields=E_feed_horn,
-            channel_effective_area_m2=telescope["sensor"][
-                "feed_horn_scatter_center_area_m2"
-            ],
-        )
-        Ene_feed_horn_eV_ = Ene_feed_horn_J_ / signal.ELECTRON_VOLT_J
-        Ene_eV.append(np.sum(Ene_feed_horn_eV_))
+        # copy
+        for isu in range(camera["num_scatter_centers_per_feed_horn"]):
+            iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
+            E_feed_horns[iii] = E_feed_horn[isu]
 
-        # from mirror to feed horn
-        # ------------------------
-        for isu in range(
-            telescope["sensor"]["num_scatter_centers_per_feed_horn"]
-        ):
-            # timing
-            # ------
+        # from feed horn to LNB
+        # ---------------------
+
+        """
+        E_lnb = time_series.zeros(
+            time_slice_duration_s=E_mirror.time_slice_duration_s,
+            num_time_slices=num_time_slices,
+            num_channels=camera["num_scatter_centers_per_feed_horn"],
+            num_components=E_mirror.num_components,
+            global_start_time_s=E_mirror.global_start_time_s
+            + min_time_delay_s,
+            si_unit=E_mirror.si_unit,
+            dtype=E_mirror.dtype,
+        )
+
+        for isu in range(camera["num_scatter_centers_per_feed_horn"]):
+            for isl in range(camera["num_scatter_centers_per_feed_horn"]):
+                # timing
+                # ------
+                feed_horn_scatter_to_lnb_vector_m = (
+                    camera["lnb_relative_scatter_center_positions_m"][isl]
+                    - camera["feed_horn_relative_scatter_center_positions_m"][
+                        isu
+                    ]
+                )
+                feed_horn_scatter_to_lnb_distance_m = np.linalg.norm(
+                    feed_horn_scatter_to_lnb_vector_m
+                )
+                feed_horn_time_delay_s = (
+                    feed_horn_scatter_to_lnb_distance_m
+                    / telescope["matrix"]["speed_of_light_m_per_s"]
+                )
+                feed_horn_slice_delay = int(
+                    np.round(
+                        feed_horn_time_delay_s / E_sensor.time_slice_duration_s
+                    )
+                )
+
+                # amplitude
+                # ---------
+                signal.add_first_to_second_at(
+                    first=feed_horn_to_lnb_E_field_scaling * E_feed_horn[isu],
+                    second=E_lnb[isl],
+                    at=feed_horn_slice_delay,
+                )
+        """
+
+        # average over feed horn
+        # ----------------------
+        dist_m = np.mean(
+            camera["lnb_relative_scatter_center_positions_m"][:, 2]
+        )
+        for isl in range(camera["num_scatter_centers_per_feed_horn"]):
+
             feed_horn_scatter_to_lnb_vector_m = (
-                telescope["sensor"]["feed_horn_relative_lnb_position_m"]
-                - telescope["sensor"][
-                    "feed_horn_relative_scatter_center_positions_m"
-                ][isu]
+                np.array([0, 0, dist_m])
+                - camera["feed_horn_relative_scatter_center_positions_m"][isl]
             )
             feed_horn_scatter_to_lnb_distance_m = np.linalg.norm(
                 feed_horn_scatter_to_lnb_vector_m
@@ -593,27 +655,27 @@ def propagate_electric_field_from_mirror_to_sensor_with_feed_horn_imaging(
                 )
             )
 
-            # amplitude
-            # ---------
+            if camera["__type__"] == "camera":
+                print(ifh, isl, feed_horn_slice_delay, "slice")
+
             signal.add_first_to_second_at(
-                first=feed_horn_to_lnb_E_field_scaling * E_feed_horn[isu],
+                first=element_wise_power(x=E_feed_horn[isl], p=2),
                 second=E_sensor[ifh],
                 at=feed_horn_slice_delay,
             )
+        E_sensor[ifh] = element_wise_power(x=E_sensor[ifh], p=0.5)
 
-    Ene_sensor_J_ = electric_fields.integrate_power_over_time(
-        electric_fields=E_sensor,
-        channel_effective_area_m2=telescope["sensor"][
-            "low_noise_block_effective_area_m2"
-        ],
-    )
-    Ene_sensor_eV_ = Ene_sensor_J_ / signal.ELECTRON_VOLT_J
-    Ene_eV = np.array(Ene_eV)
+    return E_sensor, E_feed_horns
 
-    print("ratio:", Ene_sensor_eV_ / Ene_eV)
 
-    print("Ene_eV", np.sum(Ene_eV))
-    return E_sensor
+def element_wise_power(x, p):
+    n = np.linalg.norm(x, axis=1)
+    assert x.shape[0] == n.shape[0]
+    out = np.zeros_like(x)
+    for s in range(x.shape[0]):
+        if n[s] > 0.0:
+            out[s] = x[s] * n[s] ** (p - 1)
+    return out
 
 
 def find_neighbors(positions_xy, max_num_neighbors, integration_radius):
