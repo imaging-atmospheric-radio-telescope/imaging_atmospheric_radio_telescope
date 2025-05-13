@@ -213,6 +213,7 @@ for key in response.region_of_interest_keys:
         cmap="Blues",
         norm=norm,
     )
+    """
     iaat.investigations.point_spread_function.plot.ax_add_feed_horn_hexagon(
         ax=ax,
         x=bx[17],
@@ -242,7 +243,7 @@ for key in response.region_of_interest_keys:
     iaat.investigations.point_spread_function.plot.ax_add_wavelength_sine(
         ax=ax, x=bx[17], y=by[4], wavelength=w, color="black", linewidth=0.5
     )
-
+    """
     ax.plot(ana["argmax_x_m"], ana["argmax_y_m"], marker="o", color="red")
     sebplt.ax_add_circle(
         ax=ax,
@@ -253,12 +254,24 @@ for key in response.region_of_interest_keys:
         color="red",
     )
 
+    """
     sebplt.ax_add_circle(
         ax=ax,
         x=0.0,
         y=0.0,
         r=telescope["sensor"]["camera"]["outer_radius_m"],
         color="black",
+    )
+    """
+    iaat.camera.ax_add_camera_feed_horn_edges(
+        ax=ax, camera=telescope["sensor"], color="black", linewidth=0.5,
+    )
+    iaat.camera.ax_add_camera_feed_horn_scatter_centers(
+        ax=ax,
+        camera=telescope["sensor"],
+        color="black",
+        marker=".",
+        alpha=0.33,
     )
     ax.set_xlim([min(bx), max(bx)])
     ax.set_ylim([min(by), max(by)])
