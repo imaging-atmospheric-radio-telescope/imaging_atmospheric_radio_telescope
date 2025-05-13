@@ -256,6 +256,23 @@ class TimeSeries:
         return write_tar(path=path, time_series=self)
 
 
+    def print(self, num_samples_to_be_integrated=None, channels=None, global_time=True):
+        if num_samples_to_be_integrated is None:
+            num_samples_to_be_integrated = int(self.num_time_slices / 30)
+
+        if channels is None:
+            num_columns = 12
+            channel_skip = int(self.num_channels / num_columns)
+            channels = np.arange(0, self.num_channels, channel_skip)
+
+        print(
+            time_series=self,
+            num_samples_to_be_integrated=num_samples_to_be_integrated,
+            channels=channels,
+            global_time=global_time,
+        )
+
+
 def assert_valid(time_series):
     E = time_series
     assert not np.isnan(E.global_start_time_s)
@@ -387,7 +404,7 @@ def read(path):
     return o
 
 
-def print(time_series, num_samples_to_be_integrated=20, channels=None):
+def print(time_series, num_samples_to_be_integrated=20, channels=None, global_time=False):
     """
     Print the squared amplitudes (the power) with a bar graph.
 
@@ -420,7 +437,7 @@ def print(time_series, num_samples_to_be_integrated=20, channels=None):
             s_stop = s_start + N
             m = np.mean(E2[s_start:s_stop])
             mm.append(m)
-        MM.append(mm)
+        MM.append(np.array(mm))
     MM = np.array(MM)
     MM /= np.max(MM)
 
@@ -430,8 +447,11 @@ def print(time_series, num_samples_to_be_integrated=20, channels=None):
     builtins.print(head)
 
     for t in range(len(TT)):
-        line = f"{TT[t]*1e9: 7.1f} "
-        for a in channels:
+        if global_time:
+            line = f"{(E.global_start_time_s + TT[t])*1e9: 7.1f} "
+        else:
+            line = f"{TT[t]*1e9: 7.1f} "
+        for a in range(MM.shape[0]):
             nn = int(MM[a][t] * 10)
             for i in range(10):
                 if i < nn:
