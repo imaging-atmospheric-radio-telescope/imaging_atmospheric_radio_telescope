@@ -44,15 +44,7 @@ def from_config(work_dir):
     _lnb = lownoiseblock.init(key=config["telescope"]["lnb_key"])
 
     _mirror = telescope.make_mirror(**config["telescope"]["mirror"])
-    _mirror_focal_ratio_1 = _mirror["focal_length_m"] / (
-        2.0 * _mirror["outer_radius_m"]
-    )
-    print("f/D", _mirror_focal_ratio_1)
-    _sensor = telescope.make_sensor(
-        feed_horn_focal_ratio_1=_mirror_focal_ratio_1,
-        low_noise_block_effective_area_m2=_lnb["effective_area_m2"],
-        **config["telescope"]["sensor"],
-    )
+    _sensor = telescope.make_sensor(**config["telescope"]["sensor"])
 
     _telescope = telescope.make_telescope(
         sensor=_sensor,

@@ -34,7 +34,7 @@ def init(work_dir):
     telescopes_dir = os.path.join(config_dir, "telescopes")
     os.makedirs(telescopes_dir, exist_ok=True)
 
-    for key in ["crome", "large_size_telescope"]:
+    for key in ["crome", "medium_size_telescope"]:
         telescope_config = telescopes.init(key)
         with rnw.open(
             os.path.join(telescopes_dir, f"{key:s}.json"), "wt"
@@ -55,7 +55,7 @@ def init(work_dir):
         f.write(json_utils.dumps(timing_config, indent=4))
 
     sc = {
-        "telescopes": ["crome", "large_size_telescope"],
+        "telescopes": ["crome", "medium_size_telescope"],
         "power_density_start_W_per_m2": 1e-12,
         "power_density_stop_W_per_m2": 3e-12,
         "scenarios": {},
@@ -82,7 +82,7 @@ def init(work_dir):
         f.write(json_utils.dumps(sc, indent=4))
 
     defocus_config = {
-        "telescopes": ["large_size_telescope"],
+        "telescopes": ["medium_size_telescope"],
         "start_sensor_distance_f": 0.98,
         "stop_sensor_distance_f": 1.08,
         "num": 16,

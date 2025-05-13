@@ -168,8 +168,6 @@ def make_sensor(
     sensor_distance_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
-    feed_horn_focal_ratio_1,
-    low_noise_block_effective_area_m2,
     feed_horn_oversampling=1,
 ):
     return camera.make_camera(
@@ -177,9 +175,7 @@ def make_sensor(
         sensor_distance_m=sensor_distance_m,
         feed_horn_inner_radius_m=feed_horn_inner_radius_m,
         feed_horn_transmission=feed_horn_transmission,
-        feed_horn_focal_ratio_1=feed_horn_focal_ratio_1,
         feed_horn_oversampling=feed_horn_oversampling,
-        low_noise_block_effective_area_m2=low_noise_block_effective_area_m2,
     )
 
 

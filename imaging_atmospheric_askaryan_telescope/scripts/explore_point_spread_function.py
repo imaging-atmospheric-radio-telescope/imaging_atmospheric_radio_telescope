@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "large_size_telescope"
+telescope_key = "medium_size_telescope"
 work_dir = f"explore_point_spread_function_{telescope_key:s}_order1-magic"
 
 if not os.path.exists(work_dir):
@@ -197,7 +197,6 @@ plot_camera(
     path=os.path.join(scenario_dir, "camera.jpg"),
 )
 
-"""
 fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
 ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
 iaat.camera.ax_add_camera(ax=ax, camera=telescope["sensor"], color="black")
@@ -206,7 +205,7 @@ ax.set_ylabel("y / m")
 ax.set_aspect("equal")
 fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
 sebplt.close(fig)
-"""
+
 
 R_airy_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
     telescope=telescope
@@ -267,14 +266,12 @@ for key in response.region_of_interest_keys:
         ],
     )
 
-    """
     plot_camera(
         camera=telescope["sensor"],
         image=np.ones(telescope["sensor"]["num_feed_horns"]),
         path=os.path.join(scenario_dir, f"{key:s}_mask.jpg"),
         feed_horn_mask=feed_horn_mask,
     )
-    """
 
     Ene_expected_to_be_collected_by_mirror_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
         config=response.source_config["plane_waves"][key],

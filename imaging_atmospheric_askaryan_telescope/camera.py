@@ -68,7 +68,6 @@ def _elevate_grid_in_parabola_along_z_axis(grid, focal_length_m):
 
 def _make_feed_horn_scatter_centers_only_xy(
     feed_horn_inner_radius_m,
-    feed_horn_focal_ratio_1,
     feed_horn_oversampling,
 ):
     feed_horn_outer_radius_m = utils.hexagon_outer_radius_given_inner_radius(
@@ -94,25 +93,15 @@ def _make_feed_horn_focal_length_m(
 
 def _make_feed_horn_scatter_centers(
     feed_horn_inner_radius_m,
-    feed_horn_focal_ratio_1,
     feed_horn_oversampling,
 ):
-    feed_horn_focal_length_m = _make_feed_horn_focal_length_m(
-        feed_horn_inner_radius_m=feed_horn_inner_radius_m,
-        feed_horn_focal_ratio_1=feed_horn_focal_ratio_1,
-    )
     scatter_grid = _make_feed_horn_scatter_centers_only_xy(
         feed_horn_inner_radius_m=feed_horn_inner_radius_m,
-        feed_horn_focal_ratio_1=feed_horn_focal_ratio_1,
         feed_horn_oversampling=feed_horn_oversampling,
     )
     scatter_grid = _rotate_grid_in_xy_plane(
         grid=scatter_grid,
         angle_rad=np.pi / 6,
-    )
-    scatter_grid = _elevate_grid_in_parabola_along_z_axis(
-        grid=scatter_grid,
-        focal_length_m=feed_horn_focal_length_m,
     )
     return scatter_grid
 
@@ -146,17 +135,13 @@ def make_camera(
     sensor_distance_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
-    feed_horn_focal_ratio_1,
     feed_horn_oversampling,
-    low_noise_block_effective_area_m2,
 ):
     assert sensor_outer_radius_m > 0.0
     assert sensor_distance_m > 0.0
     assert feed_horn_inner_radius_m > 0.0
-    assert feed_horn_focal_ratio_1 > 0.0
     assert feed_horn_oversampling >= 1
     assert 0.0 <= feed_horn_transmission <= 1.0
-    assert low_noise_block_effective_area_m2 > 0.0
 
     c = {}
     c["__type__"] = "camera"
@@ -164,18 +149,7 @@ def make_camera(
     c["camera"]["outer_radius_m"] = sensor_outer_radius_m
     c["camera"]["outer_diameter_m"] = 2 * sensor_outer_radius_m
     c["camera"]["feed_horn_inner_radius_m"] = feed_horn_inner_radius_m
-    c["camera"]["feed_horn_focal_ratio_1"] = feed_horn_focal_ratio_1
     c["camera"]["feed_horn_oversampling"] = feed_horn_oversampling
-    c["camera"]["feed_horn_focal_length_m"] = _make_feed_horn_focal_length_m(
-        feed_horn_inner_radius_m=feed_horn_inner_radius_m,
-        feed_horn_focal_ratio_1=feed_horn_focal_ratio_1,
-    )
-    c["camera"]["feed_horn_sensor_distance_m"] = (
-        thin_lens.compute_image_distance_for_object_distance(
-            object_distance=sensor_distance_m,
-            focal_length=c["camera"]["feed_horn_focal_length_m"],
-        )
-    )
 
     feed_horn_positions_grid = _make_feed_horn_center_grid(
         screen_radius_m=sensor_outer_radius_m,
@@ -183,7 +157,6 @@ def make_camera(
     )
     feed_horn_scatter_grid_prototype = _make_feed_horn_scatter_centers(
         feed_horn_inner_radius_m=feed_horn_inner_radius_m,
-        feed_horn_focal_ratio_1=feed_horn_focal_ratio_1,
         feed_horn_oversampling=feed_horn_oversampling,
     )
     feed_horn_voronoi_grid, feed_horn_voronoi_grid_edges = (
@@ -209,19 +182,12 @@ def make_camera(
     c["feed_horn_relative_scatter_center_positions_m"], _ = _flatten_grid(
         grid=feed_horn_scatter_grid_prototype
     )
-    c["lnb_relative_scatter_center_positions_m"] = copy.copy(
-        c["feed_horn_relative_scatter_center_positions_m"]
-    )
-    c["lnb_relative_scatter_center_positions_m"][:, 2] = (
-        TOWARDS_MIRROR * c["camera"]["feed_horn_sensor_distance_m"]
-    )
     c["num_scatter_centers_per_feed_horn"] = len(
         c["feed_horn_relative_scatter_center_positions_m"]
     )
     c["feed_horn_scatter_center_area_m2"] = (
         c["feed_horn_area_m2"] / c["num_scatter_centers_per_feed_horn"]
     )
-    c["low_noise_block_effective_area_m2"] = low_noise_block_effective_area_m2
 
     c["camera"]["feed_horn_edge_vertices_m"], _voronoi_map = _flatten_grid(
         grid=feed_horn_voronoi_grid
