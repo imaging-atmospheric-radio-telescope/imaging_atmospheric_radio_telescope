@@ -75,8 +75,8 @@ def _make_feed_horn_scatter_centers_only_xy(
         inner_radius=feed_horn_inner_radius_m
     )
 
-    expected_scatter_spacing = feed_horn_outer_radius_m / (
-        feed_horn_oversampling + 1
+    expected_scatter_spacing = (2 * feed_horn_outer_radius_m) / (
+        feed_horn_oversampling + 2
     )
     return oow.geometry.grid.hexagonal.init_from_outer_radius(
         outer_radius=feed_horn_outer_radius_m - 0.5 * expected_scatter_spacing,
@@ -144,7 +144,6 @@ def _flatten_grid(grid):
 def make_camera(
     sensor_outer_radius_m,
     sensor_distance_m,
-    mirror_focal_length_m,
     feed_horn_inner_radius_m,
     feed_horn_transmission,
     feed_horn_focal_ratio_1,
@@ -173,7 +172,7 @@ def make_camera(
     )
     c["camera"]["feed_horn_sensor_distance_m"] = (
         thin_lens.compute_image_distance_for_object_distance(
-            object_distance=mirror_focal_length_m,
+            object_distance=sensor_distance_m,
             focal_length=c["camera"]["feed_horn_focal_length_m"],
         )
     )
