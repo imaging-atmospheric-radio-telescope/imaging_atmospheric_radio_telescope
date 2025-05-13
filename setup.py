@@ -56,7 +56,6 @@ setuptools.setup(
         "spherical_coordinates>=0.1.8",
         "binning_utils_sebastian-achim-mueller>=0.0.20",
         "solid_angle_utils>=0.1.2",
-        "json_line_logger>=0.0.9",
     ],
     license="MIT",
     classifiers=[

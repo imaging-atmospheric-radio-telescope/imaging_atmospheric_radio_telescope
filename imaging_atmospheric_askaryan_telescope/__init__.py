@@ -16,3 +16,4 @@ from . import calibration_source
 from . import investigations
 from . import run
 from . import camera
+from . import logger

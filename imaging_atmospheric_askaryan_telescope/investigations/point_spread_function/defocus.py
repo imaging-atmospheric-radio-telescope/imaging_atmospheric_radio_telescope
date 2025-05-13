@@ -6,11 +6,11 @@ from ... import signal
 from ... import production
 from ... import calibration_source
 from ... import utils as iaat_utils
+from ... import logger as iaat_logger
 
 import os
 import numpy as np
 import rename_after_writing as rnw
-import json_line_logger
 
 
 def make_jobs(work_dir, config):
@@ -74,9 +74,7 @@ def run_job(job):
     source_config["plane_waves"]["1"] = s1
 
     with rnw.Directory(job["path"]) as tmp_dir:
-        logger = json_line_logger.LoggerFile(
-            os.path.join(tmp_dir, "log.jsonl")
-        )
+        logger = iaat_logger.LoggerFile(os.path.join(tmp_dir, "log.jsonl"))
 
         plane_wave_response.make_PlaneWaveResponse(
             out_dir=tmp_dir,

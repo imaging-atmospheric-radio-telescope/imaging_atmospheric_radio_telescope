@@ -1,7 +1,5 @@
 import numpy as np
 import copy
-import json_line_logger
-import logging
 from scipy.stats.qmc import Sobol
 
 
@@ -55,27 +53,6 @@ class SerialPool:
         return out
 
 
-class LoggerStartStop:
-    def __init__(
-        self, start_msg, logger=None, stop_msg="Done.", level=logging.DEBUG
-    ):
-        self.logger = stdout_logger_if_None(logger)
-        self.level = level
-        self.start_msg = start_msg
-        self.stop_msg = stop_msg
-
-    def __enter__(self):
-        self.logger.log(level=self.level, msg=self.start_msg)
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.logger.log(level=self.level, msg=self.stop_msg)
-        return
-
-    def __repr__(self):
-        return f"{self.__class__.__name__:s}()"
-
-
 def strip_dict(obj, strip):
     out = {}
     for key in obj:
@@ -115,10 +92,6 @@ def normal_approximation(
 
 def argmaxNd(a):
     return np.unravel_index(np.argmax(a), a.shape)
-
-
-def stdout_logger_if_None(logger):
-    return json_line_logger.LoggerStdout() if logger is None else logger
 
 
 def hexagon_inner_radius_given_outer_radius(outer_radius):

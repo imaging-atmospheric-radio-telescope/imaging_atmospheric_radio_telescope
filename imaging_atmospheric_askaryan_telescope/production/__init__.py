@@ -14,6 +14,7 @@ from .. import signal
 from .. import time_series
 from .. import lownoiseblock
 from .. import utils
+from .. import logger as iaat_logger
 
 
 def simulate_telescope_response(
@@ -28,7 +29,7 @@ def simulate_telescope_response(
     stop_after_section=None,
     logger=None,
 ):
-    logger = utils.stdout_logger_if_None(logger)
+    logger = iaat_logger.LoggerStdout_if_logger_is_None(logger)
     os.makedirs(out_dir, exist_ok=True)
     with rnw.open(os.path.join(out_dir, "source_config.json"), "wt") as f:
         f.write(json_utils.dumps(source_config, indent=4))
@@ -40,7 +41,7 @@ def simulate_telescope_response(
         if source_config["__type__"] == "airshower":
             with rnw.Directory(
                 mirror_dir
-            ) as tmp_mirror_dir, utils.LoggerStartStop(
+            ) as tmp_mirror_dir, iaat_logger.StartStop(
                 logger=logger,
                 start_msg="Simulating air shower using CORSIKA CoREAS",
             ) as _:
@@ -58,7 +59,7 @@ def simulate_telescope_response(
         elif source_config["__type__"] == "plane_wave":
             with rnw.Directory(
                 mirror_dir
-            ) as tmp_mirror_dir, utils.LoggerStartStop(
+            ) as tmp_mirror_dir, iaat_logger.StartStop(
                 logger=logger,
                 start_msg="Simulating plane wave from calibration source",
             ) as _:
@@ -86,7 +87,7 @@ def simulate_telescope_response(
     # -----------------------------------
     feed_horns_dir = os.path.join(out_dir, "feed_horns")
     if not os.path.exists(feed_horns_dir):
-        with rnw.Directory(feed_horns_dir) as tmp_dir, utils.LoggerStartStop(
+        with rnw.Directory(feed_horns_dir) as tmp_dir, iaat_logger.StartStop(
             logger=logger,
             start_msg="Propagating electric fields from mirror to feed horns",
         ) as _:
@@ -118,7 +119,7 @@ def simulate_telescope_response(
     # -----------------------------
     lnb_input_dir = os.path.join(out_dir, "lnb_input")
     if not os.path.exists(lnb_input_dir):
-        with rnw.Directory(lnb_input_dir) as tmp_dir, utils.LoggerStartStop(
+        with rnw.Directory(lnb_input_dir) as tmp_dir, iaat_logger.StartStop(
             logger=logger,
             start_msg="Propagating electric fields through feed horns",
         ) as _:
@@ -149,7 +150,7 @@ def simulate_telescope_response(
     if not os.path.exists(lnb_signal_output_dir):
         with rnw.Directory(
             lnb_signal_output_dir
-        ) as tmp_dir, utils.LoggerStartStop(
+        ) as tmp_dir, iaat_logger.StartStop(
             logger=logger,
             start_msg="Simulating signal leaving low noise block converters",
         ) as _:
@@ -186,7 +187,7 @@ def simulate_telescope_response(
     if not os.path.exists(lnb_noise_output_dir):
         with rnw.Directory(
             lnb_noise_output_dir
-        ) as tmp_dir, utils.LoggerStartStop(
+        ) as tmp_dir, iaat_logger.StartStop(
             logger=logger,
             start_msg="Simulating noise leaving low noise block converters",
         ) as _:
@@ -257,7 +258,7 @@ def simulate_telescope_response(
     if not os.path.exists(lnb_signal_and_noise_output_dir):
         with rnw.Directory(
             lnb_signal_and_noise_output_dir
-        ) as tmp_dir, utils.LoggerStartStop(
+        ) as tmp_dir, iaat_logger.StartStop(
             logger=logger,
             start_msg="Adding noise and signal leaving low noise block converters",
         ) as _:
@@ -287,7 +288,7 @@ def simulate_telescope_response(
     # -----------
     lnb_readout_dir = os.path.join(out_dir, "lnb_readout")
     if not os.path.exists(lnb_readout_dir):
-        with rnw.Directory(lnb_readout_dir) as tmp_dir, utils.LoggerStartStop(
+        with rnw.Directory(lnb_readout_dir) as tmp_dir, iaat_logger.StartStop(
             logger=logger, start_msg="Simulating Readout of LNBs"
         ):
             E_lnb_output = time_series.read(
