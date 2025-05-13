@@ -21,7 +21,7 @@ def make_jobs(work_dir, config):
             config=config, telescope_key=telescope_key
         )
         f_m = telescope["mirror"]["focal_length_m"]
-        quasi_rng = iaat_utils.SobolScale(
+        quasi_rng = iaat_utils.QuasiRandomGenerator(
             low=f_m * config["defocus"]["start_sensor_distance_f"],
             high=f_m * config["defocus"]["stop_sensor_distance_f"],
         )

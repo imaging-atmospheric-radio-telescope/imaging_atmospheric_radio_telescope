@@ -5,16 +5,22 @@ import logging
 from scipy.stats.qmc import Sobol
 
 
-class SobolScale:
+class QuasiRandomGenerator:
     def __init__(self, low, high, random_seed=1):
         self.sobol = Sobol(d=1, rng=random_seed)
         self.low = low
         self.high = high
         self.range = self.high - self.low
 
-    def uniform(self):
-        r = self.sobol.random()
-        return self.low + (r * self.range)
+    def uniform(self, size=None):
+        is_scalar = True if size is None else False
+        if size is None:
+            size = 1
+        r = self.sobol.random(n=size).reshape((size))
+        out = self.low + (r * self.range)
+        if is_scalar:
+            out = out[0]
+        return out
 
 
 def make_parabola_surface_height_m(
