@@ -4,6 +4,23 @@ import json_line_logger
 import logging
 
 
+def make_parabola_surface_height_m(
+    distance_to_optical_axis_m,
+    focal_length_m,
+):
+    """
+    Parameters
+    ----------
+    distance_to_optical_axis_m : float
+        The distance to the parabola's optical axis for where the height of
+        the parabola is estimated.
+    focal_length_m : float
+        The parabola's focal-length.
+    """
+    z = 1 / (4.0 * focal_length_m) * distance_to_optical_axis_m**2
+    return z
+
+
 class SerialPool:
     def __init__(self):
         pass
