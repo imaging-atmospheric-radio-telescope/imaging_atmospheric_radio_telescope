@@ -86,7 +86,7 @@ I_energy_eV = response.Image_energy / iaat.signal.ELECTRON_VOLT_J
 
 iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
-    image=I_energy_eV,
+    energy_feed_horn_eV=I_energy_eV,
     path=os.path.join(scenario_dir, "camera.jpg"),
 )
 
@@ -103,7 +103,6 @@ sebplt.close(fig)
 R_airy_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
     telescope=telescope
 )
-A_airy_m2 = np.pi * R_airy_m**2
 
 E_feed_horns = iaat.time_series.read(
     os.path.join(
@@ -132,7 +131,7 @@ Ene_pixel_eV = Ene_pixel_J / iaat.signal.ELECTRON_VOLT_J
 
 iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
-    image=Ene_pixel_eV,
+    energy_feed_horn_eV=Ene_pixel_eV,
     path=os.path.join(scenario_dir, "camera_from_fine.jpg"),
 )
 
@@ -142,7 +141,7 @@ Ene_feed_horn_scatters_eV = (
 
 iaat.investigations.point_spread_function.plot.plot_feed_horn_scatter_centers(
     camera=telescope["sensor"],
-    fedd_horn_scatter_energy_eV=Ene_feed_horn_scatters_eV,
+    energy_feed_horn_scatter_eV=Ene_feed_horn_scatters_eV,
     path=os.path.join(scenario_dir, "camera_fine.jpg"),
 )
 
@@ -161,7 +160,7 @@ for key in response.region_of_interest_keys:
 
     iaat.investigations.point_spread_function.plot.plot_camera(
         camera=telescope["sensor"],
-        image=np.ones(telescope["sensor"]["num_feed_horns"]),
+        energy_feed_horn_eV=np.ones(telescope["sensor"]["num_feed_horns"]),
         path=os.path.join(scenario_dir, f"{key:s}_mask.jpg"),
         feed_horn_mask=feed_horn_mask,
     )

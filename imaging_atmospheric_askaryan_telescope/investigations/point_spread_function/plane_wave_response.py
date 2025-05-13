@@ -1,8 +1,10 @@
 from . import utils as psf_utils
+from . import plot as psf_plot
 from ... import calibration_source
 from ... import production
 from ... import time_series
 from ... import electric_fields
+from ... import signal
 
 import rename_after_writing as rnw
 import spherical_coordinates
@@ -140,6 +142,46 @@ class PlaneWaveResponse:
                 )
             )
         return self._E_camera
+
+    @property
+    def E_feed_horn_scatter(self):
+        if not hasattr(self, "_E_feed_horn_scatter"):
+            self._E_feed_horn_scatter = time_series.read(
+                os.path.join(
+                    self.path,
+                    "camera",
+                    "feed_horns",
+                    "feed_horns.electric_fields.tar",
+                )
+            )
+        return self._E_feed_horn_scatter
+
+    @property
+    def energy_feed_horn_scatter(self):
+        return electric_fields.integrate_power_over_time(
+            electric_fields=self.E_feed_horn_scatter,
+            channel_effective_area_m2=self.sensor[
+                "feed_horn_scatter_center_area_m2"
+            ],
+        )
+
+    def plot_energy_feed_horn_scatter(self, path):
+        energy_feed_horn_scatter_eV = (
+            self.energy_feed_horn_scatter / signal.ELECTRON_VOLT_J
+        )
+        psf_plot.plot_feed_horn_scatter_centers(
+            camera=self.sensor,
+            energy_feed_horn_scatter_eV=energy_feed_horn_scatter_eV,
+            path=path,
+        )
+
+    def plot_energy_feed_horn(self, path):
+        energy_feed_horn_eV = self.Image_energy / signal.ELECTRON_VOLT_J
+        psf_plot.plot_camera(
+            camera=self.sensor,
+            energy_feed_horn_eV=energy_feed_horn_eV,
+            path=path,
+        )
 
     def E_roi(self, key):
         if key not in self._E_roi:
