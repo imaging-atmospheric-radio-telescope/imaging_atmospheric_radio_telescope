@@ -7,6 +7,7 @@ from ... import production
 from ... import electric_fields
 from ... import calibration_source
 from ... import logger as iaat_logger
+from ... import utils as iaat_utils
 
 import os
 import glob
@@ -92,10 +93,9 @@ def _make_jobs_representative_guide_stars(work_dir, config, telescope):
 
 def _make_jobs_central_feed_horn_scan(work_dir, config, telescope):
     sckey = "central_feed_horn_scan"
-    prng = np.random.Generator(
-        np.random.PCG64(config["stars"]["scenarios"][sckey]["random_seed"])
+    qrng = iaat_utils.QuasiRandomGenerator(
+        seed=config["stars"]["scenarios"][sckey]["random_seed"]
     )
-
     field_of_view_edges = psf_utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
@@ -107,13 +107,13 @@ def _make_jobs_central_feed_horn_scan(work_dir, config, telescope):
         job["key"] = sckey
         job["id"] = i
         job["region_of_interest"] = False
-        az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
-            prng=prng,
-            azimuth_rad=0.0,
-            zenith_rad=0.0,
-            min_half_angle_rad=0.0,
-            max_half_angle_rad=4.0
-            * field_of_view_edges["central_feed_horn_half_angle_rad"],
+        # This is not uniform in solid angle on purpose!
+        # Distribution will be uniform in zenith angle what will
+        # lead to a cluster near zenith.
+        az_rad = qrng.uniform(low=-np.pi, high=np.pi)
+        zd_rad = qrng.uniform(
+            low=0.0,
+            high=4.0 * field_of_view_edges["central_feed_horn_half_angle_rad"],
         )
         job["source_azimuth_rad"] = az_rad
         job["source_zenith_rad"] = zd_rad
@@ -124,7 +124,7 @@ def _make_jobs_central_feed_horn_scan(work_dir, config, telescope):
         config=config,
         telescope=telescope,
         jobs=jobs,
-        prng=prng,
+        prng=qrng,
     )
     return jobs
 
@@ -342,22 +342,28 @@ def run_job(job):
         response.plot()
 
 
-def reduce_responses(work_dir, config, telescope_key, scenario_key):
+def list_response_paths(work_dir, telescope_key, scenario_key):
+    response_path_wildcard = os.path.join(
+        work_dir, "stars", telescope_key, scenario_key, "*"
+    )
+    response_paths = glob.glob(response_path_wildcard)
+    response_paths = sorted(response_paths)
+    return response_paths
 
+
+def reduce_responses(work_dir, config, telescope_key, scenario_key):
     telescope, _, _ = psf_utils.make_telescope_timing_and_site(
         config=config,
         telescope_key=telescope_key,
     )
-
-    response_path_wildcard = os.path.join(
-        work_dir, "stars", telescope_key, scenario_key, "*"
-    )
-
     source_key = "1"
     results = []
+    response_paths = list_response_paths(
+        work_dir=work_dir,
+        telescope_key=telescope_key,
+        scenario_key=scenario_key,
+    )
 
-    response_paths = glob.glob(response_path_wildcard)
-    response_paths = sorted(response_paths)
     for response_path in response_paths:
         response = plane_wave_response.PlaneWaveResponse(response_path)
         response.plot()
