@@ -87,6 +87,9 @@ def _make_jobs_representative_guide_stars(work_dir, config, telescope):
         telescope=telescope,
         jobs=jobs,
         prng=prng,
+        fix_frequency=True,
+        fix_power_density=True,
+        fix_polarization_angle=True,
     )
     return jobs
 
@@ -125,6 +128,8 @@ def _make_jobs_central_feed_horn_scan(work_dir, config, telescope):
         telescope=telescope,
         jobs=jobs,
         prng=qrng,
+        fix_frequency=True,
+        fix_power_density=True,
     )
     return jobs
 
@@ -250,7 +255,16 @@ def _make_jobs_fully_outside_field_of_view(work_dir, config, telescope):
     return jobs
 
 
-def _finish_jobs(work_dir, config, telescope, jobs, prng):
+def _finish_jobs(
+    work_dir,
+    config,
+    telescope,
+    jobs,
+    prng,
+    fix_polarization_angle=False,
+    fix_frequency=False,
+    fix_power_density=False,
+):
     PI = np.pi
     telescope_nu_start_Hz, telescope_nu_stop_Hz = (
         lownoiseblock.input_frequency_start_stop_Hz(lnb=telescope["lnb"])
@@ -265,17 +279,37 @@ def _finish_jobs(work_dir, config, telescope, jobs, prng):
             job["key"],
             f"{job['id']:06d}",
         )
-        job["frequency_Hz"] = prng.uniform(
-            low=telescope_nu_start_Hz,
-            high=telescope_nu_stop_Hz,
-        )
+        if fix_frequency:
+            job["frequency_Hz"] = np.mean(
+                [telescope_nu_start_Hz, telescope_nu_stop_Hz]
+            )
+        else:
+            job["frequency_Hz"] = prng.uniform(
+                low=telescope_nu_start_Hz,
+                high=telescope_nu_stop_Hz,
+            )
 
         job["work_dir"] = work_dir
-        job["source_polarization_angle_rad"] = prng.uniform(low=-PI, high=PI)
-        job["power_density_W_per_m2"] = prng.uniform(
-            low=config["stars"]["power_density_start_W_per_m2"],
-            high=config["stars"]["power_density_stop_W_per_m2"],
-        )
+
+        if fix_polarization_angle:
+            job["source_polarization_angle_rad"] = 0.0
+        else:
+            job["source_polarization_angle_rad"] = prng.uniform(
+                low=-PI, high=PI
+            )
+
+        if fix_power_density:
+            job["power_density_W_per_m2"] = np.mean(
+                [
+                    config["stars"]["power_density_start_W_per_m2"],
+                    config["stars"]["power_density_stop_W_per_m2"],
+                ]
+            )
+        else:
+            job["power_density_W_per_m2"] = prng.uniform(
+                low=config["stars"]["power_density_start_W_per_m2"],
+                high=config["stars"]["power_density_stop_W_per_m2"],
+            )
     return jobs
 
 

@@ -11,7 +11,7 @@ scenario_key = "central_feed_horn_scan"
 
 parser = argparse.ArgumentParser(
     prog=f"plot_{scenario_key:s}.py",
-    description=("Plot feed_horn_sub_scatter."),
+    description=(f"Plot {scenario_key:s}."),
 )
 parser.add_argument(
     "psf_dir",

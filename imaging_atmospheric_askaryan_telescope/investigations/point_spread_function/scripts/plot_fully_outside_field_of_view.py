@@ -11,7 +11,7 @@ scenario_key = "fully_outside_field_of_view"
 
 parser = argparse.ArgumentParser(
     prog=f"plot_{scenario_key:s}.py",
-    description=("Plot feed_horn_sub_scatter."),
+    description=(f"Plot {scenario_key:s}."),
 )
 parser.add_argument(
     "psf_dir",
@@ -132,19 +132,16 @@ for telescope_key in config["stars"]["telescopes"]:
             )
             sebplt.close(fig)
 
-            fig = sebplt.figure(
-                style={"rows": 1920, "cols": 480, "fontsize": 2.0}
-            )
-            ax_cmap = sebplt.add_axes(fig=fig, span=[0.1, 0.05, 0.2, 0.9])
-            sebplt.plt.colorbar(im, cax=ax_cmap)
-            ax_cmap.set_ylabel(r"energy ratio / 1")
-            fig.savefig(
-                os.path.join(
-                    out_dir,
-                    f"{telescope_key:s}_{response_index:06d}_colorbar.jpg",
+            for orientation in ["vertical", "horizontal"]:
+                iaat_plot.write_figure_colorbar(
+                    path=os.path.join(
+                        out_dir,
+                        f"{telescope_key:s}_{response_index:06d}_colorbar_{orientation:s}.jpg",
+                    ),
+                    label=r"energy ratio / 1",
+                    norm=norm,
+                    orientation=orientation,
                 )
-            )
-            sebplt.close(fig)
 
             max_source_zenith_angle_rad = (
                 4.0 * fov["field_of_view_fully_outside_half_angle_rad"]

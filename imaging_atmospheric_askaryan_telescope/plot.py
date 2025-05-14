@@ -39,6 +39,48 @@ def make_vmax_to_match_decades(v):
     return vmax
 
 
+def write_figure_colorbar(
+    path,
+    label,
+    norm,
+    orientation="horizontal",
+    fontsize=2.0,
+    wide=1920,
+    narrow=480,
+):
+    if orientation == "horizontal":
+        figstyle = {"rows": narrow, "cols": wide, "fontsize": fontsize}
+        span = [0.06, 0.55, 0.88, 0.25]
+    elif orientation == "vertical":
+        figstyle = {"rows": wide, "cols": narrow, "fontsize": fontsize}
+        span = [0.1, 0.06, 0.25, 0.88]
+    else:
+        raise AssertionError(f"orientation '{orientation:s}' not known.")
+
+    fig = seb.figure(style=figstyle)
+    ax = seb.add_axes(fig=fig, span=[0, 0, 0, 0])
+    im = ax.pcolormesh(
+        [0, 1],
+        [0, 1],
+        [[1]],
+        cmap="Blues",
+        norm=norm,
+    )
+    ax_cmap = seb.add_axes(
+        fig=fig,
+        span=span,
+    )
+    seb.plt.colorbar(im, cax=ax_cmap, orientation=orientation)
+    if orientation == "vertical":
+        ax_cmap.set_ylabel(label)
+    elif orientation == "horizontal":
+        ax_cmap.set_xlabel(label)
+    else:
+        pass
+    fig.savefig(path)
+    seb.close(fig)
+
+
 def write_figure_gain(
     path,
     frequency,
