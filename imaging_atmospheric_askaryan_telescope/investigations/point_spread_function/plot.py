@@ -85,7 +85,7 @@ def plot_camera(camera, energy_feed_horns_eV, path, feed_horn_mask=None):
     ax.set_ylabel("y / m")
     ax.set_aspect("equal")
     sebplt.plt.colorbar(im, cax=ax_cmap)
-    ax_cmap.set_ylabel(r"Energy / eV")
+    ax_cmap.set_ylabel(r"energy / eV")
 
     ax_hist = sebplt.add_axes(fig=fig, span=[0.15, 0.05, 0.65, 0.12])
     bin_edges = np.geomspace(
@@ -134,7 +134,7 @@ def plot_feed_horn_scatter_centers(camera, energy_feed_horns_scatter_eV, path):
     p = sebplt.matplotlib.collections.PatchCollection(patches, cmap="Blues")
     p.set_array(energy_feed_horns_scatter_eV)
     sebplt.plt.colorbar(p, cax=ax_cmap)
-    ax_cmap.set_ylabel(r"Energy / eV")
+    ax_cmap.set_ylabel(r"energy / eV")
     iaat_camera.ax_add_camera_feed_horn_edges(
         ax=ax, camera=camera, color="black", alpha=0.33, linewidth=0.2
     )
