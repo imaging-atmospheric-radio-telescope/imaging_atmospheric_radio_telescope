@@ -48,19 +48,14 @@ def set_power_with_areal_density(plane_wave_config, power_density_W_per_m2):
 
 def make_field_of_view_region_edges(sensor, focal_length_m):
     regions = {}
+    feed_horn_diameter_m = 2.0 * sensor["camera"]["feed_horn_inner_radius_m"]
 
-    _inner_radius_m = (
-        sensor["camera"]["outer_radius_m"]
-        - sensor["camera"]["feed_horn_inner_radius_m"]
-    )
+    _inner_radius_m = sensor["camera"]["outer_radius_m"] - feed_horn_diameter_m
     regions["field_of_view_fully_inside_half_angle_rad"] = np.arctan(
         _inner_radius_m / focal_length_m
     )
 
-    _outer_radius_m = (
-        sensor["camera"]["outer_radius_m"]
-        + sensor["camera"]["feed_horn_inner_radius_m"]
-    )
+    _outer_radius_m = sensor["camera"]["outer_radius_m"] + feed_horn_diameter_m
     regions["field_of_view_fully_outside_half_angle_rad"] = np.arctan(
         _outer_radius_m / focal_length_m
     )
