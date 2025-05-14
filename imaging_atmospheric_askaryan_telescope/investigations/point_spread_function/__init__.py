@@ -111,7 +111,7 @@ def run(work_dir, pool=None, logger=None):
 
     logger.debug("make jobs for 'stars' ...")
     star_jobs = stars.make_jobs(work_dir=work_dir, config=config)
-    logger.debug(f"{len(star_jobs):d} defocus jobs in total.")
+    logger.debug(f"{len(star_jobs):d} star jobs in total.")
     star_jobs = stars.drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
     logger.debug(f"{len(star_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'stars' ...")
@@ -129,7 +129,7 @@ def run(work_dir, pool=None, logger=None):
 
     logger.debug("make jobs for 'multis' ...")
     multis_jobs = multis.make_jobs(work_dir=work_dir, config=config)
-    logger.debug(f"{len(multis_jobs):d} multis jobs in total.")
+    logger.debug(f"{len(multis_jobs):d} multi jobs in total.")
     multis_jobs = multis.drop_finished_jobs(
         work_dir=work_dir, jobs=multis_jobs
     )

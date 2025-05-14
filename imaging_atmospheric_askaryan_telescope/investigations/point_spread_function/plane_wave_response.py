@@ -83,6 +83,7 @@ def make_PlaneWaveResponse(
                 readout_random_seed=random_seed + 2,
                 camera_lnb_random_seed=random_seed + 3,
                 stop_after_section="feed_horns",
+                logger=logger,
             )
 
             with rnw.open(os.path.join(roi_key_dir, "sensor.json"), "wt") as f:

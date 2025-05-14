@@ -14,6 +14,7 @@ import rename_after_writing as rnw
 
 
 def make_jobs(work_dir, config):
+    PI = np.pi
     jobs = []
     for telescope_key in config["defocus"]["telescopes"]:
 
@@ -21,15 +22,16 @@ def make_jobs(work_dir, config):
             config=config, telescope_key=telescope_key
         )
         f_m = telescope["mirror"]["focal_length_m"]
-        quasi_rng = iaat_utils.QuasiRandomGenerator(
-            low=f_m * config["defocus"]["start_sensor_distance_f"],
-            high=f_m * config["defocus"]["stop_sensor_distance_f"],
-        )
+        qrng = iaat_utils.QuasiRandomGenerator(seed=123)
         for i in range(config["defocus"]["num"]):
             job = {}
             job["telescope_key"] = telescope_key
             job["id"] = i
-            job["sensor_distance_m"] = quasi_rng.uniform()
+            job["sensor_distance_m"] = qrng.uniform(
+                low=f_m * config["defocus"]["start_sensor_distance_f"],
+                high=f_m * config["defocus"]["stop_sensor_distance_f"],
+            )
+            job["polarization_angle_rad"] = qrng.uniform(low=-PI, high=PI)
             job["work_dir"] = work_dir
             job["path"] = os.path.join(
                 work_dir, "defocus", job["telescope_key"], f"{job['id']:06d}"
@@ -68,7 +70,7 @@ def run_job(job):
     s1 = calibration_source.plane_wave_in_far_field.make_config()
     s1["geometry"]["azimuth_rad"] = 0.0
     s1["geometry"]["zenith_rad"] = 0.0
-    s1["geometry"]["polarization_angle_rad"] = 0.0
+    s1["geometry"]["polarization_angle_rad"] = job["polarization_angle_rad"]
     s1["sine_wave"]["emission_frequency_Hz"] = source_frequency_Hz
     source_config["plane_waves"] = {}
     source_config["plane_waves"]["1"] = s1

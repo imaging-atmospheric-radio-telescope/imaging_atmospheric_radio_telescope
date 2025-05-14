@@ -251,6 +251,7 @@ def _make_jobs_fully_outside_field_of_view(work_dir, config, telescope):
 
 
 def _finish_jobs(work_dir, config, telescope, jobs, prng):
+    PI = np.pi
     telescope_nu_start_Hz, telescope_nu_stop_Hz = (
         lownoiseblock.input_frequency_start_stop_Hz(lnb=telescope["lnb"])
     )
@@ -270,7 +271,7 @@ def _finish_jobs(work_dir, config, telescope, jobs, prng):
         )
 
         job["work_dir"] = work_dir
-        job["source_polarization_angle_rad"] = 0.0
+        job["source_polarization_angle_rad"] = prng.uniform(low=-PI, high=PI)
         job["power_density_W_per_m2"] = prng.uniform(
             low=config["stars"]["power_density_start_W_per_m2"],
             high=config["stars"]["power_density_stop_W_per_m2"],

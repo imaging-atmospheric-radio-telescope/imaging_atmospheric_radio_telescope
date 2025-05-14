@@ -72,7 +72,7 @@ def _draw_source(prng, config, telescope):
         low=config["multis"]["power_density_start_W_per_m2"],
         high=config["multis"]["power_density_stop_W_per_m2"],
     )
-    job["polarization_angle_rad"] = 0.0
+    job["polarization_angle_rad"] = prng.uniform(low=-np.pi, high=np.pi)
     return job
 
 
