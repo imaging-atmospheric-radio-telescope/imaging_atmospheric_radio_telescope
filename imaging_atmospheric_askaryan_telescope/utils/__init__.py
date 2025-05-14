@@ -1,6 +1,18 @@
 import numpy as np
 import copy
 from scipy.stats.qmc import Sobol
+from scipy.optimize import curve_fit
+
+
+def gauss_pseudo_2d(xy, x0, y0, sigma):
+    dx = xy[:, 0] - x0
+    dy = xy[:, 1] - y0
+    dd = np.hypot(dx, dy)
+    return gauss1d(x=dd, x0=0, sigma=sigma)
+
+
+def gauss1d(x, x0, sigma):
+    return np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
 
 class QuasiRandomGenerator:

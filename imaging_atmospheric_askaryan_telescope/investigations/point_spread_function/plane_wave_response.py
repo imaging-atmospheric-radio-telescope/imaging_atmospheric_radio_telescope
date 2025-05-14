@@ -5,6 +5,7 @@ from ... import production
 from ... import time_series
 from ... import electric_fields
 from ... import signal
+from ... import camera
 
 import rename_after_writing as rnw
 import spherical_coordinates
@@ -165,6 +166,11 @@ class PlaneWaveResponse:
                 "feed_horn_scatter_center_area_m2"
             ],
         )
+
+    def point_cloud_feed_horns_scatter_energy(self):
+        sc_pos = camera.get_camera_feed_horn_scatter_centers(self.sensor)
+        sc_w = self.energy_feed_horns_scatter
+        return sc_pos[:, 0:2], sc_w
 
     def plot_energy_feed_horns_scatter(self, path):
         energy_feed_horns_scatter_eV = (

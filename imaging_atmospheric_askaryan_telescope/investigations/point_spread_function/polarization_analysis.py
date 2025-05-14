@@ -20,3 +20,26 @@ def analyse_linear_polarization_over_time(E_field_vs_time):
     factor = larges_eigen_value / sum_of_all_eigen_values
     vector = eigen_vectors[larges_eigen_value_index]
     return factor, vector
+
+
+def analyse_linear_polarization(electric_fields, channel_mask):
+    factors = []
+    vectors = []
+    for channel in range(electric_fields.num_channels):
+        if channel_mask[channel]:
+            factor, vector = analyse_linear_polarization_over_time(
+                E_field_vs_time=electric_fields[channel]
+            )
+            factors.append(factor)
+            vectors.append(vector)
+    factors = np.array(factors)
+    vectors = np.array(vectors)
+
+    xxs = vectors[:, 0]
+    yys = vectors[:, 1]
+    phis = np.arctan2(yys, xxs)
+
+    return (np.median(factors), np.std(factors)), (
+        np.median(phis),
+        np.std(phis),
+    )
