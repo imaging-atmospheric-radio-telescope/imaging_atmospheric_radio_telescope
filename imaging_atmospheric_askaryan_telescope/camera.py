@@ -245,3 +245,11 @@ def get_camera_feed_horn_scatter_centers(camera):
             )
             positions_m.append(position_m)
     return np.array(positions_m)
+
+
+def get_index_of_central_feed_horn(camera):
+    pos = copy.copy(camera["feed_horn_positions_m"])
+    pos[:, 2] -= np.mean(pos[:, 2])
+    amin = np.argmin(np.linalg.norm(pos, axis=1))
+    assert np.linalg.norm(pos[amin]) < 1e-6
+    return amin
