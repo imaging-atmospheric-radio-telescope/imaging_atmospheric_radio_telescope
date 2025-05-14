@@ -4,18 +4,25 @@ from scipy.stats.qmc import Sobol
 
 
 class QuasiRandomGenerator:
-    def __init__(self, low, high, random_seed=1):
-        self.sobol = Sobol(d=1, rng=random_seed)
-        self.low = low
-        self.high = high
-        self.range = self.high - self.low
+    """
+    In contrast to a pseudo random number generator, this quasi
+    generator has a strategy to populate uniform distributions
+    as quickly as possible.
+    """
 
-    def uniform(self, size=None):
+    def __init__(self, seed=1):
+        self.sobol = Sobol(d=1, rng=seed)
+
+    def uniform(self, low=0, high=1, size=None):
+        u = self._uniform_0_1(size=size)
+        width = high - low
+        return low + u * width
+
+    def _uniform_0_1(self, size=None):
         is_scalar = True if size is None else False
         if size is None:
             size = 1
-        r = self.sobol.random(n=size).reshape((size))
-        out = self.low + (r * self.range)
+        out = self.sobol.random(n=size).reshape((size))
         if is_scalar:
             out = out[0]
         return out
