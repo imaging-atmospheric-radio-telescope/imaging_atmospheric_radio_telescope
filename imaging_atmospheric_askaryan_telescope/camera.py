@@ -7,9 +7,6 @@ import thin_lens
 import copy
 
 
-TOWARDS_MIRROR = -1.0
-
-
 def _make_feed_horn_center_grid(
     screen_radius_m,
     feed_horn_inner_radius_m,
@@ -51,18 +48,6 @@ def _grid_add_vector(grid, vector):
     out = collections.OrderedDict()
     for key in grid:
         out[key] = grid[key] + vector
-    return out
-
-
-def _elevate_grid_in_parabola_along_z_axis(grid, focal_length_m):
-    out = collections.OrderedDict()
-    for key in grid:
-        _x, _y, _z = grid[key]
-        out_z = TOWARDS_MIRROR * utils.make_parabola_surface_height_m(
-            distance_to_optical_axis_m=np.linalg.norm([_x, _y]),
-            focal_length_m=focal_length_m,
-        )
-        out[key] = np.array([_x, _y, out_z])
     return out
 
 
