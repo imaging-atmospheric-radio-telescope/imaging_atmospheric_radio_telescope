@@ -5,6 +5,7 @@ import numpy as np
 import optic_object_wavefronts as oow
 import thin_lens
 import copy
+import sebastians_matplotlib_addons as sebplt
 
 
 def _make_feed_horn_center_grid(
@@ -211,17 +212,21 @@ def ax_add_camera_feed_horn_centers(ax, camera, **kwargs):
         )
 
 
-def ax_add_camera_feed_horn_edges(ax, camera, **kwargs):
+def ax_add_camera_feed_horn_edges(ax, camera, scale_function=None, **kwargs):
+    edge_vertices = copy.copy(camera["camera"]["feed_horn_edge_vertices_m"])
+    if scale_function is not None:
+        for i in range(len(edge_vertices)):
+            edge_vertices[i][0] = scale_function(edge_vertices[i][0])
+            edge_vertices[i][1] = scale_function(edge_vertices[i][1])
+
     for i in range(len(camera["feed_horn_positions_m"])):
         _edges = camera["camera"]["feed_horn_edge_mapping"][i]
         for j in range(len(_edges)):
             start_key = _edges[j]
             stop_index = 0 if j == 5 else j + 1
             stop_key = _edges[stop_index]
-            start_pos = camera["camera"]["feed_horn_edge_vertices_m"][
-                start_key
-            ]
-            stop_pos = camera["camera"]["feed_horn_edge_vertices_m"][stop_key]
+            start_pos = edge_vertices[start_key]
+            stop_pos = edge_vertices[stop_key]
             ax.plot(
                 [start_pos[0], stop_pos[0]],
                 [start_pos[1], stop_pos[1]],
@@ -253,3 +258,74 @@ def get_index_of_central_feed_horn(camera):
     amin = np.argmin(np.linalg.norm(pos, axis=1))
     assert np.linalg.norm(pos[amin]) < 1e-6
     return amin
+
+
+def ax_add_camera_feed_horn_scatter_values(
+    ax,
+    camera,
+    feed_horn_scatter_values,
+    scale_function=None,
+    **kwargs,
+):
+    scatpos = get_camera_feed_horn_scatter_centers(camera=camera)
+    scatpos = copy.copy(scatpos)
+    scatter_hexagon_radius = 0.5 * np.sqrt(
+        camera["feed_horn_scatter_center_area_m2"]
+    )
+
+    if scale_function is not None:
+        scatter_hexagon_radius = scale_function(scatter_hexagon_radius)
+        for i in range(len(scatpos)):
+            scatpos[i][0] = scale_function(scatpos[i][0])
+            scatpos[i][1] = scale_function(scatpos[i][1])
+
+    patches = []
+    for i in range(len(scatpos)):
+        patches.append(
+            sebplt.matplotlib.patches.RegularPolygon(
+                (scatpos[i][0], scatpos[i][1]),
+                numVertices=6,
+                radius=scatter_hexagon_radius,
+                orientation=0.0,
+            )
+        )
+    p = sebplt.matplotlib.collections.PatchCollection(patches, **kwargs)
+    p.set_array(feed_horn_scatter_values)
+    ax.add_collection(p)
+    return p
+
+
+def ax_add_camera_feed_horn_values(
+    ax,
+    camera,
+    feed_horn_values,
+    scale_function=None,
+    **kwargs,
+):
+    pos = camera["feed_horn_positions_m"]
+    pos = copy.copy(pos)
+
+    feed_horn_outer_radius = utils.hexagon_outer_radius_given_inner_radius(
+        camera["camera"]["feed_horn_inner_radius_m"]
+    )
+
+    if scale_function is not None:
+        feed_horn_outer_radius = scale_function(feed_horn_outer_radius)
+        for i in range(len(pos)):
+            pos[i][0] = scale_function(pos[i][0])
+            pos[i][1] = scale_function(pos[i][1])
+
+    patches = []
+    for i in range(len(pos)):
+        patches.append(
+            sebplt.matplotlib.patches.RegularPolygon(
+                (pos[i][0], pos[i][1]),
+                numVertices=6,
+                radius=feed_horn_outer_radius,
+                orientation=0.0,
+            )
+        )
+    p = sebplt.matplotlib.collections.PatchCollection(patches, **kwargs)
+    p.set_array(feed_horn_values)
+    ax.add_collection(p)
+    return p

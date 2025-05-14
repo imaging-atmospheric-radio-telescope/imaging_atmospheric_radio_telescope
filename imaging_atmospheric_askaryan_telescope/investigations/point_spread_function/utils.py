@@ -63,6 +63,11 @@ def make_field_of_view_region_edges(sensor, focal_length_m):
     regions["central_feed_horn_half_angle_rad"] = np.arctan(
         sensor["camera"]["feed_horn_inner_radius_m"] / focal_length_m
     )
+
+    regions["field_of_view_half_angle_rad"] = np.arctan(
+        sensor["camera"]["outer_radius_m"] / focal_length_m
+    )
+
     return regions
 
 

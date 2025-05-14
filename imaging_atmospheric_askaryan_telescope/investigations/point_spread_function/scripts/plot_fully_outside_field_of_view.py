@@ -4,6 +4,7 @@ import sebastians_matplotlib_addons as sebplt
 import imaging_atmospheric_askaryan_telescope as iaat
 from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
 import numpy as np
+import spherical_coordinates
 import binning_utils
 
 scenario_key = "fully_outside_field_of_view"
@@ -81,6 +82,142 @@ for telescope_key in config["stars"]["telescopes"]:
         if np.any(power_ratio > power_ratio_threshold):
             print(response_path)
 
+            brightest_feed_horn_index = np.argmax(power_ratio)
+            response_index = int(os.path.basename(response_path))
+
+            m2deg = lambda x: -np.rad2deg(
+                np.arctan(x / telescope["mirror"]["focal_length_m"])
+            )
+
+            fig = sebplt.figure(
+                style={"rows": 1920, "cols": 1920, "fontsize": 2.0}
+            )
+            AXES_MINIMAL = {
+                "spines": ["left", "bottom"],
+                "axes": ["x", "y"],
+                "grid": False,
+            }
+            AXES_BLANK = {"spines": [], "axes": [], "grid": False}
+            ax = sebplt.add_axes(
+                fig=fig, span=[0.0, 0.0, 1, 1], style=AXES_BLANK
+            )
+            norm = sebplt.matplotlib.colors.LogNorm(
+                vmin=1e-3,
+                vmax=1e-1,
+            )
+            im = iaat.camera.ax_add_camera_feed_horn_scatter_values(
+                ax=ax,
+                camera=telescope["sensor"],
+                feed_horn_scatter_values=response.energy_feed_horns_scatter
+                / energy_expected_from_source_J,
+                cmap="Blues",
+                norm=norm,
+                scale_function=m2deg,
+            )
+            iaat.camera.ax_add_camera_feed_horn_edges(
+                ax=ax,
+                camera=telescope["sensor"],
+                color="black",
+                alpha=0.33,
+                linewidth=0.2,
+                scale_function=m2deg,
+            )
+            ax.set_xlabel(r"x / (1$^{\circ}$)")
+            ax.set_ylabel(r"y / (1$^{\circ}$)")
+            fig.savefig(
+                os.path.join(
+                    out_dir,
+                    f"{telescope_key:s}_{response_index:06d}_ghosting.jpg",
+                )
+            )
+            sebplt.close(fig)
+
+            fig = sebplt.figure(
+                style={"rows": 1920, "cols": 480, "fontsize": 2.0}
+            )
+            ax_cmap = sebplt.add_axes(fig=fig, span=[0.1, 0.05, 0.2, 0.9])
+            sebplt.plt.colorbar(im, cax=ax_cmap)
+            ax_cmap.set_ylabel(r"energy ratio / 1")
+            fig.savefig(
+                os.path.join(
+                    out_dir,
+                    f"{telescope_key:s}_{response_index:06d}_colorbar.jpg",
+                )
+            )
+            sebplt.close(fig)
+
+            max_source_zenith_angle_rad = (
+                4.0 * fov["field_of_view_fully_outside_half_angle_rad"]
+            )
+            max_source_zenith_angle_deg = np.rad2deg(
+                max_source_zenith_angle_rad
+            )
+            fig = sebplt.figure(
+                style={"rows": 1920, "cols": 1920, "fontsize": 2.0}
+            )
+            ax = sebplt.add_axes(
+                fig=fig, span=[0.0, 0.0, 1, 1], style=AXES_BLANK
+            )
+            ax.set_xlim(
+                [-max_source_zenith_angle_deg, max_source_zenith_angle_deg]
+            )
+            ax.set_ylim(
+                [-max_source_zenith_angle_deg, max_source_zenith_angle_deg]
+            )
+            ax.set_xlabel(r"x / (1$^{\circ}$)")
+            ax.set_ylabel(r"y / (1$^{\circ}$)")
+            source_cx, source_cy = spherical_coordinates.az_zd_to_cx_cy(
+                azimuth_rad=plane_wave_config["geometry"]["azimuth_rad"],
+                zenith_rad=plane_wave_config["geometry"]["zenith_rad"],
+            )
+            ax.plot(
+                np.rad2deg(source_cx),
+                np.rad2deg(source_cy),
+                marker="*",
+                markersize=10.0,
+                color="black",
+            )
+            im = iaat.camera.ax_add_camera_feed_horn_values(
+                ax=ax,
+                camera=telescope["sensor"],
+                feed_horn_values=response.energy_feed_horns
+                / energy_expected_from_source_J,
+                scale_function=m2deg,
+                cmap="Blues",
+                norm=norm,
+            )
+            nnn_deg = int(
+                np.ceil(np.rad2deg(fov["field_of_view_half_angle_rad"]))
+            )
+            NNN_deg = int(np.ceil(max_source_zenith_angle_deg))
+            for ideg in np.arange(nnn_deg, NNN_deg):
+                sebplt.ax_add_circle(
+                    ax=ax,
+                    x=0.0,
+                    y=0.0,
+                    r=ideg,
+                    color="black",
+                    linewidth=0.25,
+                    alpha=0.25,
+                )
+            for iaz_rad in np.arange(0, 2 * np.pi, np.pi / 6):
+                _ax = np.cos(iaz_rad)
+                _ay = np.sin(iaz_rad)
+                ax.plot(
+                    _ax * np.array([nnn_deg, NNN_deg - 1]),
+                    _ay * np.array([nnn_deg, NNN_deg - 1]),
+                    color="black",
+                    linewidth=0.25,
+                    alpha=0.25,
+                )
+            fig.savefig(
+                os.path.join(
+                    out_dir,
+                    f"{telescope_key:s}_{response_index:06d}_geometry.jpg",
+                )
+            )
+            sebplt.close(fig)
+
     azimuths_rad = np.array(azimuths_rad)
     zeniths_rad = np.array(zeniths_rad)
     polarizations_rad = np.array(polarizations_rad)
@@ -95,8 +232,8 @@ for telescope_key in config["stars"]["telescopes"]:
     bin_counts = np.histogram(power_ratios, bins=power_ratio_bin["edges"])[0]
     relbin_counts = bin_counts / np.sum(bin_counts)
 
-    fig = sebplt.figure(style={"rows": 720, "cols": 1920, "fontsize": 1.5})
-    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
+    fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 2.0})
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
     sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=power_ratio_bin["edges"],
@@ -108,7 +245,7 @@ for telescope_key in config["stars"]["telescopes"]:
     ax.loglog()
     ax.set_ylim([1e-5, 1e-0])
     ax.set_xlim(power_ratio_bin["limits"])
-    ax.set_xlabel("power ratio / 1")
+    ax.set_xlabel("energy ratio / 1")
     ax.set_ylabel("relative intensity / 1")
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_power_ratio.jpg"))
     sebplt.close(fig)
