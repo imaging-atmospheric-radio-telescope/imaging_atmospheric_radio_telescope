@@ -3,6 +3,7 @@ import copy
 import homogeneous_transformation as homtra
 
 from .. import time_series
+from .. import mount
 from .. import signal
 from . import sine_wave_ramp
 
@@ -75,7 +76,25 @@ def has_no_nan(x):
     return np.all(np.logical_not(np.isnan(x)))
 
 
-def make_civil_transformation(azimuth_rad, zenith_rad, polarization_angle_rad):
+def make_civil_rotation_for_polarization(polarization_angle_rad):
+    """
+    Rotation along the z-axis
+    """
+    return {
+        "repr": "tait_bryan",
+        "xyz_deg": np.array([0.0, 0.0, np.rad2deg(-polarization_angle_rad)]),
+    }
+
+
+def _make_civil_transformation(civil_rot, translation_vector=None):
+    if translation_vector is None:
+        translation_vector = np.array([0, 0, 0])
+    return {"pos": translation_vector, "rot": civil_rot}
+
+
+def compile_homogeneous_transformation(
+    azimuth_rad, zenith_rad, polarization_angle_rad
+):
     """
     Defining the 3D transformation of the plane wave.
 
@@ -95,19 +114,26 @@ def make_civil_transformation(azimuth_rad, zenith_rad, polarization_angle_rad):
         Angle of electric field axis with respect to its own reference frame
         (x axis).
     """
-    rot = {
-        "repr": "tait_bryan",
-        "xyz_deg": np.array(
-            [
-                np.rad2deg(polarization_angle_rad),
-                np.rad2deg(-zenith_rad),
-                np.rad2deg(-azimuth_rad),
-            ]
-        ),
-    }
-    zero = np.array([0, 0, 0])  # we only want to rotate.
 
-    return {"pos": zero, "rot": rot}
+    rot_polarization = make_civil_rotation_for_polarization(
+        polarization_angle_rad=polarization_angle_rad
+    )
+    rot_pointing = mount.make_civil_rotation_for_mount_without_z_rotation(
+        azimuth_rad=azimuth_rad,
+        zenith_rad=zenith_rad,
+    )
+    t_civil_polarization = _make_civil_transformation(rot_polarization)
+    t_civil_pointing = _make_civil_transformation(rot_pointing)
+
+    t_polarization = homtra.compile(t_civil_polarization)
+    t_pointing = homtra.compile(t_civil_pointing)
+
+    t_ba = homtra.sequence(
+        t_a=t_polarization,
+        t_b=t_pointing,
+    )
+
+    return t_ba
 
 
 def make_power_setup(
@@ -162,12 +188,10 @@ def make_geometry_setup(
     # B_field_vector_in_source_frame = np.array([0.0, 1.0, 0.0])
 
     g["homogeneous_transformation_from_source_frame_to_asl_frame"] = (
-        homtra.compile(
-            make_civil_transformation(
-                azimuth_rad=g["azimuth_rad"],
-                zenith_rad=g["zenith_rad"],
-                polarization_angle_rad=g["polarization_angle_rad"],
-            )
+        compile_homogeneous_transformation(
+            azimuth_rad=g["azimuth_rad"],
+            zenith_rad=g["zenith_rad"],
+            polarization_angle_rad=g["polarization_angle_rad"],
         )
     )
 
