@@ -2,6 +2,7 @@ import numpy as np
 import os
 import copy
 import builtins
+import gzip
 from .utils import tarstream
 from .signal import add_first_to_second_at
 
@@ -350,9 +351,11 @@ def write(path, time_series):
             filename=f"si_unit.txt",
             filebytes=s.si_unit.encode(),
         )
+        _x_bytes = s._x.tobytes(order="C")
+        _x_bytes_gz = gzip.compress(_x_bytes)
         t.write(
-            filename=f"x.channel.time.component.{s._x.dtype.name:s}",
-            filebytes=s._x.tobytes(order="C"),
+            filename=f"x.channel.time.component.{s._x.dtype.name:s}.gz",
+            filebytes=_x_bytes_gz,
         )
 
 
@@ -384,8 +387,18 @@ def read(path):
 
         filename, filebytes = t.read()
         assert filename.startswith("x.channel.time.component.")
-        _dtype_ext = os.path.splitext(filename)[-1]
+
+        if filename.endswith(".gz"):
+            _filename, _gz_ext = os.path.splitext(filename)
+            _filebytes = gzip.decompress(filebytes)
+            assert _gz_ext == ".gz"
+        else:
+            _filename = filename
+            _filebytes = filebytes
+
+        _dtype_ext = os.path.splitext(_filename)[-1]
         assert _dtype_ext.startswith(".")
+
         dtype_name = _dtype_ext[1:]
 
         o = zeros(
@@ -398,7 +411,7 @@ def read(path):
             si_unit=si_unit,
         )
 
-        tmp = np.frombuffer(filebytes, dtype=dtype_name)
+        tmp = np.frombuffer(_filebytes, dtype=dtype_name)
         o._x = tmp.reshape(
             o.num_channels,
             o.num_time_slices,
