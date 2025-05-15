@@ -94,7 +94,7 @@ def simulate_telescope_response(
             E_mirror = time_series.read(
                 path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
             )
-            E_sensor, E_feed_horns = (
+            E_sensor, E_feed_horns_scatter = (
                 simtelescope.propagate_electric_field_from_mirror_to_sensor(
                     telescope=telescope,
                     mirror_electric_fields=E_mirror,
@@ -108,8 +108,8 @@ def simulate_telescope_response(
                 time_series=E_sensor,
             )
             time_series.write(
-                path=os.path.join(tmp_dir, "feed_horns.electric_fields.tar"),
-                time_series=E_feed_horns,
+                path=os.path.join(tmp_dir, "scatter.electric_fields.tar"),
+                time_series=E_feed_horns_scatter,
             )
 
     if stop_after_section == "feed_horns":

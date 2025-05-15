@@ -153,7 +153,7 @@ class PlaneWaveResponse:
                     self.path,
                     "camera",
                     "feed_horns",
-                    "feed_horns.electric_fields.tar",
+                    "scatter.electric_fields.tar",
                 )
             )
         return self._E_feed_horns_scatter
