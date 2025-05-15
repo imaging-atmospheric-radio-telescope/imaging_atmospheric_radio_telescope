@@ -150,7 +150,7 @@ def _make_jobs_fully_inside_field_of_view(work_dir, config, telescope):
         job = {}
         job["key"] = sckey
         job["id"] = i
-        job["region_of_interest"] = False
+        job["region_of_interest"] = True
         az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
             prng=prng,
             azimuth_rad=0.0,
@@ -188,7 +188,7 @@ def _make_jobs_on_edge_of_field_of_view(work_dir, config, telescope):
         job = {}
         job["key"] = sckey
         job["id"] = i
-        job["region_of_interest"] = False
+        job["region_of_interest"] = True
         az_rad, zd_rad = spherical_coordinates.random.uniform_az_zd_in_cone(
             prng=prng,
             azimuth_rad=0.0,
@@ -371,6 +371,7 @@ def run_job(job):
                 num_waves * timing["oversampling"]
             ),
             logger=logger,
+            save_roi_electric_fields=False,
         )
         response = plane_wave_response.PlaneWaveResponse(tmp_dir)
         response.plot()

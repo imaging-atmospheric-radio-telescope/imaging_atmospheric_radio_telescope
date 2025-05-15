@@ -91,6 +91,7 @@ def run_job(job):
                 num_waves * timing["oversampling"]
             ),
             logger=logger,
+            save_roi_electric_fields=False,
         )
         response = plane_wave_response.PlaneWaveResponse(tmp_dir)
         response.plot()

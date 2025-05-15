@@ -78,6 +78,7 @@ iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResp
     region_of_interest_rad=region_of_interest_rad,
     region_of_interest_num_bins=21,
     save_feed_horns_scatter_electric_fields=True,
+    save_roi_electric_fields=True,
 )
 response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
     path=scenario_dir

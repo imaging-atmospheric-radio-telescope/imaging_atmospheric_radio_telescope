@@ -27,6 +27,7 @@ def make_PlaneWaveResponse(
     region_of_interest_rad=np.deg2rad(0.5),
     region_of_interest_num_bins=42,
     save_feed_horns_scatter_electric_fields=False,
+    save_roi_electric_fields=False,
     logger=None,
 ):
     os.makedirs(out_dir, exist_ok=True)
@@ -86,6 +87,7 @@ def make_PlaneWaveResponse(
                 readout_random_seed=random_seed + 2,
                 camera_lnb_random_seed=random_seed + 3,
                 stop_after_section="feed_horns",
+                save_feed_horns_electric_fields=save_roi_electric_fields,
                 logger=logger,
             )
 
@@ -162,23 +164,15 @@ class PlaneWaveResponse:
 
     @property
     def energy_feed_horns_scatter(self):
-        try:
-            return electric_fields.integrate_power_over_time(
-                electric_fields=self.E_feed_horns_scatter,
-                channel_effective_area_m2=self.sensor[
-                    "feed_horn_scatter_center_area_m2"
-                ],
-            )
-        except FileNotFoundError as err:
-            _path = os.path.join(
-                self.path,
-                "camera",
-                "feed_horns",
-                "scatter.energy.npy",
-            )
-            with open(_path, "rb") as f:
-                ene = np.load(f)
-            return ene
+        _path = os.path.join(
+            self.path,
+            "camera",
+            "feed_horns",
+            "scatter.energy.npy",
+        )
+        with open(_path, "rb") as f:
+            ene = np.load(f)
+        return ene
 
     def point_cloud_feed_horns_scatter_energy(self):
         sc_pos = camera.get_camera_feed_horn_scatter_centers(self.sensor)
@@ -248,19 +242,29 @@ class PlaneWaveResponse:
 
     @property
     def energy_feed_horns(self):
-        Ene_J = electric_fields.integrate_power_over_time(
-            electric_fields=self.E_feed_horns,
-            channel_effective_area_m2=self.sensor["feed_horn_area_m2"],
+        _path = os.path.join(
+            self.path,
+            "camera",
+            "feed_horns",
+            "energy.npy",
         )
+        with open(_path, "rb") as f:
+            Ene_J = np.load(f)
         return Ene_J
 
     def energy_roi(self, key):
-        E_roi_key = self.E_roi(key)
         sensor_roi_key = self.sensor_roi(key)
-        Ene_roi_J = electric_fields.integrate_power_over_time(
-            electric_fields=E_roi_key,
-            channel_effective_area_m2=sensor_roi_key["feed_horn_area_m2"],
+
+        _path = os.path.join(
+            self.path,
+            "region_of_interest",
+            key,
+            "feed_horns",
+            "energy.npy",
         )
+        with open(_path, "rb") as f:
+            Ene_roi_J = np.load(f)
+
         x_bin_edges = sensor_roi_key["region_of_interest"]["x_bin_edges_m"]
         y_bin_edges = sensor_roi_key["region_of_interest"]["y_bin_edges_m"]
 

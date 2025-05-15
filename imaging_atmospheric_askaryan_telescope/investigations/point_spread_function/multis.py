@@ -120,6 +120,7 @@ def run_job(job):
             region_of_interest_rad=None,
             region_of_interest_num_bins=None,
             logger=logger,
+            save_roi_electric_fields=False,
         )
         response = plane_wave_response.PlaneWaveResponse(tmp_dir)
         response.plot()
