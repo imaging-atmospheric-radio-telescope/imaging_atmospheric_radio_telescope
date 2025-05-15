@@ -27,7 +27,15 @@ import shutil
 import glob
 
 
-def init(work_dir):
+def either(flag, x, y):
+    if flag:
+        return x
+    else:
+        return y
+
+
+def init(work_dir, big=True):
+
     os.makedirs(work_dir, exist_ok=True)
     config_dir = os.path.join(work_dir, "config")
     os.makedirs(config_dir, exist_ok=True)
@@ -36,7 +44,13 @@ def init(work_dir):
     telescopes_dir = os.path.join(config_dir, "telescopes")
     os.makedirs(telescopes_dir, exist_ok=True)
 
-    for key in ["crome", "medium_size_telescope"]:
+    TELESCOPE_KEYS = either(
+        big,
+        ["crome", "medium_size_telescope", "large_size_telescope"],
+        ["crome", "medium_size_telescope"],
+    )
+
+    for key in TELESCOPE_KEYS:
         telescope_config = telescopes.init(key)
         with rnw.open(
             os.path.join(telescopes_dir, f"{key:s}.json"), "wt"
@@ -57,7 +71,7 @@ def init(work_dir):
         f.write(json_utils.dumps(timing_config, indent=4))
 
     sc = {
-        "telescopes": ["crome", "medium_size_telescope"],
+        "telescopes": TELESCOPE_KEYS,
         "power_density_start_W_per_m2": 1e-12,
         "power_density_stop_W_per_m2": 3e-12,
         "scenarios": {},
@@ -66,17 +80,20 @@ def init(work_dir):
         "num": 5,
         "random_seed": 100,
     }
-    sc["scenarios"]["central_feed_horn_scan"] = {"num": 8, "random_seed": 100}
+    sc["scenarios"]["central_feed_horn_scan"] = {
+        "num": either(big, 80, 8),
+        "random_seed": 100,
+    }
     sc["scenarios"]["fully_inside_field_of_view"] = {
-        "num": 8,
+        "num": either(big, 400, 8),
         "random_seed": 100,
     }
     sc["scenarios"]["on_edge_of_field_of_view"] = {
-        "num": 8,
+        "num": either(big, 80, 4),
         "random_seed": 100,
     }
     sc["scenarios"]["fully_outside_field_of_view"] = {
-        "num": 8,
+        "num": either(big, 160, 8),
         "random_seed": 100,
     }
 
@@ -84,21 +101,25 @@ def init(work_dir):
         f.write(json_utils.dumps(sc, indent=4))
 
     defocus_config = {
-        "telescopes": ["medium_size_telescope"],
-        "start_sensor_distance_f": 0.98,
-        "stop_sensor_distance_f": 1.08,
-        "num": 16,
+        "telescopes": either(
+            big,
+            ["medium_size_telescope", "large_size_telescope"],
+            ["medium_size_telescope"],
+        ),
+        "start_sensor_distance_f": 0.99,
+        "stop_sensor_distance_f": 1.05,
+        "num": either(big, 64, 16),
     }
     with rnw.open(os.path.join(config_dir, "defocus.json"), "wt") as f:
         f.write(json_utils.dumps(defocus_config, indent=4))
 
     multis_config = {
-        "telescopes": ["crome", "medium_size_telescope"],
+        "telescopes": TELESCOPE_KEYS,
         "num_sources_per_event": 2,
         "random_seed": 120,
         "power_density_start_W_per_m2": 1e-12,
         "power_density_stop_W_per_m2": 3e-12,
-        "num": 16,
+        "num": either(big, 320, 16),
     }
     with rnw.open(os.path.join(config_dir, "multis.json"), "wt") as f:
         f.write(json_utils.dumps(multis_config, indent=4))
