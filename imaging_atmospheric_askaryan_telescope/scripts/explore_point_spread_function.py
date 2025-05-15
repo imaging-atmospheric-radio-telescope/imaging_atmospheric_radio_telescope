@@ -12,7 +12,7 @@ import os
 import scipy.linalg
 
 telescope_key = "crome"
-work_dir = f"explore_point_spread_function_{telescope_key:s}_order1-magic"
+work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -77,6 +77,7 @@ iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResp
     source_config=source_config,
     region_of_interest_rad=region_of_interest_rad,
     region_of_interest_num_bins=21,
+    save_feed_horns_scatter_electric_fields=True,
 )
 response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
     path=scenario_dir
@@ -110,7 +111,7 @@ E_feed_horns = iaat.time_series.read(
         "response",
         "camera",
         "feed_horns",
-        "feed_horns.electric_fields.tar",
+        "scatter.electric_fields.tar",
     )
 )
 Ene_feed_horn_scatters_J = iaat.electric_fields.integrate_power_over_time(

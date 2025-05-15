@@ -27,6 +27,7 @@ def simulate_telescope_response(
     readout_random_seed,
     camera_lnb_random_seed,
     stop_after_section=None,
+    save_feed_horns_scatter_electric_fields=False,
     logger=None,
 ):
     logger = iaat_logger.LoggerStdout_if_logger_is_None(logger)
@@ -107,10 +108,25 @@ def simulate_telescope_response(
                 path=os.path.join(tmp_dir, "electric_fields.tar"),
                 time_series=E_sensor,
             )
-            time_series.write(
-                path=os.path.join(tmp_dir, "scatter.electric_fields.tar"),
-                time_series=E_feed_horns_scatter,
+
+            # energy in scatter centers
+            # -------------------------
+            Ene_feed_horns_scatter = electric_fields.integrate_power_over_time(
+                electric_fields=E_feed_horns_scatter,
+                channel_effective_area_m2=telescope["sensor"][
+                    "feed_horn_scatter_center_area_m2"
+                ],
             )
+            with open(os.path.join(tmp_dir, "scatter.energy.npy"), "wb") as f:
+                np.save(file=f, arr=Ene_feed_horns_scatter)
+
+            if save_feed_horns_scatter_electric_fields:
+                time_series.write(
+                    path=os.path.join(tmp_dir, "scatter.electric_fields.tar"),
+                    time_series=E_feed_horns_scatter,
+                )
+
+            del E_feed_horns_scatter
 
     if stop_after_section == "feed_horns":
         return
