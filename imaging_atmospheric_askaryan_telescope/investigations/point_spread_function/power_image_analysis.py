@@ -1,5 +1,7 @@
 import numpy as np
 import scipy
+import binning_utils
+from scipy.optimize import curve_fit
 from astropy.convolution.kernels import Gaussian2DKernel
 
 from ... import utils
@@ -83,3 +85,96 @@ def find_quantile_bins(x, q):
     cumsum_f = np.cumsum(f)
     idx = np.argmin(np.abs(cumsum_f - fraction))
     return idx
+
+
+def flatten_image(x_bin_edges_m, y_bin_edges_m, image):
+    x = binning_utils.centers(x_bin_edges_m)
+    y = binning_utils.centers(y_bin_edges_m)
+    num_total = len(x) * len(y)
+    xy = np.zeros((num_total, 2))
+    w = np.zeros(num_total)
+    j = 0
+    for ix in range(len(x)):
+        for iy in range(len(y)):
+            xy[j, 0] = x[ix]
+            xy[j, 1] = y[iy]
+            w[j] = image[ix, iy]
+            j += 1
+    return xy, w
+
+
+def get_distances(xy, x0, y0):
+    dd = xy.copy()
+    dd[:, 0] -= x0
+    dd[:, 1] -= y0
+    dd = dd**2
+    return np.sqrt(np.sum(dd, axis=1))
+
+
+def encircle_containment(
+    x_bin_edges_m, y_bin_edges_m, image, x_m, y_m, quantile
+):
+    assert 0.0 < quantile <= 1.0
+    xy_m, img_w = flatten_image(
+        x_bin_edges_m=x_bin_edges_m,
+        y_bin_edges_m=y_bin_edges_m,
+        image=image,
+    )
+    img_r = get_distances(
+        xy=xy_m,
+        x0=x_m,
+        y0=y_m,
+    )
+    img_q = img_w / img_w.sum()
+    rargs = np.argsort(img_r)
+
+    img_rs = img_r[rargs]
+    img_qs = img_q[rargs]
+
+    arg_qunatile = np.argmin(np.abs(np.cumsum(img_qs) - quantile))
+    r_quantile = img_rs[arg_qunatile]
+    return r_quantile
+
+
+def fit_gauss_in_image(x_bin_edges_m, y_bin_edges_m, image):
+    xy, w = flatten_image(
+        x_bin_edges_m=x_bin_edges_m,
+        y_bin_edges_m=y_bin_edges_m,
+        image=image,
+    )
+    w = w / np.percentile(w, 90)
+
+    r_max = max(x_bin_edges_m) - min(x_bin_edges_m)
+    r_min = 2.0 * np.mean(np.gradient(x_bin_edges_m))
+
+    # gauss_pseudo_2d(xy, x0, y0, sigma)
+    guess = [
+        np.mean(x_bin_edges_m),
+        np.mean(y_bin_edges_m),
+        np.mean([r_min, r_max]),
+    ]
+
+    bounds = (
+        [min(x_bin_edges_m), min(y_bin_edges_m), r_min],
+        [max(x_bin_edges_m), max(y_bin_edges_m), r_max],
+    )
+
+    predicted_params, uncert_cov = curve_fit(
+        f=gauss_pseudo_2d,
+        xdata=xy,
+        ydata=w,
+        p0=guess,
+        bounds=bounds,
+    )
+    return predicted_params
+
+
+def gauss_pseudo_2d(xy, x0, y0, sigma):
+    dx = xy[:, 0] - x0
+    dy = xy[:, 1] - y0
+    dd = np.hypot(dx, dy)
+    return gauss1d(x=dd, x0=0, sigma=sigma)
+
+
+def gauss1d(x, x0, sigma):
+    return np.exp(-((x - x0) ** 2) / (2 * sigma**2))

@@ -59,6 +59,9 @@ snapdtype = [
 ]
 
 for telescope_key in config["stars"]["telescopes"]:
+    if "large" in telescope_key:
+        continue
+
     cache_path = os.path.join(out_dir, telescope_key + ".bin")
     if os.path.exists(cache_path):
         continue
@@ -227,6 +230,9 @@ for telescope_key in config["stars"]["telescopes"]:
 
 
 for telescope_key in config["stars"]["telescopes"]:
+    if "large" in telescope_key:
+        continue
+
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
@@ -337,21 +343,28 @@ for telescope_key in config["stars"]["telescopes"]:
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_snr.jpg"))
     sebplt.close(fig)
 
+    pola_diff_rad = np.mod(
+        snap["source_polarization_angle_rad"], np.pi
+    ) - np.mod(snap["reconstructed_polarization_angle_rad"], np.pi)
+    pola_diff_rad = np.mod(pola_diff_rad, np.pi)
+    pola_order_mask = pola_diff_rad > np.pi / 2
+    pola_diff_rad[pola_order_mask] = pola_diff_rad[pola_order_mask] - np.pi
+
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
     ax.plot(
         np.rad2deg(snap["source_zenith_rad"]),
-        np.rad2deg(
-            np.mod(snap["reconstructed_polarization_angle_rad"], np.pi)
-        ),
+        np.rad2deg(pola_diff_rad),
         color="black",
         marker="o",
         linewidth=0.0,
-        alpha=0.25,
+        alpha=0.05,
     )
-    ax.set_ylim([-10, 190])
+    ax.set_ylim([-100, 100])
     ax.set_xlim([0.0, np.rad2deg(fov["field_of_view_half_angle_rad"])])
     ax.set_xlabel(r"angle off axis / (1$^\circ$)")
-    ax.set_ylabel(r"polarization angle / (1$^\circ$)")
+    ax.set_ylabel(
+        "true - reconstructed\npolarization angle / " + r"(1$^\circ$)"
+    )
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_polarization.jpg"))
     sebplt.close(fig)

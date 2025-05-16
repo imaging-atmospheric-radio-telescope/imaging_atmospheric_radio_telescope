@@ -35,6 +35,8 @@ power_ratio_threshold = 0.1
 
 source_key = "1"
 for telescope_key in config["stars"]["telescopes"]:
+    if "large" in telescope_key:
+        continue
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
@@ -220,10 +222,9 @@ for telescope_key in config["stars"]["telescopes"]:
     polarizations_rad = np.array(polarizations_rad)
     power_ratios = np.array(power_ratios)
 
+    _num_bins = int(2 * np.sqrt(np.prod(power_ratios.shape)))
     power_ratio_bin = binning_utils.Binning(
-        bin_edges=np.geomspace(
-            1e-5, 1.0, int(2 * np.sqrt(np.prod(power_ratios.shape)))
-        )
+        bin_edges=np.geomspace(1e-5, 1.0, _num_bins)
     )
 
     bin_counts = np.histogram(power_ratios, bins=power_ratio_bin["edges"])[0]
