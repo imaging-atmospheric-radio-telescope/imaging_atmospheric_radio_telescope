@@ -231,7 +231,7 @@ def init_different_oversamplings(work_dir, combinations=None, big=True):
 
 
 def run_different_oversamplings(work_dir, **kwargs):
-    work_dirs = glob.glob(os.path.join(work_dir, "area_*_time_*"))
+    work_dirs = glob.glob(os.path.join(work_dir, "mirror_*_feed_*_time_*"))
 
     for path in work_dirs:
         run(work_dir=path, **kwargs)
