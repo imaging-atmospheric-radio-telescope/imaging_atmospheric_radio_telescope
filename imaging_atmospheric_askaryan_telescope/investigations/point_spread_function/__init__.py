@@ -34,7 +34,41 @@ def either(flag, x, y):
         return y
 
 
-def init(work_dir, big=True):
+def resolve_mirror_oversampling(key):
+    _map = {
+        "low": 0.5,
+        "mid": 1.0,
+        "high": 2.0,
+    }
+    return _map[key]
+
+
+def resolve_time_oversampling(key):
+    _map = {
+        "low": 3,
+        "mid": 6,
+        "high": 12,
+    }
+    return _map[key]
+
+
+def resolve_feed_oversampling(key):
+    _map = {
+        "mid": 1,
+        "high": 2,
+    }
+    return _map[key]
+
+
+def init(
+    work_dir,
+    big=True,
+    time_oversampling=6,
+    mirror_oversampling=1,
+    feed_horn_oversampling_order=1,
+):
+    assert 1.9 < time_oversampling
+    assert 0.4 < mirror_oversampling
 
     os.makedirs(work_dir, exist_ok=True)
     config_dir = os.path.join(work_dir, "config")
@@ -52,6 +86,12 @@ def init(work_dir, big=True):
 
     for key in TELESCOPE_KEYS:
         telescope_config = telescopes.init(key)
+        telescope_config["mirror"][
+            "scatter_center_areal_density_per_m2"
+        ] *= mirror_oversampling
+        telescope_config["sensor"][
+            "feed_horn_oversampling_order"
+        ] = feed_horn_oversampling_order
         with rnw.open(
             os.path.join(telescopes_dir, f"{key:s}.json"), "wt"
         ) as f:
@@ -61,7 +101,7 @@ def init(work_dir, big=True):
         f.write(json_utils.dumps(sites.init("karlsruhe"), indent=4))
 
     timing_config = {
-        "oversampling": 6,
+        "oversampling": time_oversampling,
         "time_window_duration_s": 3.5e-08,
         "readout_sampling_rate_per_s": 250e6,
     }
@@ -157,3 +197,41 @@ def run(work_dir, pool=None, logger=None):
     logger.debug(f"{len(multis_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'multis' ...")
     pool.map(multis.run_job, multis_jobs)
+
+
+def init_different_oversamplings(work_dir, combinations=None, big=True):
+    if combinations is None:
+        combinations = []
+        combinations.append({"feed": "mid", "mirror": "mid", "time": "mid"})
+
+        combinations.append({"feed": "mid", "mirror": "low", "time": "mid"})
+        combinations.append({"feed": "mid", "mirror": "high", "time": "mid"})
+
+        combinations.append({"feed": "mid", "mirror": "mid", "time": "low"})
+        combinations.append({"feed": "mid", "mirror": "mid", "time": "high"})
+
+        combinations.append({"feed": "high", "mirror": "mid", "time": "mid"})
+
+        for combi in combinations:
+            combi_dir = os.path.join(
+                work_dir,
+                f"mirror_{combi['mirror']:s}_feed_{combi['feed']:s}_time_{combi['time']:s}",
+            )
+            init(
+                work_dir=combi_dir,
+                big=big,
+                time_oversampling=resolve_time_oversampling(combi["time"]),
+                mirror_oversampling=resolve_mirror_oversampling(
+                    combi["mirror"]
+                ),
+                feed_horn_oversampling_order=resolve_feed_oversampling(
+                    combi["feed"]
+                ),
+            )
+
+
+def run_different_oversamplings(work_dir, **kwargs):
+    work_dirs = glob.glob(os.path.join(work_dir, "area_*_time_*"))
+
+    for path in work_dirs:
+        run(work_dir=path, **kwargs)
