@@ -4,7 +4,7 @@
         "random_seed": 0,
         "focal_length_m": 1.191,
         "outer_radius_m": 1.675,
-        "inner_radius_m": 0.193,
+        "inner_radius_m": 0.386,
         "scatter_center_areal_density_per_m2": 90,
         "comment": "From Felix's phd: Readout: 350MHz bandwidth and 1250Msps (Sec.5.1.1), LNB noise 42K-52K (p.52), mirror (Sec.5.1.6)."
     },
