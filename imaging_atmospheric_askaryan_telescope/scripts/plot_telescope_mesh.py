@@ -102,6 +102,32 @@ TELESCOPE_KEYS = [
     "large_size_telescope",
 ]
 
+
+fig = sebplt.figure({"rows": 640, "cols": 1920, "fontsize": 2.0})
+ax = sebplt.add_axes(
+    fig=fig,
+    span=[0, 0, 1, 1],
+    style={"spines": [], "axes": [], "grid": False},
+)
+xoff = 0.0
+for telescope_key in TELESCOPE_KEYS:
+    tele_dir = os.path.join(out_dir, telescope_key)
+    iaat.run.init(work_dir=tele_dir, telescope_key=telescope_key)
+    telescope = iaat.run.from_config(work_dir=tele_dir)["telescope"]
+    xoff += telescope["mirror"]["outer_radius_m"] * 2
+    sebplt.ax_add_circle(
+        ax=ax,
+        x=xoff,
+        y=telescope["mirror"]["outer_radius_m"],
+        r=telescope["mirror"]["outer_radius_m"],
+        color="black",
+    )
+
+ax.set_aspect("equal")
+fig.savefig(os.path.join(out_dir, f"telescope_sizes.jpg"))
+sebplt.close(fig)
+
+
 for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
 
@@ -161,7 +187,7 @@ for telescope_key in TELESCOPE_KEYS:
     )
 
     fig = sebplt.figure(
-        {"rows": 1920 * f_over_D + 200, "cols": 1920, "fontsize": 2.0}
+        {"rows": 1920 * 0.8 * f_over_D + 300, "cols": 1920, "fontsize": 2.0}
     )
     ax = sebplt.add_axes(
         fig=fig,
