@@ -33,17 +33,13 @@ args = parser.parse_args()
 out_dir = args.out_dir
 
 
-def ax_add_telescope_xy(ax, telescope, linewidth, roi):
-    ax.set_aspect("equal")
-    ax.set_xlabel(r"$x$ / m")
-    ax.set_ylabel(r"$y$ / m")
+def ax_add_important_rings(ax, telescope):
     sebplt.ax_add_circle(
         ax=ax,
         x=0,
         y=0,
         r=telescope["mirror"]["inner_radius_m"],
         color="black",
-        linewidth=linewidth,
         linestyle="-",
         alpha=0.33,
     )
@@ -53,45 +49,60 @@ def ax_add_telescope_xy(ax, telescope, linewidth, roi):
         y=0,
         r=telescope["mirror"]["outer_radius_m"],
         color="black",
-        linewidth=linewidth,
         linestyle="-",
         alpha=0.33,
     )
-
     sebplt.ax_add_circle(
         ax=ax,
         x=0,
         y=0,
         r=telescope["sensor"]["camera"]["outer_radius_m"],
         color="black",
-        linewidth=linewidth,
         linestyle="-",
         alpha=0.33,
     )
 
+
+def ax_add_mirror_xy(ax, telescope, roi_width):
     ax.scatter(
         telescope["mirror"]["scatter_center_positions_m"][:, 0],
         telescope["mirror"]["scatter_center_positions_m"][:, 1],
-        s=(20 / roi) ** 2,
         color="black",
         linewidth=0.0,
+        alpha=0.66,
         edgecolor="none",
     )
 
-    ax.scatter(
-        telescope["sensor"]["feed_horn_positions_m"][:, 0],
-        telescope["sensor"]["feed_horn_positions_m"][:, 1],
-        s=(12.8 / roi) ** 2,
-        color="white",
-        edgecolor="black",
-        linewidth=0.5,
+
+def ax_add_camera_xy(ax, telescope, roi_width):
+    camera = telescope["sensor"]
+
+    fh_r = 10 * np.sqrt(camera["feed_horn_area_m2"]) / roi_width
+    print(fh_r)
+
+    iaat.camera.ax_add_camera_feed_horn_edges(
+        ax=ax, camera=camera, color="lightgray", linewidth=1 * fh_r
+    )
+
+    iaat.camera.ax_add_camera_feed_horn_scatter_centers(
+        ax=ax,
+        camera=camera,
+        marker="o",
+        alpha=0.66,
+        markersize=5 * fh_r,
+        markeredgewidth=0.0,
+        color="black",
     )
 
 
 FIGSIZE = {"rows": 1920, "cols": 1920, "fontsize": 2.0}
+TELESCOPE_KEYS = [
+    "crome",
+    "medium_size_telescope",
+    "large_size_telescope",
+]
 
-
-for telescope_key in ["crome", "large_size_telescope"]:
+for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
 
     iaat.run.init(work_dir=tele_dir, telescope_key=telescope_key)
@@ -108,12 +119,20 @@ for telescope_key in ["crome", "large_size_telescope"]:
         fig = sebplt.figure(FIGSIZE)
         ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
 
-        ax_add_telescope_xy(
-            ax=ax,
-            telescope=telescope,
-            roi=close_up_items[item]["range"],
-            linewidth=1.0,
-        )
+        ax_add_important_rings(ax=ax, telescope=telescope)
+
+        if item == "mirror":
+            ax_add_mirror_xy(
+                ax=ax,
+                telescope=telescope,
+                roi_width=close_up_items["camera"]["range"],
+            )
+        elif item == "camera":
+            ax_add_camera_xy(
+                ax=ax,
+                telescope=telescope,
+                roi_width=close_up_items["camera"]["range"],
+            )
 
         ax.set_xlim([0, close_up_items[item]["range"]])
         ax.set_ylim([0, close_up_items[item]["range"]])
@@ -129,12 +148,21 @@ for telescope_key in ["crome", "large_size_telescope"]:
                 alpha=0.5,
             )
 
+        ax.set_aspect("equal")
+        ax.set_xlabel(r"$x$ / m")
+        ax.set_ylabel(r"$y$ / m")
         fig.savefig(
             os.path.join(tele_dir, f"telescope_{item:s}_close_up_xy.jpg")
         )
         sebplt.close(fig)
 
-    fig = sebplt.figure({"rows": 1920 * 2, "cols": 1920, "fontsize": 2.0})
+    f_over_D = telescope["mirror"]["focal_length_m"] / (
+        2 * telescope["mirror"]["outer_radius_m"]
+    )
+
+    fig = sebplt.figure(
+        {"rows": 1920 * f_over_D + 200, "cols": 1920, "fontsize": 2.0}
+    )
     ax = sebplt.add_axes(
         fig=fig,
         span=[0.15, 0.15, 0.8, 0.8],
@@ -183,29 +211,45 @@ for telescope_key in ["crome", "large_size_telescope"]:
 
     ax.plot(
         mD * np.array([-0.5, +0.5, +0.55, 0.6]),
-        mf * np.array([1, 1, 0.95, 0.95]),
+        mf * np.array([1, 1, 0.93, 0.93]),
         color="black",
         linewidth=0.5,
     )
-    ax.text(s=r"$f$", x=0.6 * mD + 0.25, y=mf * 0.95 - 0.25)
+    ax.text(
+        s=r"$f$",
+        x=0.6 * mD,
+        y=mf * 0.93,
+        verticalalignment="center",
+    )
 
     ax.plot(
         mD * np.array([-0.5, +0.5, +0.55, 0.6]),
-        sensor_d * np.array([1, 1, 1.05, 1.05]),
+        sensor_d * np.array([1, 1, 1.07, 1.07]),
         color="black",
         linewidth=0.5,
     )
-    ax.text(s=r"$d$", x=+0.6 * mD + 0.25, y=sensor_d * 1.05 - 0.25)
+    ax.text(
+        s=r"$d$",
+        x=+0.6 * mD,
+        y=sensor_d * 1.07,
+        verticalalignment="center",
+    )
 
     ax.plot(
         [mD, mD],
-        [0, 2.0],
+        [0, mf * 0.25],
         color="black",
         linestyle="--",
         linewidth=0.75,
         alpha=0.5,
     )
-    ax.text(s=r"$D/2$", x=mD * 0.92, y=2.5)
+    ax.text(
+        s=r"$D/2$",
+        x=mD * 0.92,
+        y=mf * 0.25,
+        horizontalalignment="right",
+        verticalalignment="center",
+    )
 
     ax.plot(
         [miD, miD],
@@ -215,7 +259,12 @@ for telescope_key in ["crome", "large_size_telescope"]:
         linewidth=0.75,
         alpha=0.5,
     )
-    ax.text(s=r"$D_\mathrm{inner}/2$", x=miD + 0.25, y=3.5)
+    ax.text(
+        s=r"$D_\mathrm{inner}/2$",
+        x=miD,
+        y=0.5 * mf,
+        verticalalignment="center",
+    )
 
     ax.plot(
         [sR, sR],
@@ -225,7 +274,13 @@ for telescope_key in ["crome", "large_size_telescope"]:
         linewidth=0.75,
         alpha=0.5,
     )
-    ax.text(s=r"$D_\mathrm{screen}/2$", x=sR + 0.25, y=1.05 * sensor_d)
+    ax.text(
+        s=r"$D_\mathrm{screen}/2$",
+        x=sR,
+        y=1.1 * sensor_d,
+        horizontalalignment="left",
+        verticalalignment="center",
+    )
 
     # field of view
     sebplt.ax_add_pie_slice(
@@ -249,7 +304,13 @@ for telescope_key in ["crome", "large_size_telescope"]:
         linewidth=0.75,
         alpha=0.5,
     )
-    ax.text(s=r"$\Theta_\text{field-of-view}/2$", x=-8, y=0.9 * mf)
+    ax.text(
+        s=r"$\Theta_\text{field-of-view}/2$",
+        x=-1.4 * sR,
+        y=sensor_d * 1.1,
+        horizontalalignment="right",
+        verticalalignment="center",
+    )
 
     ax.set_aspect("equal")
     ax.set_xlabel(r"$x$ / m")

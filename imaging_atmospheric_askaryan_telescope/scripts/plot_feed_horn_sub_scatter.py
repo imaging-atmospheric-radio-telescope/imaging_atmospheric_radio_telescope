@@ -30,26 +30,43 @@ os.makedirs(out_dir, exist_ok=True)
 screen_radius_m = 0.1
 feed_horn_inner_radius_m = 0.03
 focal_ratio_1 = 1.4
-feed_horn_oversampling = 1
+feed_horn_oversampling_order = 1
 
 cc = iaat.camera.make_camera(
     sensor_outer_radius_m=screen_radius_m,
     sensor_distance_m=32.2,
     feed_horn_inner_radius_m=feed_horn_inner_radius_m,
     feed_horn_transmission=0.5,
-    feed_horn_focal_ratio_1=focal_ratio_1,
-    feed_horn_oversampling=feed_horn_oversampling,
-    low_noise_block_effective_area_m2=iaat.signal.calculate_antenna_effective_area(
-        wavelength=0.03,
-        gain=1.0,
-    ),
+    feed_horn_oversampling_order=feed_horn_oversampling_order,
 )
 
-fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
-ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
+fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 2.3})
+ax = sebplt.add_axes(
+    fig=fig, span=[0, 0, 1, 1], style={"spines": [], "axes": [], "grid": False}
+)
 iaat.camera.ax_add_camera(ax=ax, camera=cc, color="black")
-ax.set_xlabel("x / m")
-ax.set_ylabel("y / m")
+
+
+iaat.camera.ax_add_camera_feed_horn_edges(ax=ax, camera=cc, color="lightgray")
+iaat.camera.ax_add_camera_feed_horn_scatter_centers(
+    ax=ax,
+    camera=cc,
+    marker="o",
+    alpha=0.2,
+    markersize=10.0,
+    markeredgewidth=0.0,
+    color="black",
+)
+iaat.camera.ax_add_camera_feed_horn_centers(
+    ax=ax, camera=cc, marker="+", color="black"
+)
+
+sebplt.ax_add_circle(
+    ax=ax, x=0.029, y=0.018, r=0.027, linestyle="--", color="black"
+)
+
+# ax.set_xlabel("x / m")
+# ax.set_ylabel("y / m")
 ax.set_aspect("equal")
 fig.savefig(os.path.join(out_dir, "feed_horn_mesh.jpg"))
 sebplt.close(fig)
