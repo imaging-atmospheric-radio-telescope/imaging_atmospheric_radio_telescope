@@ -46,31 +46,31 @@ def ax_add_box_gradient(
         )
 
 
+def get_mean_input_frequency(telescope):
+    lnb = iaat.lownoiseblock.init(key=telescope["lnb_key"])
+    nu_start_Hz, nu_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
+        lnb=lnb
+    )
+    return np.mean([nu_start_Hz, nu_stop_Hz])
+
+
 D_bin = binning_utils.Binning(bin_edges=np.linspace(1, 30, 201))
 Nu_bin = binning_utils.Binning(bin_edges=np.geomspace(1e9, 100e9, 301))
 
 D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M = 23.0
 
+
 lst = iaat.telescopes.init("large_size_telescope")
-lst_lnb = iaat.lownoiseblock.init(key=lst["lnb_key"])
-lst_nu_Hz = np.mean(
-    [
-        lst_lnb["local_oscillator_frequency_Hz"]
-        + lst_lnb["intermediate_frequency_start_Hz"],
-        lst_lnb["local_oscillator_frequency_Hz"]
-        + lst_lnb["intermediate_frequency_stop_Hz"],
-    ]
-)
+lst_nu_Hz = get_mean_input_frequency(telescope=lst)
+lst_marker = "D"
+
+mst = iaat.telescopes.init("medium_size_telescope")
+mst_nu_Hz = get_mean_input_frequency(telescope=mst)
+mst_marker = "P"
+
 crome = iaat.telescopes.init("crome")
-crome_lnb = iaat.lownoiseblock.init(key=crome["lnb_key"])
-crome_nu_Hz = np.mean(
-    [
-        crome_lnb["local_oscillator_frequency_Hz"]
-        + crome_lnb["intermediate_frequency_start_Hz"],
-        crome_lnb["local_oscillator_frequency_Hz"]
-        + crome_lnb["intermediate_frequency_stop_Hz"],
-    ]
-)
+crome_nu_Hz = get_mean_input_frequency(telescope=crome)
+crome_marker = "*"
 
 theta = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
 for iD in range(D_bin["num"]):
@@ -140,13 +140,19 @@ ax.vlines(
 ax.plot(
     2.0 * lst["mirror"]["outer_radius_m"],
     lst_nu_Hz * TO_GIGA,
-    marker="P",
+    marker=lst_marker,
+    color="black",
+)
+ax.plot(
+    2.0 * mst["mirror"]["outer_radius_m"],
+    mst_nu_Hz * TO_GIGA,
+    marker=mst_marker,
     color="black",
 )
 ax.plot(
     2.0 * crome["mirror"]["outer_radius_m"],
     crome_nu_Hz * TO_GIGA,
-    marker="*",
+    marker=crome_marker,
     color="black",
 )
 fill_alpha = 0.15
