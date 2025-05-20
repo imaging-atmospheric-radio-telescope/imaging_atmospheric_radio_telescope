@@ -2,14 +2,14 @@
     "lnb_key": "inverto_40mm_pro_wideband",
     "mirror": {
         "random_seed": 0,
-        "focal_length_m": 15.0,
+        "focal_length_m": 12.0,
         "outer_radius_m": 6.0,
-        "inner_radius_m": 1.6,
+        "inner_radius_m": 1.2,
         "scatter_center_areal_density_per_m2": 6
     },
     "sensor": {
-        "sensor_outer_radius_m": 0.6,
-        "sensor_distance_m": 15.0,
+        "sensor_outer_radius_m": 0.525,
+        "sensor_distance_m": 12.0,
         "feed_horn_inner_radius_m": 0.028,
         "feed_horn_transmission": 0.5,
         "feed_horn_oversampling_order": 1
