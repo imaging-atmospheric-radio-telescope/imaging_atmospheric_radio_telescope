@@ -180,6 +180,14 @@ def run(work_dir, pool=None, logger=None):
     logger = iaat_logger.LoggerStdout_if_logger_is_None(logger)
     config = utils.read_config(work_dir)
 
+    logger.debug("make jobs for 'calibrate' ...")
+    calib_jobs = _calibrate_make_jobs(work_dir=work_dir)
+    logger.debug(f"{len(calib_jobs):d} calibrate jobs in total.")
+    calib_jobs = _calibrate_drop_finished_jobs(jobs=calib_jobs)
+    logger.debug(f"{len(calib_jobs):d} jobs are missing and need to be run.")
+    logger.debug("run jobs for 'calibrate' ...")
+    pool.map(_calibrate_run_job, calib_jobs)
+
     logger.debug("make jobs for 'stars' ...")
     star_jobs = stars.make_jobs(work_dir=work_dir, config=config)
     logger.debug(f"{len(star_jobs):d} star jobs in total.")
@@ -222,6 +230,34 @@ def run_plots(work_dir, pool=None, logger=None):
     logger.debug(f"{len(plot_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'plot' ...")
     pool.map(_plot_run_job, plot_jobs)
+
+
+def _calibrate_make_jobs(work_dir):
+    config = utils.read_config(work_dir=work_dir)
+    jobs = []
+    for telescope_key in config["telescopes"]:
+        jobs.append({"telescope_key": telescope_key, "work_dir": work_dir})
+    return jobs
+
+
+def _calibrate_drop_finished_jobs(jobs):
+    out = []
+    for job in jobs:
+        calib_path = os.path.join(
+            job["work_dir"], "calibration", job["telescope_key"]
+        )
+        if not os.path.exists(calib_path):
+            out.append(job)
+    return out
+
+
+def _calibrate_run_job(job):
+    config = utils.read_config(work_dir=job["work_dir"])
+    _, _, _ = utils.make_telescope_timing_and_site(
+        work_dir=job["work_dir"],
+        config=config,
+        telescope_key=job["telescope_key"],
+    )
 
 
 def _plot_make_jobs(work_dir):

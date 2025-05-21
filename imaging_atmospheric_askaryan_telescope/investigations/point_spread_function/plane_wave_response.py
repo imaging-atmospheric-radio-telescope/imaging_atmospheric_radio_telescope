@@ -20,7 +20,6 @@ def make_PlaneWaveResponse(
     out_dir,
     random_seed,
     telescope,
-    telescope_psf_quantile_contained_in_feed_horn,
     site,
     timing,
     source_config,
@@ -42,7 +41,6 @@ def make_PlaneWaveResponse(
         source_config=source_config,
         site=site,
         telescope=telescope,
-        telescope_psf_quantile_contained_in_feed_horn=telescope_psf_quantile_contained_in_feed_horn,
         timing=timing,
         thermal_noise_random_seed=random_seed + 1,
         readout_random_seed=random_seed + 2,
@@ -72,6 +70,10 @@ def make_PlaneWaveResponse(
                 num_bins=region_of_interest_num_bins,
                 other_telescope=telescope,
             )
+            telescope_region_of_interest["calibration"] = {}
+            telescope_region_of_interest["calibration"][
+                "point_spread_function_quantile_contained_in_feed_horn"
+            ] = 1.0
 
             os.makedirs(roi_key_dir, exist_ok=True)
             shutil.copytree(
@@ -84,7 +86,6 @@ def make_PlaneWaveResponse(
                 source_config=source_config,
                 site=site,
                 telescope=telescope_region_of_interest,
-                telescope_psf_quantile_contained_in_feed_horn=1.0,
                 timing=timing,
                 thermal_noise_random_seed=random_seed + 1,
                 readout_random_seed=random_seed + 2,

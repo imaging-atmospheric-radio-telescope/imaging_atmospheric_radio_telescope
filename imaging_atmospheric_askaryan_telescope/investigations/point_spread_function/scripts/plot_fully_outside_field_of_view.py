@@ -38,7 +38,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
-            config=config, telescope_key=telescope_key
+            work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
     fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(

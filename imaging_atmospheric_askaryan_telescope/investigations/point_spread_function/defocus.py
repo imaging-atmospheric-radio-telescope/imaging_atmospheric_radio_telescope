@@ -19,7 +19,7 @@ def make_jobs(work_dir, config):
     for telescope_key in config["defocus"]["telescopes"]:
 
         telescope, _, _ = psf_utils.make_telescope_timing_and_site(
-            config=config, telescope_key=telescope_key
+            work_dir=work_dir, config=config, telescope_key=telescope_key
         )
         f_m = telescope["mirror"]["focal_length_m"]
         qrng = iaat_utils.QuasiRandomGenerator(seed=123)
@@ -52,6 +52,7 @@ def run_job(job):
     config = psf_utils.read_config(job["work_dir"])
 
     telescope, timing, site = psf_utils.make_telescope_timing_and_site(
+        work_dir=job["work_dir"],
         config=config,
         telescope_key=job["telescope_key"],
         sensor_distance_m=job["sensor_distance_m"],

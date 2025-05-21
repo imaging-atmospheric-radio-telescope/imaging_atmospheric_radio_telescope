@@ -371,12 +371,17 @@ def propagate_electric_field_from_mirror_to_sensor(
     telescope,
     mirror_electric_fields,
     num_time_slices,
-    psf_quantile_contained_in_feed_horn=1,
 ):
     """
     ===
     """
-    assert 0.0 < psf_quantile_contained_in_feed_horn <= 1.0
+    assert (
+        0.0
+        < telescope["calibration"][
+            "point_spread_function_quantile_contained_in_feed_horn"
+        ]
+        <= 1.0
+    )
 
     camera = telescope["sensor"]
     mirror = telescope["mirror"]
@@ -395,7 +400,9 @@ def propagate_electric_field_from_mirror_to_sensor(
     )
 
     psf_containment_mirror_to_feed_horn_E_field_scaling = np.sqrt(
-        psf_quantile_contained_in_feed_horn
+        telescope["calibration"][
+            "point_spread_function_quantile_contained_in_feed_horn"
+        ]
     )
 
     geometric_mirror_to_feed_horn_E_field_scaling = np.sqrt(

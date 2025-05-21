@@ -1,6 +1,7 @@
 from ... import utils as iaat_utils
 from ... import signal
 from ... import telescope
+from ... import calibration
 from ... import lownoiseblock
 from ... import timing_and_sampling
 
@@ -72,7 +73,7 @@ def make_field_of_view_region_edges(sensor, focal_length_m):
 
 
 def make_telescope_timing_and_site(
-    config, telescope_key, sensor_distance_m=None
+    work_dir, config, telescope_key, sensor_distance_m=None
 ):
     telescope_config = config["telescopes"][telescope_key]
 
@@ -91,6 +92,11 @@ def make_telescope_timing_and_site(
         lnb=_lnb,
         speed_of_light_m_per_s=signal.SPEED_OF_LIGHT_M_PER_S,
     )
+    tscope = calibration.add_calibration_to_telescope(
+        telescope=tscope,
+        path=os.path.join(work_dir, "calibration", telescope_key),
+    )
+
     tscope["key"] = copy.copy(telescope_key)
     timing = timing_and_sampling.make_timing_from_lnb(
         lnb=tscope["lnb"],

@@ -26,6 +26,10 @@ telescope = _askaryan["telescope"]
 timing = _askaryan["timing"]
 site = _askaryan["site"]
 
+telescope = iaat.calibration.add_calibration_to_telescope(
+    telescope, path=os.path.join(work_dir, "telescop_calibration")
+)
+
 random_seed = 1405
 
 lnb_start_Hz, lnb_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
@@ -46,27 +50,16 @@ A_airy_m2 = np.pi * R_airy_m**2
 
 # Determine onaxis PSF area
 # ==========================
-onaxis_roi_num_pixel = 61
-
-psf_image_path = os.path.join(work_dir, "onaxis_psf.tar")
-if not os.path.exists(psf_image_path):
-    psf_image = iaat.calibration.make_point_spread_function_image(
-        telescope=telescope,
-        timing=timing,
-        region_of_interest_num_bins=onaxis_roi_num_pixel,
-    )
-    iaat.calibration.save(path=psf_image_path, psf_image=psf_image)
-psf_image = iaat.calibration.load(path=psf_image_path)
-
 onaxis_roi_path = os.path.join(work_dir, "onaxis_psf.jpg")
 if not os.path.exists(onaxis_roi_path):
+    img = telescope["calibration"]["image"]
 
     fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
     ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
     norm = sebplt.matplotlib.colors.PowerNorm(
-        vmin=1e-3 * np.max(psf_image["image"]),
-        vmax=np.max(psf_image["image"]),
+        vmin=1e-3 * np.max(img["image"]),
+        vmax=np.max(img["image"]),
         gamma=1 / 2.0,
     )
     iaat.camera.ax_add_camera_feed_horn_edges(
@@ -76,9 +69,9 @@ if not os.path.exists(onaxis_roi_path):
         linewidth=0.5,
     )
     im = ax.pcolormesh(
-        psf_image["x_bin_edges_m"],
-        psf_image["y_bin_edges_m"],
-        psf_image["image"].T,
+        img["x_bin_edges_m"],
+        img["y_bin_edges_m"],
+        img["image"].T,
         cmap="Blues",
         norm=norm,
     )
@@ -90,15 +83,6 @@ if not os.path.exists(onaxis_roi_path):
     fig.savefig(onaxis_roi_path)
     sebplt.close(fig)
 
-psf_containment = iaat.calibration.analyse_point_spread_function_image(
-    psf_image=psf_image
-)
-psf_quantile_contained_in_feed_horn = np.interp(
-    x=telescope["sensor"]["feed_horn_area_m2"],
-    xp=psf_containment["area_quantile_water_shed_m2"],
-    fp=psf_containment["quantiles"],
-)
-
 onaxis_roi_containment_path = os.path.join(
     work_dir, "onaxis_psf_containment.jpg"
 )
@@ -106,13 +90,17 @@ if not os.path.exists(onaxis_roi_containment_path):
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
     ax.plot(
-        psf_containment["quantiles"],
-        psf_containment["area_quantile_water_shed_m2"] / A_airy_m2,
+        telescope["calibration"]["containment"]["quantiles"],
+        telescope["calibration"]["containment"]["area_quantile_water_shed_m2"]
+        / A_airy_m2,
         color="black",
     )
     ax.plot(
-        psf_containment["quantiles"],
-        psf_containment["area_quantile_encirclement_m2"] / A_airy_m2,
+        telescope["calibration"]["containment"]["quantiles"],
+        telescope["calibration"]["containment"][
+            "area_quantile_encirclement_m2"
+        ]
+        / A_airy_m2,
         color="gray",
     )
     ax.axhline(
@@ -159,7 +147,6 @@ iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResp
     out_dir=scenario_dir,
     random_seed=random_seed,
     telescope=telescope,
-    telescope_psf_quantile_contained_in_feed_horn=psf_quantile_contained_in_feed_horn,
     site=site,
     timing=timing,
     source_config=source_config,

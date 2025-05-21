@@ -3,11 +3,47 @@ from . import calibration_source
 from . import lownoiseblock
 from . import investigations
 from . import utils
+from . import timing_and_sampling
 
 import tempfile
 import numpy as np
 import io
 import os
+import json_utils
+import rename_after_writing as rnw
+
+
+def make_calibration(telescope, time_oversampling=6):
+    _timing = timing_and_sampling.make_timing_from_lnb(
+        lnb=telescope["lnb"],
+        oversampling=time_oversampling,
+        readout_sampling_rate_per_s=1e9,
+        time_window_duration_s=10e-9,
+    )
+    calib = {}
+    calib["image"] = make_point_spread_function_image(
+        telescope=telescope,
+        timing=_timing,
+    )
+    calib["containment"] = analyse_point_spread_function_image(
+        psf_image=calib["image"],
+    )
+    calib["point_spread_function_quantile_contained_in_feed_horn"] = np.interp(
+        x=telescope["sensor"]["feed_horn_area_m2"],
+        xp=calib["containment"]["area_quantile_water_shed_m2"],
+        fp=calib["containment"]["quantiles"],
+    )
+    return calib
+
+
+def add_calibration_to_telescope(telescope, path):
+    if not os.path.exists(path):
+        calibration = make_calibration(telescope=telescope)
+        save_calibration(path=path, calibration=calibration)
+
+    telescope["calibration"] = load_calibration(path=path)
+
+    return telescope
 
 
 def make_point_spread_function_image(
@@ -30,6 +66,10 @@ def make_point_spread_function_image(
         num_bins=region_of_interest_num_bins,
         other_telescope=telescope,
     )
+    telescope_region_of_interest["calibration"] = {}
+    telescope_region_of_interest["calibration"][
+        "point_spread_function_quantile_contained_in_feed_horn"
+    ] = 1.0
 
     if work_dir is None:
         work_dir_handle = tempfile.TemporaryDirectory(prefix="iaat-")
@@ -44,7 +84,6 @@ def make_point_spread_function_image(
         source_config=onaxis_source_config,
         site=SITE_DOES_NOT_MATTER,
         telescope=telescope_region_of_interest,
-        telescope_psf_quantile_contained_in_feed_horn=1.0,
         timing=timing,
         thermal_noise_random_seed=NON_RELEVANT_RANDOM_SEED + 1,
         readout_random_seed=NON_RELEVANT_RANDOM_SEED + 2,
@@ -82,8 +121,8 @@ def analyse_point_spread_function_image(psf_image, quantiles=None):
     if quantiles is None:
         quantiles = np.linspace(0.01, 0.99, 99)
 
-    area_v1_quantiles_m2 = []
-    area_v2_quantiles_m2 = []
+    area_wts_quantiles_m2 = []
+    area_enc_quantiles_m2 = []
     for quantile in quantiles:
         _ana = investigations.point_spread_function.power_image_analysis.analyse_image(
             x_bin_edges_m=psf_image["x_bin_edges_m"],
@@ -91,7 +130,7 @@ def analyse_point_spread_function_image(psf_image, quantiles=None):
             image=psf_image["image"],
             containment_quantile=quantile,
         )
-        area_v1_quantiles_m2.append(_ana["area_quantile_m2"])
+        area_wts_quantiles_m2.append(_ana["area_quantile_m2"])
 
         r_quantile_m = investigations.point_spread_function.power_image_analysis.encircle_containment(
             x_bin_edges_m=psf_image["x_bin_edges_m"],
@@ -101,15 +140,15 @@ def analyse_point_spread_function_image(psf_image, quantiles=None):
             y_m=0.0,
             quantile=quantile,
         )
-        area_v2_quantiles_m2.append(np.pi * r_quantile_m**2)
+        area_enc_quantiles_m2.append(np.pi * r_quantile_m**2)
 
-    area_v1_quantiles_m2 = np.array(area_v1_quantiles_m2)
-    area_v2_quantiles_m2 = np.array(area_v2_quantiles_m2)
+    area_wts_quantiles_m2 = np.array(area_wts_quantiles_m2)
+    area_enc_quantiles_m2 = np.array(area_enc_quantiles_m2)
 
     return {
         "quantiles": quantiles,
-        "area_quantile_water_shed_m2": area_v1_quantiles_m2,
-        "area_quantile_encirclement_m2": area_v2_quantiles_m2,
+        "area_quantile_water_shed_m2": area_wts_quantiles_m2,
+        "area_quantile_encirclement_m2": area_enc_quantiles_m2,
     }
 
 
@@ -159,6 +198,27 @@ def make_site():
         "earth_magnetic_field_z_muT": 0,
         "name": "Arbitrary",
     }
+
+
+def save_calibration(path, calibration):
+    os.makedirs(path, exist_ok=True)
+    save(path=os.path.join(path, "image.tar"), psf_image=calibration["image"])
+    with rnw.open(os.path.join(path, "containment.json"), "wt") as f:
+        f.write(json_utils.dumps(calibration["containment"], indent=4))
+    fn = "point_spread_function_quantile_contained_in_feed_horn"
+    with rnw.open(os.path.join(path, f"{fn:s}.json"), "wt") as f:
+        f.write(json_utils.dumps(calibration[fn], indent=4))
+
+
+def load_calibration(path):
+    calib = {}
+    calib["image"] = load(path=os.path.join(path, "image.tar"))
+    with open(os.path.join(path, "containment.json"), "rt") as f:
+        calib["containment"] = json_utils.loads(f.read())
+    fn = "point_spread_function_quantile_contained_in_feed_horn"
+    with open(os.path.join(path, f"{fn:s}.json"), "rt") as f:
+        calib[fn] = json_utils.loads(f.read())
+    return calib
 
 
 def save(path, psf_image):

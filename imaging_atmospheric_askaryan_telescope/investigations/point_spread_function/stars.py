@@ -21,7 +21,7 @@ def make_jobs(work_dir, config):
     for telescope_key in config["stars"]["telescopes"]:
 
         telescope, _, _ = psf_utils.make_telescope_timing_and_site(
-            config=config, telescope_key=telescope_key
+            work_dir=work_dir, config=config, telescope_key=telescope_key
         )
 
         jobs += _make_jobs_representative_guide_stars(
@@ -325,7 +325,9 @@ def run_job(job):
     config = psf_utils.read_config(job["work_dir"])
 
     tscope, timing, site = psf_utils.make_telescope_timing_and_site(
-        config=config, telescope_key=job["telescope_key"]
+        work_dir=job["work_dir"],
+        config=config,
+        telescope_key=job["telescope_key"],
     )
 
     nu_Hz = np.mean(lownoiseblock.input_frequency_start_stop_Hz(tscope["lnb"]))
@@ -403,6 +405,7 @@ def can_be_interpreted_as_int(s):
 
 def reduce_responses(work_dir, config, telescope_key, scenario_key):
     telescope, _, _ = psf_utils.make_telescope_timing_and_site(
+        work_dir=work_dir,
         config=config,
         telescope_key=telescope_key,
     )
