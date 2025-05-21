@@ -368,7 +368,7 @@ def run_job(job):
             region_of_interest=job["region_of_interest"],
             region_of_interest_rad=region_of_interest_rad,
             region_of_interest_num_bins=psf_utils.substract_one_when_even(
-                num_waves * timing["oversampling"]
+                num_waves * 6
             ),
             logger=logger,
             save_roi_electric_fields=False,
