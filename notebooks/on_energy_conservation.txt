@@ -18,8 +18,40 @@ LST    23.0  1.4  1.1    1.1
 [taken from 2025-05-20]
 
 I suspect the difference for on and off axis is only relevant for small f/D.
-                               Airy radius/mm   feed radius/mm   area ratio /1
+                               Airy radius/mm   feed radius/mm   area ratio/1
 CROME             0.28   0.20            34.2             33.1          7%
 MST               0.22   0.22            31.2             28.0         24%
 LST               0.44   0.44            43.8             28.0        245%
 [corrected for MAGIC_CONSTANT]
+
+
+name     A-scatter mirror/feedhorn
+----------------------------------
+CROME     21 ( 4.6)
+MST      439 (21  )
+LST      232 (15  )
+
+
+2025-05-21_psf
+
+Increased the size of LST feed horns from r=28mm to r=42mm, Factor 2.25 in area.
+Now the LST eta-on reduced by a factor of 2.31.
+
+name            eta-on
+----------------------
+CROME             0.28
+MST               0.21
+LST               0.19
+
+For the LST:
+eta-on:       0.22    0.44        [1.0?]
+r_feedhorn:     42mm    28mm
+A_feedhorn:     55cm2   24.6cm2   [11cm2 ???] when anti proportional
+
+It seems that:
+
+eta-on(A-feed-horn) $\prop$ 1 / A-feed-horn
+
+or maybe:
+
+eta-on(A-feed-horn) $\prop$ 1 / A-Airy

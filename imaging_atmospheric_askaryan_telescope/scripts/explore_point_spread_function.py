@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "crome"
+telescope_key = "medium_size_telescope"
 work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
@@ -32,6 +32,109 @@ lnb_start_Hz, lnb_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
     lnb=telescope["lnb"]
 )
 lnb_input_frequency_Hz = np.mean([lnb_start_Hz, lnb_stop_Hz])
+
+region_of_interest_rad = (
+    6
+    * np.sqrt(telescope["sensor"]["feed_horn_area_m2"])
+    / telescope["mirror"]["focal_length_m"]
+)
+
+R_airy_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+    telescope=telescope
+)
+A_airy_m2 = np.pi * R_airy_m**2
+
+# Determine onaxis PSF area
+# ==========================
+onaxis_roi_num_pixel = 61
+psf_quantile = 0.95
+
+onaxis_source_config = iaat.production.radio_from_plane_wave.make_config()
+s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
+s1["geometry"]["azimuth_rad"] = np.deg2rad(0.0)
+s1["geometry"]["zenith_rad"] = np.deg2rad(0.0)
+s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
+s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz
+onaxis_source_config["plane_waves"] = {}
+onaxis_source_config["plane_waves"]["onaxis"] = s1
+
+onaxis_dir = os.path.join(work_dir, "onaxis")
+if not os.path.exists(onaxis_dir):
+    iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResponse(
+        out_dir=onaxis_dir,
+        random_seed=random_seed,
+        telescope=telescope,
+        site=site,
+        timing=timing,
+        source_config=onaxis_source_config,
+        region_of_interest_rad=region_of_interest_rad,
+        region_of_interest_num_bins=onaxis_roi_num_pixel,
+        save_feed_horns_scatter_electric_fields=True,
+        save_roi_electric_fields=True,
+    )
+onaxis_response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+    path=onaxis_dir
+)
+bx, by, Ene_roi = onaxis_response.energy_roi("onaxis")
+
+onaxis_roi_path = os.path.join(work_dir, "onaxis_psf.jpg")
+if not os.path.exists(onaxis_roi_path):
+
+
+    fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
+    ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
+    norm = sebplt.matplotlib.colors.PowerNorm(
+        vmin=1e-3 * np.max(Ene_roi),
+        vmax=np.max(Ene_roi),
+        gamma=1 / 2.0,
+    )
+    iaat.camera.ax_add_camera_feed_horn_edges(
+        ax=ax,
+        camera=telescope["sensor"],
+        color="black",
+        linewidth=0.5,
+    )
+    im = ax.pcolormesh(
+        bx,
+        by,
+        Ene_roi.T,
+        cmap="Blues",
+        norm=norm,
+    )
+    sebplt.plt.colorbar(im, cax=ax_cmap)
+    ax_cmap.set_ylabel(r"proportinal to Energy / 1")
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("y / m")
+    ax.set_aspect("equal")
+    fig.savefig(onaxis_roi_path)
+    sebplt.close(fig)
+
+onaxis_quantiles =  np.linspace(0.05, 0.95, 19)
+onaxis_area_quantiles = []
+for quantile in onaxis_quantiles:
+    ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
+        x_bin_edges_m=bx,
+        y_bin_edges_m=by,
+        image=Ene_roi,
+        containment_quantile=quantile,
+    )
+    onaxis_area_quantiles.append(ana["area_quantile_m2"])
+
+onaxis_area_quantiles=np.array(onaxis_area_quantiles)
+
+onaxis_roi_containment_path = os.path.join(work_dir, "onaxis_psf_containment.jpg")
+if not os.path.exists(onaxis_roi_containment_path):
+    fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
+    ax.plot(onaxis_quantiles, onaxis_area_quantiles/A_airy_m2, color="black")
+    #ax.axhline(y=1, linestyle="--", color="black")
+    ax.semilogy()
+    ax.set_xlim([0, 1])
+    ax.set_xlabel("quantile / 1")
+    ax.set_ylabel(r"area / Airy disk")
+    fig.savefig(onaxis_roi_containment_path)
+    sebplt.close(fig)
 
 
 # HEAD ON
@@ -61,11 +164,6 @@ source_config["plane_waves"]["second"] = s2
 scenario_dir = os.path.join(work_dir, "response")
 
 
-region_of_interest_rad = (
-    6
-    * np.sqrt(telescope["sensor"]["feed_horn_area_m2"])
-    / telescope["mirror"]["focal_length_m"]
-)
 
 
 iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResponse(
@@ -102,9 +200,7 @@ fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
 sebplt.close(fig)
 
 
-R_airy_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
-    telescope=telescope
-)
+
 
 E_feed_horns = iaat.time_series.read(
     os.path.join(
