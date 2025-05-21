@@ -382,8 +382,23 @@ def list_response_paths(work_dir, telescope_key, scenario_key):
         work_dir, "stars", telescope_key, scenario_key, "*"
     )
     response_paths = glob.glob(response_path_wildcard)
-    response_paths = sorted(response_paths)
-    return response_paths
+    out_paths = []
+    for rpath in response_paths:
+        basename = os.path.basename(rpath)
+        if can_be_interpreted_as_int(basename):
+            if len(basename) == 6:
+                out_paths.append(rpath)
+
+    out_paths = sorted(out_paths)
+    return out_paths
+
+
+def can_be_interpreted_as_int(s):
+    try:
+        v = int(s)
+        return True
+    except ValueError as err:
+        return False
 
 
 def reduce_responses(work_dir, config, telescope_key, scenario_key):
