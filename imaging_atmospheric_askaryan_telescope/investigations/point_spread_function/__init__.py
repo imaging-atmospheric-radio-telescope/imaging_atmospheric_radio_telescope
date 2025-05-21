@@ -198,6 +198,11 @@ def run(work_dir, pool=None, logger=None):
     logger.debug("run jobs for 'multis' ...")
     pool.map(multis.run_job, multis_jobs)
 
+
+def run_plots(work_dir, pool=None, logger=None):
+    pool = utils.serial_pool_if_None(pool)
+    logger = iaat_logger.LoggerStdout_if_logger_is_None(logger)
+
     logger.debug("make jobs for 'plots' ...")
     plot_jobs = _plot_make_jobs(work_dir=work_dir)
     logger.debug(f"{len(plot_jobs):d} plot jobs in total.")
