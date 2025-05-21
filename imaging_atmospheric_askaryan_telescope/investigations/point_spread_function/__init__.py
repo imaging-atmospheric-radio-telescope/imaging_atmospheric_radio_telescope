@@ -64,6 +64,7 @@ def resolve_feed_oversampling(key):
 def init(
     work_dir,
     big=True,
+    minimal_field_of_view=False,
     time_oversampling=6,
     mirror_oversampling=1,
     feed_horn_oversampling_order=1,
@@ -93,6 +94,14 @@ def init(
         telescope_config["sensor"][
             "feed_horn_oversampling_order"
         ] = feed_horn_oversampling_order
+
+        if minimal_field_of_view:
+            _sensor = telescope_config["sensor"]
+            min_sensor_outer_radius_m = _sensor["feed_horn_inner_radius_m"]
+            min_sensor_outer_radius_m *= 4
+            if min_sensor_outer_radius_m < _sensor["sensor_outer_radius_m"]:
+                _sensor["sensor_outer_radius_m"] = min_sensor_outer_radius_m
+
         with rnw.open(
             os.path.join(telescopes_dir, f"{key:s}.json"), "wt"
         ) as f:
