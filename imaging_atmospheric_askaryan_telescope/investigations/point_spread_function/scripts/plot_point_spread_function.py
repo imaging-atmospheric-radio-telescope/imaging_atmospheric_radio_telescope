@@ -409,23 +409,27 @@ for telescope_key in config["stars"]["telescopes"]:
     relative_cnt[relative_cnt > 1] = 1.0
 
     # FIT
-    fit_coef, fit_cov = np.polyfit(
-        x=oa_bin["centers"], y=h1_area_p50 * AREA_SCALE, deg=1, cov=True
-    )
-    fit_coef_std = np.sqrt(np.diag(fit_cov))
-    psf_fit_airy_per_deg = np.poly1d(fit_coef)
+    try:
+        fit_coef, fit_cov = np.polyfit(
+            x=oa_bin["centers"], y=h1_area_p50 * AREA_SCALE, deg=1, cov=True
+        )
+        fit_coef_std = np.sqrt(np.diag(fit_cov))
+        psf_fit_airy_per_deg = np.poly1d(fit_coef)
 
-    with rnw.open(
-        os.path.join(out_dir, f"{telescope_key:s}_spread.txt"), "wt"
-    ) as f:
-        f.write("Area/Airy = ")
-        f.write("(")
-        f.write(sci_uncertainty(fit_coef[0], fit_coef_std[0]))
-        f.write(")")
-        f.write(" angle/deg + ")
-        f.write("(")
-        f.write(sci_uncertainty(fit_coef[1], fit_coef_std[1]))
-        f.write(")")
+        with rnw.open(
+            os.path.join(out_dir, f"{telescope_key:s}_spread.txt"), "wt"
+        ) as f:
+            f.write("Area/Airy = ")
+            f.write("(")
+            f.write(sci_uncertainty(fit_coef[0], fit_coef_std[0]))
+            f.write(")")
+            f.write(" angle/deg + ")
+            f.write("(")
+            f.write(sci_uncertainty(fit_coef[1], fit_coef_std[1]))
+            f.write(")")
+        HAVE_FIT = True
+    except ValueError:
+        HAVE_FIT = False
 
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
@@ -439,7 +443,7 @@ for telescope_key in config["stars"]["telescopes"]:
         color="black",
     )
 
-    if SHOW_FIT:
+    if SHOW_FIT and HAVE_FIT:
         _xxx = np.linspace(oa_bin["start"], oa_bin["stop"], 201)
         ax.plot(_xxx**2, psf_fit_airy_per_deg(_xxx), "-r")
 
@@ -497,25 +501,29 @@ for telescope_key in config["stars"]["telescopes"]:
             h1_disto_p50[isi] = float("nan")
             h1_disto_s68[isi] = float("nan")
 
-    distortion_fit, distortion_fit_cov = np.polyfit(
-        x=np.rad2deg(snap["source_zenith_rad"]),
-        y=np.rad2deg(snap["roi_zenith_rad"]),
-        deg=1,
-        cov=True,
-    )
-    distortion_fit_std = np.sqrt(np.diag(distortion_fit_cov))
-    distortion_fit_fn_deg = np.poly1d(distortion_fit)
-    with rnw.open(
-        os.path.join(out_dir, f"{telescope_key:s}_distortion.txt"), "wt"
-    ) as f:
-        f.write("reco angle / deg = ")
-        f.write("(")
-        f.write(sci_uncertainty(distortion_fit[0], distortion_fit_std[0]))
-        f.write(")")
-        f.write(" true angle + ")
-        f.write("(")
-        f.write(sci_uncertainty(distortion_fit[1], distortion_fit_std[1]))
-        f.write(")")
+    try:
+        distortion_fit, distortion_fit_cov = np.polyfit(
+            x=np.rad2deg(snap["source_zenith_rad"]),
+            y=np.rad2deg(snap["roi_zenith_rad"]),
+            deg=1,
+            cov=True,
+        )
+        distortion_fit_std = np.sqrt(np.diag(distortion_fit_cov))
+        distortion_fit_fn_deg = np.poly1d(distortion_fit)
+        with rnw.open(
+            os.path.join(out_dir, f"{telescope_key:s}_distortion.txt"), "wt"
+        ) as f:
+            f.write("reco angle / deg = ")
+            f.write("(")
+            f.write(sci_uncertainty(distortion_fit[0], distortion_fit_std[0]))
+            f.write(")")
+            f.write(" true angle + ")
+            f.write("(")
+            f.write(sci_uncertainty(distortion_fit[1], distortion_fit_std[1]))
+            f.write(")")
+        HAVE_FIT = True
+    except ValueError:
+        HAVE_FIT = False
 
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
@@ -527,7 +535,7 @@ for telescope_key in config["stars"]["telescopes"]:
         weights=relative_cnt,
         color="black",
     )
-    if SHOW_FIT:
+    if SHOW_FIT and HAVE_FIT:
         ax.axhline(y=distortion_fit[0], color="r")
 
     ax_add_fov_marker(ax, FOV_HA_DEG**2)
