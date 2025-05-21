@@ -37,7 +37,6 @@ os.makedirs(out_dir, exist_ok=True)
 config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
 
 source_key = "1"
-config["stars"]["telescopes"].remove("large_size_telescope")
 
 
 def screen_to_sky(x_m, focal_length_m):
@@ -115,8 +114,6 @@ def ax_add_fov_marker(ax, x):
 PSF_QUANTILE = 0.8
 
 for telescope_key in config["stars"]["telescopes"]:
-    if "large" in telescope_key:
-        continue
 
     cache_path = os.path.join(out_dir, telescope_key + ".jsonl")
     if os.path.exists(cache_path):
@@ -349,8 +346,6 @@ XLABEL_OFF_AXIS_DEG2 = (
 )
 
 for telescope_key in config["stars"]["telescopes"]:
-    if "large" in telescope_key:
-        continue
 
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(

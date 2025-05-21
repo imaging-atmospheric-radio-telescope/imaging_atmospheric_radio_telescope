@@ -59,8 +59,6 @@ snapdtype = [
 ]
 
 for telescope_key in config["stars"]["telescopes"]:
-    if "large" in telescope_key:
-        continue
 
     cache_path = os.path.join(out_dir, telescope_key + ".bin")
     if os.path.exists(cache_path):
@@ -230,8 +228,6 @@ for telescope_key in config["stars"]["telescopes"]:
 
 
 for telescope_key in config["stars"]["telescopes"]:
-    if "large" in telescope_key:
-        continue
 
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(

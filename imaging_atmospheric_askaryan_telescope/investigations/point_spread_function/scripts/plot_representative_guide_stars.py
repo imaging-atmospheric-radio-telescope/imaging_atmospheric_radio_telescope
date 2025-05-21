@@ -33,8 +33,7 @@ config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
 
 source_key = "1"
 for telescope_key in config["stars"]["telescopes"]:
-    if "large" in telescope_key:
-        continue
+
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             config=config, telescope_key=telescope_key
