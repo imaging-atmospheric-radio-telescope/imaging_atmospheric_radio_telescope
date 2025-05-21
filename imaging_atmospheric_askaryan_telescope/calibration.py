@@ -63,11 +63,54 @@ def make_point_spread_function_image(
         production_work_dir=work_dir,
         region_of_interest_num_bins=region_of_interest_num_bins,
     )
+    image /= image.sum()
 
     if work_dir_handle is not None:
         work_dir_handle.cleanup()
 
-    return x_bin_edges_m, y_bin_edges_m, image
+    psf_image = {
+        "x_bin_edges_m": x_bin_edges_m,
+        "y_bin_edges_m": y_bin_edges_m,
+        "image": image,
+        "si_unit": "1",
+    }
+    return psf_image
+
+
+def analyse_point_spread_function_image(psf_image, quantiles=None):
+
+    if quantiles is None:
+        quantiles = np.linspace(0.01, 0.99, 99)
+
+    area_v1_quantiles_m2 = []
+    area_v2_quantiles_m2 = []
+    for quantile in quantiles:
+        _ana = investigations.point_spread_function.power_image_analysis.analyse_image(
+            x_bin_edges_m=psf_image["x_bin_edges_m"],
+            y_bin_edges_m=psf_image["y_bin_edges_m"],
+            image=psf_image["image"],
+            containment_quantile=quantile,
+        )
+        area_v1_quantiles_m2.append(_ana["area_quantile_m2"])
+
+        r_quantile_m = investigations.point_spread_function.power_image_analysis.encircle_containment(
+            x_bin_edges_m=psf_image["x_bin_edges_m"],
+            y_bin_edges_m=psf_image["y_bin_edges_m"],
+            image=psf_image["image"],
+            x_m=0.0,
+            y_m=0.0,
+            quantile=quantile,
+        )
+        area_v2_quantiles_m2.append(np.pi * r_quantile_m**2)
+
+    area_v1_quantiles_m2 = np.array(area_v1_quantiles_m2)
+    area_v2_quantiles_m2 = np.array(area_v2_quantiles_m2)
+
+    return {
+        "quantiles": quantiles,
+        "area_quantile_water_shed_m2": area_v1_quantiles_m2,
+        "area_quantile_encirclement_m2": area_v2_quantiles_m2,
+    }
 
 
 def make_onaxis_source_config(telescope):
@@ -120,36 +163,46 @@ def make_site():
     }
 
 
-def save(path, x_bin_edges, y_bin_edges, image):
+def save(path, psf_image):
     with utils.tarstream.TarStream(path=path, mode="w") as t:
         t.write(
-            filename="x_bin_edges.npy",
-            filebytes=npy_to_bytes(x_bin_edges),
+            filename="x_bin_edges_m.npy",
+            filebytes=npy_to_bytes(psf_image["x_bin_edges_m"]),
         )
         t.write(
-            filename="y_bin_edges.npy",
-            filebytes=npy_to_bytes(y_bin_edges),
+            filename="y_bin_edges_m.npy",
+            filebytes=npy_to_bytes(psf_image["y_bin_edges_m"]),
         )
         t.write(
             filename="image.npy",
-            filebytes=npy_to_bytes(image),
+            filebytes=npy_to_bytes(psf_image["image"]),
+        )
+        t.write(
+            filename="si_unit.txt",
+            filebytes=npy_to_bytes(psf_image["si_unit"]),
         )
 
 
 def load(path):
+    out = {}
     with utils.tarstream.TarStream(path=path, mode="r") as t:
         filename, filebytes = t.read()
-        assert filename == "x_bin_edges.npy"
-        x_bin_edges = bytes_to_npy(filebytes)
+        assert filename == "x_bin_edges_m.npy"
+        out["x_bin_edges_m"] = bytes_to_npy(filebytes)
 
         filename, filebytes = t.read()
-        assert filename == "y_bin_edges.npy"
-        y_bin_edges = bytes_to_npy(filebytes)
+        assert filename == "y_bin_edges_m.npy"
+        out["y_bin_edges_m"] = bytes_to_npy(filebytes)
 
         filename, filebytes = t.read()
         assert filename == "image.npy"
-        image = bytes_to_npy(filebytes)
-    return x_bin_edges, y_bin_edges, image
+        out["image"] = bytes_to_npy(filebytes)
+
+        filename, filebytes = t.read()
+        assert filename == "si_unit.txt"
+        out["si_unit"] = bytes_to_npy(filebytes)
+
+    return out
 
 
 def _load_image_from_production_response(

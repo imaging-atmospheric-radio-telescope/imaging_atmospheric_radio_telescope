@@ -48,40 +48,15 @@ A_airy_m2 = np.pi * R_airy_m**2
 # ==========================
 onaxis_roi_num_pixel = 61
 
-xb, yb, img = iaat.calibration.make_point_spread_function_image(
-    telescope=telescope,
-    timing=timing,
-    region_of_interest_num_bins=onaxis_roi_num_pixel,
-)
-
-
-onaxis_source_config = iaat.production.radio_from_plane_wave.make_config()
-s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
-s1["geometry"]["azimuth_rad"] = np.deg2rad(0.0)
-s1["geometry"]["zenith_rad"] = np.deg2rad(0.0)
-s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
-s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz
-onaxis_source_config["plane_waves"] = {}
-onaxis_source_config["plane_waves"]["onaxis"] = s1
-
-onaxis_dir = os.path.join(work_dir, "onaxis")
-if not os.path.exists(onaxis_dir):
-    iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResponse(
-        out_dir=onaxis_dir,
-        random_seed=random_seed,
+psf_image_path = os.path.join(work_dir, "onaxis_psf.tar")
+if not os.path.exists(psf_image_path):
+    psf_image = iaat.calibration.make_point_spread_function_image(
         telescope=telescope,
-        site=site,
         timing=timing,
-        source_config=onaxis_source_config,
-        region_of_interest_rad=region_of_interest_rad,
         region_of_interest_num_bins=onaxis_roi_num_pixel,
-        save_feed_horns_scatter_electric_fields=True,
-        save_roi_electric_fields=True,
     )
-onaxis_response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
-    path=onaxis_dir
-)
-bx, by, Ene_roi = onaxis_response.energy_roi("onaxis")
+    iaat.calibration.save(path=psf_image_path, psf_image=psf_image)
+psf_image = iaat.calibration.load(path=psf_image_path)
 
 onaxis_roi_path = os.path.join(work_dir, "onaxis_psf.jpg")
 if not os.path.exists(onaxis_roi_path):
@@ -90,8 +65,8 @@ if not os.path.exists(onaxis_roi_path):
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
     ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
     norm = sebplt.matplotlib.colors.PowerNorm(
-        vmin=1e-3 * np.max(Ene_roi),
-        vmax=np.max(Ene_roi),
+        vmin=1e-3 * np.max(psf_image["image"]),
+        vmax=np.max(psf_image["image"]),
         gamma=1 / 2.0,
     )
     iaat.camera.ax_add_camera_feed_horn_edges(
@@ -101,9 +76,9 @@ if not os.path.exists(onaxis_roi_path):
         linewidth=0.5,
     )
     im = ax.pcolormesh(
-        bx,
-        by,
-        Ene_roi.T,
+        psf_image["x_bin_edges_m"],
+        psf_image["y_bin_edges_m"],
+        psf_image["image"].T,
         cmap="Blues",
         norm=norm,
     )
@@ -115,23 +90,13 @@ if not os.path.exists(onaxis_roi_path):
     fig.savefig(onaxis_roi_path)
     sebplt.close(fig)
 
-onaxis_quantiles = np.linspace(0.05, 0.95, 19)
-onaxis_area_quantiles_m2 = []
-for quantile in onaxis_quantiles:
-    ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
-        x_bin_edges_m=bx,
-        y_bin_edges_m=by,
-        image=Ene_roi,
-        containment_quantile=quantile,
-    )
-    onaxis_area_quantiles_m2.append(ana["area_quantile_m2"])
-
-onaxis_area_quantiles_m2 = np.array(onaxis_area_quantiles_m2)
-
+psf_containment = iaat.calibration.analyse_point_spread_function_image(
+    psf_image=psf_image
+)
 psf_quantile_contained_in_feed_horn = np.interp(
     x=telescope["sensor"]["feed_horn_area_m2"],
-    xp=onaxis_area_quantiles_m2,
-    fp=onaxis_quantiles,
+    xp=psf_containment["area_quantile_water_shed_m2"],
+    fp=psf_containment["quantiles"],
 )
 
 onaxis_roi_containment_path = os.path.join(
@@ -141,7 +106,14 @@ if not os.path.exists(onaxis_roi_containment_path):
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
     ax.plot(
-        onaxis_quantiles, onaxis_area_quantiles_m2 / A_airy_m2, color="black"
+        psf_containment["quantiles"],
+        psf_containment["area_quantile_water_shed_m2"] / A_airy_m2,
+        color="black",
+    )
+    ax.plot(
+        psf_containment["quantiles"],
+        psf_containment["area_quantile_encirclement_m2"] / A_airy_m2,
+        color="gray",
     )
     ax.axhline(
         y=telescope["sensor"]["feed_horn_area_m2"] / A_airy_m2,
