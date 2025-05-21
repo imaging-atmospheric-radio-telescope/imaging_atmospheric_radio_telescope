@@ -350,7 +350,7 @@ def propagate_electric_field_from_mirror_to_region_of_interest_sensor(
             # amplitude
             # ---------
             for dim in range(3):
-                signal.add_first_to_second_at(
+                signal.add_first_to_second_at_int(
                     first=E_mirror[imi, :, dim],
                     second=E_sensor[ise, :, dim],
                     at=slice_delay,
@@ -455,15 +455,13 @@ def propagate_electric_field_from_mirror_to_sensor(
                 )
                 relative_time_delay_s = time_delay_s - min_time_delay_s
 
-                slice_delay = int(
-                    np.round(
-                        relative_time_delay_s / E_sensor.time_slice_duration_s
-                    )
+                slice_delay = (
+                    relative_time_delay_s / E_sensor.time_slice_duration_s
                 )
 
                 # amplitude
                 # ---------
-                signal.add_first_to_second_at(
+                signal.add_first_to_second_at_float(
                     first=mirror_to_feed_horn_E_field_scaling * E_mirror[imi],
                     second=E_feed_horn[isu],
                     at=slice_delay,
@@ -479,7 +477,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         # -----------------
         NUM_FEED_HORN_SCATTER = camera["num_scatter_centers_per_feed_horn"]
         for isl in range(NUM_FEED_HORN_SCATTER):
-            signal.add_first_to_second_at(
+            signal.add_first_to_second_at_int(
                 first=element_wise_power(
                     x=E_feed_horn[isl],
                     p=2,

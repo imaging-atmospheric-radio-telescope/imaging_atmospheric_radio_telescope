@@ -4,7 +4,7 @@ import copy
 import builtins
 import gzip
 from .utils import tarstream
-from .signal import add_first_to_second_at
+from .signal import add_first_to_second_at_float
 
 
 def zeros(
@@ -241,11 +241,11 @@ class TimeSeries:
             dT_s = np.mean([dT1_s, dT2_s])
 
         delta_T_s = other.global_start_time_s - self.global_start_time_s
-        at_time_slice_in_second = int(np.round(delta_T_s / dT_s))
+        at_time_slice_in_second = delta_T_s / dT_s
 
         out = copy(self)
         for channel in range(other.num_channels):
-            add_first_to_second_at(
+            add_first_to_second_at_float(
                 first=other[channel],
                 second=out[channel],
                 at=at_time_slice_in_second,

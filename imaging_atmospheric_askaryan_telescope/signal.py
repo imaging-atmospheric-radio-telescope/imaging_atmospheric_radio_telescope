@@ -5,7 +5,30 @@ import numpy as np
 import copy
 
 
-def add_first_to_second_at(first, second, at):
+def add_first_to_second_at_float(first, second, at):
+    """
+    Adds the values in 'first' to the values in 'second' with the
+    starting index in 'second' being 'at'.
+
+    Parameters
+    ----------
+    first : array
+        A series of values to be added to 'second'.
+    second : array
+        A series of values to add values from 'first' to.
+        'second' is modified in place.
+    at : float
+        The starting index in 'second' where the values of 'first' are added
+        to.
+    """
+    A, B = _get_add_first_to_second_at_AB_ats_and_weights(at=at)
+    A_at, A_weight = A
+    B_at, B_weight = B
+    add_first_to_second_at_int(first=first * A_weight, second=second, at=A_at)
+    add_first_to_second_at_int(first=first * B_weight, second=second, at=B_at)
+
+
+def add_first_to_second_at_int(first, second, at):
     """
     Adds the values in 'first' to the values in 'second' with the
     starting index in 'second' being 'at'.
@@ -36,6 +59,15 @@ def add_first_to_second_at(first, second, at):
         start = 0
 
     second[start:end] += first[start - at : end - at]
+
+
+def _get_add_first_to_second_at_AB_ats_and_weights(at):
+    at_A = int(at // 1)
+    at_B = at_A + 1
+    weight_B = float(np.mod(at, 1))
+    weight_A = 1.0 - weight_B
+
+    return (at_A, weight_A), (at_B, weight_B)
 
 
 def _butter_bandpass(lowcut, highcut, fs, order=5):
