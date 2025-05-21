@@ -115,6 +115,8 @@ def encircle_containment(
     x_bin_edges_m, y_bin_edges_m, image, x_m, y_m, quantile
 ):
     assert 0.0 < quantile <= 1.0
+    dxy = np.mean([np.gradient(x_bin_edges_m), np.gradient(y_bin_edges_m)])
+    rxy = dxy / 2
     xy_m, img_w = flatten_image(
         x_bin_edges_m=x_bin_edges_m,
         y_bin_edges_m=y_bin_edges_m,
@@ -125,6 +127,7 @@ def encircle_containment(
         x0=x_m,
         y0=y_m,
     )
+    img_r += rxy
     img_q = img_w / img_w.sum()
     rargs = np.argsort(img_r)
 

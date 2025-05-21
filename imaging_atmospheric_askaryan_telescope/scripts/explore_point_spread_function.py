@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "medium_size_telescope"
+telescope_key = "crome"
 work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
@@ -122,8 +122,9 @@ if not os.path.exists(onaxis_roi_containment_path):
     )
     ax.semilogy()
     ax.set_xlim([0, 1])
+    ax.set_ylim([1e-3, 1e1])
     ax.set_xlabel("quantile / 1")
-    ax.set_ylabel(r"area / Airy disk")
+    ax.set_ylabel(r"area / Airy disk area")
     fig.savefig(onaxis_roi_containment_path)
     sebplt.close(fig)
 

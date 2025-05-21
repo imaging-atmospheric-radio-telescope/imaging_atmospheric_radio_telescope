@@ -283,6 +283,11 @@ def make_telescope(mirror, sensor, lnb, speed_of_light_m_per_s):
             ]
             * 2.1,
         )
+
+    tele["airy_half_angle_rad"] = calculate_airy_angle(tele)
+    tele["airy_radius_in_focal_plane_m"] = (
+        calculate_airy_disk_radius_in_focal_plane(tele)
+    )
     return tele
 
 

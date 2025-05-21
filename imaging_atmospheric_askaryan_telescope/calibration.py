@@ -146,12 +146,10 @@ def make_onaxis_source_config(telescope):
 
 
 def guess_region_of_interest_full_angle(telescope):
-    region_of_interest_rad = (
-        6
-        * np.sqrt(telescope["sensor"]["feed_horn_area_m2"])
-        / telescope["mirror"]["focal_length_m"]
-    )
-    return region_of_interest_rad
+    D = 2.0 * telescope["mirror"]["outer_radius_m"]
+    f = telescope["mirror"]["focal_length_m"]
+    overhead = 6.0
+    return (D / f) * overhead * telescope["airy_half_angle_rad"]
 
 
 def make_site():
