@@ -199,6 +199,8 @@ def run(work_dir, pool=None, logger=None):
     logger.debug("run jobs for 'multis' ...")
     pool.map(multis.run_job, multis_jobs)
 
+    run_plots(work_dir=work_dir, pool=pool, logger=logger)
+
 
 def run_plots(work_dir, pool=None, logger=None):
     pool = utils.serial_pool_if_None(pool)
