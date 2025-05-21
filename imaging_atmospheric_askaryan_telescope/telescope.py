@@ -366,10 +366,13 @@ def propagate_electric_field_from_mirror_to_sensor(
     telescope,
     mirror_electric_fields,
     num_time_slices,
+    psf_quantile_contained_in_feed_horn=1,
 ):
     """
     ===
     """
+    assert 0.0 < psf_quantile_contained_in_feed_horn <= 1.0
+
     camera = telescope["sensor"]
     mirror = telescope["mirror"]
 
@@ -386,7 +389,11 @@ def propagate_electric_field_from_mirror_to_sensor(
         dtype=E_mirror.dtype,
     )
 
-    mirror_to_feed_horn_E_field_scaling = np.sqrt(
+    psf_containment_mirror_to_feed_horn_E_field_scaling = np.sqrt(
+        psf_quantile_contained_in_feed_horn
+    )
+
+    geometric_mirror_to_feed_horn_E_field_scaling = np.sqrt(
         1.0
         / (
             mirror["num_scatter_centers"]
@@ -395,6 +402,11 @@ def propagate_electric_field_from_mirror_to_sensor(
     ) * np.sqrt(
         mirror["scatter_center_area_m2"]
         / camera["feed_horn_scatter_center_area_m2"]
+    )
+
+    mirror_to_feed_horn_E_field_scaling = (
+        geometric_mirror_to_feed_horn_E_field_scaling
+        * psf_containment_mirror_to_feed_horn_E_field_scaling
     )
 
     E_feed_horns_scatters = time_series.zeros(
@@ -467,8 +479,8 @@ def propagate_electric_field_from_mirror_to_sensor(
             iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
             E_feed_horns_scatters[iii] = E_feed_horn[isu]
 
-        # Average feed horn
-        # -----------------
+        # Suming up feed horn's scatter centers
+        # -------------------------------------
         NUM_FEED_HORN_SCATTER = camera["num_scatter_centers_per_feed_horn"]
         for isl in range(NUM_FEED_HORN_SCATTER):
             signal.add_first_to_second_at_int(
@@ -483,7 +495,6 @@ def propagate_electric_field_from_mirror_to_sensor(
             x=E_sensor[ifh],
             p=0.5,
         )
-        E_sensor[ifh] = np.sqrt(1.0 / NUM_FEED_HORN_SCATTER) * E_sensor[ifh]
 
     return E_sensor, E_feed_horns_scatters
 

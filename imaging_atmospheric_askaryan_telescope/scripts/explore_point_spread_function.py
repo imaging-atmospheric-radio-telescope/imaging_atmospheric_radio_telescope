@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "crome"
+telescope_key = "medium_size_telescope"
 work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
@@ -80,7 +80,6 @@ bx, by, Ene_roi = onaxis_response.energy_roi("onaxis")
 onaxis_roi_path = os.path.join(work_dir, "onaxis_psf.jpg")
 if not os.path.exists(onaxis_roi_path):
 
-
     fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
     ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
@@ -110,7 +109,7 @@ if not os.path.exists(onaxis_roi_path):
     fig.savefig(onaxis_roi_path)
     sebplt.close(fig)
 
-onaxis_quantiles =  np.linspace(0.05, 0.95, 19)
+onaxis_quantiles = np.linspace(0.05, 0.95, 19)
 onaxis_area_quantiles_m2 = []
 for quantile in onaxis_quantiles:
     ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
@@ -129,12 +128,20 @@ psf_quantile_contained_in_feed_horn = np.interp(
     fp=onaxis_quantiles,
 )
 
-onaxis_roi_containment_path = os.path.join(work_dir, "onaxis_psf_containment.jpg")
+onaxis_roi_containment_path = os.path.join(
+    work_dir, "onaxis_psf_containment.jpg"
+)
 if not os.path.exists(onaxis_roi_containment_path):
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
-    ax.plot(onaxis_quantiles, onaxis_area_quantiles_m2/A_airy_m2, color="black")
-    ax.axhline(y=telescope["sensor"]["feed_horn_area_m2"]/A_airy_m2, linestyle="--", color="black")
+    ax.plot(
+        onaxis_quantiles, onaxis_area_quantiles_m2 / A_airy_m2, color="black"
+    )
+    ax.axhline(
+        y=telescope["sensor"]["feed_horn_area_m2"] / A_airy_m2,
+        linestyle="--",
+        color="black",
+    )
     ax.semilogy()
     ax.set_xlim([0, 1])
     ax.set_xlabel("quantile / 1")
@@ -169,12 +176,11 @@ source_config["plane_waves"]["second"] = s2
 scenario_dir = os.path.join(work_dir, "response")
 
 
-
-
 iaat.investigations.point_spread_function.plane_wave_response.make_PlaneWaveResponse(
     out_dir=scenario_dir,
     random_seed=random_seed,
     telescope=telescope,
+    telescope_psf_quantile_contained_in_feed_horn=psf_quantile_contained_in_feed_horn,
     site=site,
     timing=timing,
     source_config=source_config,
@@ -203,8 +209,6 @@ ax.set_ylabel("y / m")
 ax.set_aspect("equal")
 fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
 sebplt.close(fig)
-
-
 
 
 E_feed_horns = iaat.time_series.read(

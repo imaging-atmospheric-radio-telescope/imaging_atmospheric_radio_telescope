@@ -22,6 +22,7 @@ def simulate_telescope_response(
     source_config,
     site,
     telescope,
+    telescope_psf_quantile_contained_in_feed_horn,
     timing,
     thermal_noise_random_seed,
     readout_random_seed,
@@ -99,6 +100,7 @@ def simulate_telescope_response(
             E_sensor, E_feed_horns_scatter = (
                 simtelescope.propagate_electric_field_from_mirror_to_sensor(
                     telescope=telescope,
+                    psf_quantile_contained_in_feed_horn=telescope_psf_quantile_contained_in_feed_horn,
                     mirror_electric_fields=E_mirror,
                     num_time_slices=timing["electric_fields"]["sensor"][
                         "num_time_slices"
