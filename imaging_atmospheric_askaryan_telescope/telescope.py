@@ -386,21 +386,15 @@ def propagate_electric_field_from_mirror_to_sensor(
         dtype=E_mirror.dtype,
     )
 
-    MAGIC_CONSTANT = 2.5
-
-    mirror_to_feed_horn_E_field_scaling = (
-        np.sqrt(
-            1.0
-            / (
-                mirror["num_scatter_centers"]
-                * camera["num_scatter_centers_per_feed_horn"]
-            )
+    mirror_to_feed_horn_E_field_scaling = np.sqrt(
+        1.0
+        / (
+            mirror["num_scatter_centers"]
+            * camera["num_scatter_centers_per_feed_horn"]
         )
-        * np.sqrt(
-            mirror["scatter_center_area_m2"]
-            / camera["feed_horn_scatter_center_area_m2"]
-        )
-        * np.sqrt(MAGIC_CONSTANT)
+    ) * np.sqrt(
+        mirror["scatter_center_area_m2"]
+        / camera["feed_horn_scatter_center_area_m2"]
     )
 
     E_feed_horns_scatters = time_series.zeros(
