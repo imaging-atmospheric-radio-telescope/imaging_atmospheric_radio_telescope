@@ -209,7 +209,7 @@ def run_plots(work_dir, pool=None, logger=None):
     logger.debug("make jobs for 'plots' ...")
     plot_jobs = _plot_make_jobs(work_dir=work_dir)
     logger.debug(f"{len(plot_jobs):d} plot jobs in total.")
-    plot_jobs = _plot_drop_finished_jobs(work_dir=work_dir, jobs=plot_jobs)
+    plot_jobs = _plot_drop_finished_jobs(jobs=plot_jobs)
     logger.debug(f"{len(plot_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'plot' ...")
     pool.map(_plot_run_job, plot_jobs)
@@ -236,9 +236,10 @@ def _plot_run_job(job):
     subprocess.call(job)
 
 
-def _plot_drop_finished_jobs(work_dir, jobs):
+def _plot_drop_finished_jobs(jobs):
     out = []
     for job in jobs:
+        work_dir = job[2]
         job_scriptname = os.path.basename(job[1])
         assert job_scriptname.startswith("plot_")
         assert job_scriptname.endswith(".py")
@@ -279,6 +280,21 @@ def init_different_oversamplings(work_dir, combinations=None, big=True):
                     combi["feed"]
                 ),
             )
+
+
+def plot_different_oversamplings(work_dir, lazy=True, pool=None, logger=None):
+    pool = utils.serial_pool_if_None(pool)
+    logger = iaat_logger.LoggerStdout_if_logger_is_None(logger)
+    work_dirs = glob.glob(os.path.join(work_dir, "mirror_*_feed_*_time_*"))
+
+    jobs = []
+    for path in work_dirs:
+        jobs += _plot_make_jobs(work_dir=path)
+
+    if lazy:
+        jobs = _plot_drop_finished_jobs(jobs=jobs)
+
+    pool.map(_plot_run_job, jobs)
 
 
 def run_different_oversamplings(work_dir, **kwargs):
