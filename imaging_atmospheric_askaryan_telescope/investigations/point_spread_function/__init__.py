@@ -226,7 +226,7 @@ def _plot_make_jobs(work_dir):
     )
     jobs = []
     for plot_script_path in plot_script_paths:
-        jobs.append(["pyhton", plot_script_path, work_dir])
+        jobs.append(["python", plot_script_path, work_dir])
     return jobs
 
 
