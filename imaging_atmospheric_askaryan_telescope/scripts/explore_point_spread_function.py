@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "medium_size_telescope"
+telescope_key = "crome"
 work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
@@ -111,7 +111,7 @@ if not os.path.exists(onaxis_roi_path):
     sebplt.close(fig)
 
 onaxis_quantiles =  np.linspace(0.05, 0.95, 19)
-onaxis_area_quantiles = []
+onaxis_area_quantiles_m2 = []
 for quantile in onaxis_quantiles:
     ana = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
         x_bin_edges_m=bx,
@@ -119,16 +119,22 @@ for quantile in onaxis_quantiles:
         image=Ene_roi,
         containment_quantile=quantile,
     )
-    onaxis_area_quantiles.append(ana["area_quantile_m2"])
+    onaxis_area_quantiles_m2.append(ana["area_quantile_m2"])
 
-onaxis_area_quantiles=np.array(onaxis_area_quantiles)
+onaxis_area_quantiles_m2 = np.array(onaxis_area_quantiles_m2)
+
+psf_quantile_contained_in_feed_horn = np.interp(
+    x=telescope["sensor"]["feed_horn_area_m2"],
+    xp=onaxis_area_quantiles_m2,
+    fp=onaxis_quantiles,
+)
 
 onaxis_roi_containment_path = os.path.join(work_dir, "onaxis_psf_containment.jpg")
 if not os.path.exists(onaxis_roi_containment_path):
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
-    ax.plot(onaxis_quantiles, onaxis_area_quantiles/A_airy_m2, color="black")
-    #ax.axhline(y=1, linestyle="--", color="black")
+    ax.plot(onaxis_quantiles, onaxis_area_quantiles_m2/A_airy_m2, color="black")
+    ax.axhline(y=telescope["sensor"]["feed_horn_area_m2"]/A_airy_m2, linestyle="--", color="black")
     ax.semilogy()
     ax.set_xlim([0, 1])
     ax.set_xlabel("quantile / 1")
@@ -160,7 +166,6 @@ s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 0.99
 source_config["plane_waves"] = {}
 source_config["plane_waves"]["first"] = s1
 source_config["plane_waves"]["second"] = s2
-
 scenario_dir = os.path.join(work_dir, "response")
 
 
