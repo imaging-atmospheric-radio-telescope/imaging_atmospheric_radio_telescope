@@ -1,7 +1,14 @@
 import numpy as np
 import copy
+import importlib
 from scipy.stats.qmc import Sobol
 from scipy.optimize import curve_fit
+
+
+def package_path():
+    return str(
+        importlib.resources.files("imaging_atmospheric_askaryan_telescope")
+    )
 
 
 def gauss_pseudo_2d(xy, x0, y0, sigma):

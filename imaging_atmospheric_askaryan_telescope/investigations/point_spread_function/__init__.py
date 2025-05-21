@@ -198,6 +198,49 @@ def run(work_dir, pool=None, logger=None):
     logger.debug("run jobs for 'multis' ...")
     pool.map(multis.run_job, multis_jobs)
 
+    logger.debug("make jobs for 'plots' ...")
+    plot_jobs = _plot_make_jobs(work_dir=work_dir)
+    logger.debug(f"{len(plot_jobs):d} plot jobs in total.")
+    plot_jobs = _plot_drop_finished_jobs(work_dir=work_dir, jobs=plot_jobs)
+    logger.debug(f"{len(plot_jobs):d} jobs are missing and need to be run.")
+    logger.debug("run jobs for 'plot' ...")
+    pool.map(_plot_run_job, plot_jobs)
+
+
+def _plot_make_jobs(work_dir):
+    iaat_dir = iaat_utils.package_path()
+    plot_script_paths = glob.glob(
+        os.path.join(
+            iaat_dir,
+            "investigations",
+            "point_spread_function",
+            "scripts",
+            "plot_*.py",
+        )
+    )
+    jobs = []
+    for plot_script_path in plot_script_paths:
+        jobs.append(["pyhton", plot_script_path, work_dir])
+    return jobs
+
+
+def _plot_run_job(job):
+    subprocess.call(job)
+
+
+def _plot_drop_finished_jobs(work_dir, jobs):
+    out = []
+    for job in jobs:
+        job_scriptname = os.path.basename(job[1])
+        assert job_scriptname.startswith("plot_")
+        assert job_scriptname.endswith(".py")
+        script_key = job_scriptname[5:-3]
+
+        job_out_dir = os.path.join(work_dir, "plots", script_key)
+        if not os.path.exists(job_out_dir):
+            out.append(job)
+    return out
+
 
 def init_different_oversamplings(work_dir, combinations=None, big=True):
     if combinations is None:
