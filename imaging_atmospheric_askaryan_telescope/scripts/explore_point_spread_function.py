@@ -47,7 +47,13 @@ A_airy_m2 = np.pi * R_airy_m**2
 # Determine onaxis PSF area
 # ==========================
 onaxis_roi_num_pixel = 61
-psf_quantile = 0.95
+
+xb, yb, img = iaat.calibration.make_point_spread_function_image(
+    telescope=telescope,
+    timing=timing,
+    region_of_interest_num_bins=onaxis_roi_num_pixel,
+)
+
 
 onaxis_source_config = iaat.production.radio_from_plane_wave.make_config()
 s1 = iaat.calibration_source.plane_wave_in_far_field.make_config()
