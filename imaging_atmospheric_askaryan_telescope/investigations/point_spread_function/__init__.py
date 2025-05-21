@@ -25,6 +25,7 @@ import json_utils
 import rename_after_writing as rnw
 import shutil
 import glob
+import subprocess
 
 
 def either(flag, x, y):
