@@ -379,7 +379,7 @@ def propagate_electric_field_from_mirror_to_sensor(
         0.0
         < telescope["calibration"][
             "point_spread_function_quantile_contained_in_feed_horn"
-        ]
+        ]["watershed"]
         <= 1.0
     )
 
@@ -402,7 +402,7 @@ def propagate_electric_field_from_mirror_to_sensor(
     psf_containment_mirror_to_feed_horn_E_field_scaling = np.sqrt(
         telescope["calibration"][
             "point_spread_function_quantile_contained_in_feed_horn"
-        ]
+        ]["watershed"]
     )
 
     geometric_mirror_to_feed_horn_E_field_scaling = np.sqrt(

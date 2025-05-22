@@ -28,12 +28,30 @@ def make_calibration(telescope, time_oversampling=6):
     calib["containment"] = analyse_point_spread_function_image(
         psf_image=calib["image"],
     )
-    calib["point_spread_function_quantile_contained_in_feed_horn"] = np.interp(
+
+    containment_watershed = interpolate(
         x=telescope["sensor"]["feed_horn_area_m2"],
-        xp=calib["containment"]["area_quantile_water_shed_m2"],
+        xp=calib["containment"]["area_quantile_watershed_m2"],
         fp=calib["containment"]["quantiles"],
+        fmax=1.0,
     )
+    containment_encirclement = interpolate(
+        x=telescope["sensor"]["feed_horn_area_m2"],
+        xp=calib["containment"]["area_quantile_encirclement_m2"],
+        fp=calib["containment"]["quantiles"],
+        fmax=1.0,
+    )
+    calib["point_spread_function_quantile_contained_in_feed_horn"] = {
+        "watershed": containment_watershed,
+        "encirclement": containment_encirclement,
+    }
     return calib
+
+
+def interpolate(x, xp, fp, fmax):
+    f = np.interp(x=x, xp=xp, fp=fp)
+    f = fmax if f > fmax else f
+    return f
 
 
 def add_calibration_to_telescope(telescope, path):
@@ -66,10 +84,6 @@ def make_point_spread_function_image(
         num_bins=region_of_interest_num_bins,
         other_telescope=telescope,
     )
-    telescope_region_of_interest["calibration"] = {}
-    telescope_region_of_interest["calibration"][
-        "point_spread_function_quantile_contained_in_feed_horn"
-    ] = 1.0
 
     if work_dir is None:
         work_dir_handle = tempfile.TemporaryDirectory(prefix="iaat-")
@@ -147,7 +161,7 @@ def analyse_point_spread_function_image(psf_image, quantiles=None):
 
     return {
         "quantiles": quantiles,
-        "area_quantile_water_shed_m2": area_wts_quantiles_m2,
+        "area_quantile_watershed_m2": area_wts_quantiles_m2,
         "area_quantile_encirclement_m2": area_enc_quantiles_m2,
     }
 

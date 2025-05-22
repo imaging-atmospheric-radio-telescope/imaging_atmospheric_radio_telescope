@@ -70,10 +70,6 @@ def make_PlaneWaveResponse(
                 num_bins=region_of_interest_num_bins,
                 other_telescope=telescope,
             )
-            telescope_region_of_interest["calibration"] = {}
-            telescope_region_of_interest["calibration"][
-                "point_spread_function_quantile_contained_in_feed_horn"
-            ] = 1.0
 
             os.makedirs(roi_key_dir, exist_ok=True)
             shutil.copytree(

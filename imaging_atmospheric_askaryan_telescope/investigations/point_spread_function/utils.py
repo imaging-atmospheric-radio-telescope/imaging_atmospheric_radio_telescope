@@ -139,7 +139,17 @@ def make_telescope_like_other_but_with_region_of_interest_camera(
         feed_horn_transmission=1.0,
     )
 
-    return telescope.make_telescope_like_other_but_different_sensor(
+    tele = telescope.make_telescope_like_other_but_different_sensor(
         telescope=other_telescope,
         sensor=sensor_roi,
     )
+
+    tele["calibration"] = {}
+    tele["calibration"][
+        "point_spread_function_quantile_contained_in_feed_horn"
+    ] = {}
+    tele["calibration"][
+        "point_spread_function_quantile_contained_in_feed_horn"
+    ]["watershed"] = 1.0
+
+    return tele

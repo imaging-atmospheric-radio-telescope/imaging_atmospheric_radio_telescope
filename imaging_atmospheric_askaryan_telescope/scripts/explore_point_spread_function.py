@@ -11,7 +11,7 @@ import json_utils
 import os
 import scipy.linalg
 
-telescope_key = "crome"
+telescope_key = "medium_size_telescope"
 work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
@@ -91,7 +91,7 @@ if not os.path.exists(onaxis_roi_containment_path):
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
     ax.plot(
         telescope["calibration"]["containment"]["quantiles"],
-        telescope["calibration"]["containment"]["area_quantile_water_shed_m2"]
+        telescope["calibration"]["containment"]["area_quantile_watershed_m2"]
         / A_airy_m2,
         color="black",
     )
