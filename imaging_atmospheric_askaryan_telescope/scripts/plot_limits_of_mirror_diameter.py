@@ -10,8 +10,19 @@ import binning_utils
 sebplt.matplotlib.rcParams.update(iaat_plot.CONFIG["matplotlib"])
 
 
-def airy_theta(D, l):
-    return np.arcsin(1.22 * l / D)
+def ax_add_marker(ax, x, y, s, **kwargs):
+    ax.text(
+        x=x,
+        y=y,
+        s=s,
+        **kwargs,
+        verticalalignment="center",
+        horizontalalignment="center",
+    )
+
+
+def airy_full_angle(D, l):
+    return 2.0 * iaat.theory.airy_angle(mirror_diameter=D, wavelength=l)
 
 
 def contour_fmt_deg(x):
@@ -62,20 +73,20 @@ D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M = 23.0
 
 lst = iaat.telescopes.init("large_size_telescope")
 lst_nu_Hz = get_mean_input_frequency(telescope=lst)
-lst_marker = "D"
+lst_marker = r"$\mathbf{L}$"
 
 mst = iaat.telescopes.init("medium_size_telescope")
 mst_nu_Hz = get_mean_input_frequency(telescope=mst)
-mst_marker = "P"
+mst_marker = r"$\mathbf{M}$"
 
 crome = iaat.telescopes.init("crome")
 crome_nu_Hz = get_mean_input_frequency(telescope=crome)
-crome_marker = "*"
+crome_marker = r"$\mathbf{C}$"
 
 theta = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
 for iD in range(D_bin["num"]):
     for iNu in range(Nu_bin["num"]):
-        theta[iD, iNu] = airy_theta(
+        theta[iD, iNu] = airy_full_angle(
             D=D_bin["centers"][iD],
             l=iaat.signal.frequency_to_wavelength(
                 frequency=Nu_bin["centers"][iNu]
@@ -84,19 +95,20 @@ for iD in range(D_bin["num"]):
 
 theta_deg = np.rad2deg(theta)
 theta_levels_deg = [
-    0.067,
     0.15,
     0.3,
     0.6,
     1.2,
     2.4,
+    4.8,
+    9.6,
 ]  # np.geomspace(0.15 / 2, 3.0, 8)
 
 vD, vNu = valid_airy_Nus(
     theta_D_Nu=theta_deg,
     D_bin_centers=D_bin["centers"],
     Nu_bin_centers=Nu_bin["centers"],
-    theta_threshold=0.15,
+    theta_threshold=0.30,
 )
 
 # make valid regime polygon
@@ -135,25 +147,32 @@ ax.vlines(
     ymax=Nu_bin["stop"] * TO_GIGA,
     colors=["black"],
     linestyle="--",
-    alpha=0.33,
+    alpha=0.15,
 )
-ax.plot(
-    2.0 * lst["mirror"]["outer_radius_m"],
-    lst_nu_Hz * TO_GIGA,
-    marker=lst_marker,
+marker_fontsize = 16
+ax_add_marker(
+    ax=ax,
+    x=2.0 * lst["mirror"]["outer_radius_m"],
+    y=lst_nu_Hz * TO_GIGA,
+    s=lst_marker,
     color="black",
+    fontsize=marker_fontsize,
 )
-ax.plot(
-    2.0 * mst["mirror"]["outer_radius_m"],
-    mst_nu_Hz * TO_GIGA,
-    marker=mst_marker,
+ax_add_marker(
+    ax=ax,
+    x=2.0 * mst["mirror"]["outer_radius_m"],
+    y=mst_nu_Hz * TO_GIGA,
+    s=mst_marker,
     color="black",
+    fontsize=marker_fontsize,
 )
-ax.plot(
-    2.0 * crome["mirror"]["outer_radius_m"],
-    crome_nu_Hz * TO_GIGA,
-    marker=crome_marker,
+ax_add_marker(
+    ax=ax,
+    x=2.0 * crome["mirror"]["outer_radius_m"],
+    y=crome_nu_Hz * TO_GIGA,
+    s=crome_marker,
     color="black",
+    fontsize=marker_fontsize,
 )
 fill_alpha = 0.15
 HESS2_MIRROR_D_M = 28

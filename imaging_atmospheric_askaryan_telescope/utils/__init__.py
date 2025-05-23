@@ -3,6 +3,7 @@ import copy
 import importlib
 from scipy.stats.qmc import Sobol
 from scipy.optimize import curve_fit
+from . import scientific
 
 
 def package_path():
