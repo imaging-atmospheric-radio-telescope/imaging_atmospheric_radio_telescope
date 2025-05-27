@@ -96,7 +96,7 @@ def simulate_telescope_response(
             E_mirror = time_series.read(
                 path=os.path.join(out_dir, "mirror", "electric_fields.tar"),
             )
-            E_sensor, E_feed_horns_scatter = (
+            E_feed_horns_scatters = (
                 simtelescope.propagate_electric_field_from_mirror_to_sensor(
                     telescope=telescope,
                     mirror_electric_fields=E_mirror,
@@ -106,27 +106,10 @@ def simulate_telescope_response(
                 )
             )
 
-            # feed horns
-            # ----------
-            Ene_feed_horns = electric_fields.integrate_power_over_time(
-                electric_fields=E_sensor,
-                channel_effective_area_m2=telescope["sensor"][
-                    "feed_horn_area_m2"
-                ],
-            )
-            with open(os.path.join(tmp_dir, "energy.npy"), "wb") as f:
-                np.save(file=f, arr=Ene_feed_horns)
-
-            if save_feed_horns_electric_fields:
-                time_series.write(
-                    path=os.path.join(tmp_dir, "electric_fields.tar"),
-                    time_series=E_sensor,
-                )
-
             # feed horns scatter
             # ------------------
             Ene_feed_horns_scatter = electric_fields.integrate_power_over_time(
-                electric_fields=E_feed_horns_scatter,
+                electric_fields=E_feed_horns_scatters,
                 channel_effective_area_m2=telescope["sensor"][
                     "feed_horn_scatter_center_area_m2"
                 ],
@@ -137,7 +120,31 @@ def simulate_telescope_response(
             if save_feed_horns_scatter_electric_fields:
                 time_series.write(
                     path=os.path.join(tmp_dir, "scatter.electric_fields.tar"),
-                    time_series=E_feed_horns_scatter,
+                    time_series=E_feed_horns_scatters,
+                )
+
+            E_feed_horns = (
+                simtelescope.camera_screen_scatter_centers_to_feed_horns(
+                    E_feed_horns_scatters=E_feed_horns_scatters,
+                    telescope=telescope,
+                )
+            )
+
+            # feed horns
+            # ----------
+            Ene_feed_horns = electric_fields.integrate_power_over_time(
+                electric_fields=E_feed_horns,
+                channel_effective_area_m2=telescope["sensor"][
+                    "feed_horn_area_m2"
+                ],
+            )
+            with open(os.path.join(tmp_dir, "energy.npy"), "wb") as f:
+                np.save(file=f, arr=Ene_feed_horns)
+
+            if save_feed_horns_electric_fields:
+                time_series.write(
+                    path=os.path.join(tmp_dir, "electric_fields.tar"),
+                    time_series=E_feed_horns,
                 )
 
     if stop_after_section == "feed_horns":
@@ -151,13 +158,13 @@ def simulate_telescope_response(
             logger=logger,
             start_msg="Propagating electric fields through feed horns",
         ) as _:
-            E_sensor = time_series.read(
+            E_feed_horns = time_series.read(
                 path=os.path.join(
                     out_dir, "feed_horns", "electric_fields.tar"
                 ),
             )
             E_lnb_input = simulate_electric_field_leaving_feed_horns(
-                electric_fields_entering_feed_horns=E_sensor,
+                electric_fields_entering_feed_horns=E_feed_horns,
                 feed_horn_area_m2=telescope["sensor"]["feed_horn_area_m2"],
                 lnb_effective_area_m2=telescope["lnb"]["effective_area_m2"],
                 feed_horn_transmission=telescope["sensor"][

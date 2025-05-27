@@ -389,15 +389,6 @@ def propagate_electric_field_from_mirror_to_sensor(
     min_time_delay_s = np.min(telescope["matrix"]["time_delays_s"])
 
     E_mirror = mirror_electric_fields
-    E_feed_horns = time_series.zeros(
-        time_slice_duration_s=E_mirror.time_slice_duration_s,
-        num_time_slices=num_time_slices,
-        num_channels=camera["num_feed_horns"],
-        num_components=E_mirror.num_components,
-        global_start_time_s=E_mirror.global_start_time_s + min_time_delay_s,
-        si_unit=E_mirror.si_unit,
-        dtype=E_mirror.dtype,
-    )
 
     point_spread_function_quantile_contained_in_feed_horn_scatter = (
         telescope["calibration"][
@@ -437,15 +428,9 @@ def propagate_electric_field_from_mirror_to_sensor(
     )
 
     for ifh in range(camera["num_feed_horns"]):
-        E_feed_horn = time_series.zeros(
-            time_slice_duration_s=E_mirror.time_slice_duration_s,
-            num_time_slices=num_time_slices,
+        E_feed_horn = time_series.zeros_like(
+            other=E_feed_horns_scatters,
             num_channels=camera["num_scatter_centers_per_feed_horn"],
-            num_components=E_mirror.num_components,
-            global_start_time_s=E_mirror.global_start_time_s
-            + min_time_delay_s,
-            si_unit=E_mirror.si_unit,
-            dtype=E_mirror.dtype,
         )
 
         # from mirror to feed horn
@@ -487,29 +472,43 @@ def propagate_electric_field_from_mirror_to_sensor(
                     at=slice_delay,
                 )
 
-        # copy for debug output
-        # ---------------------
+        # copy output
+        # -----------
         for isu in range(camera["num_scatter_centers_per_feed_horn"]):
             iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
             E_feed_horns_scatters[iii] = E_feed_horn[isu]
 
-        # Suming up feed horn's scatter centers
-        # -------------------------------------
+    return E_feed_horns_scatters
+
+
+def camera_screen_scatter_centers_to_feed_horns(
+    E_feed_horns_scatters, telescope
+):
+    camera = telescope["sensor"]
+
+    E_feed_horns = time_series.zeros_like(
+        other=E_feed_horns_scatters, num_channels=camera["num_feed_horns"]
+    )
+
+    for ifh in range(camera["num_feed_horns"]):
         for isu in range(camera["num_scatter_centers_per_feed_horn"]):
+            iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
+
             signal.add_first_to_second_at_int(
                 first=element_wise_power(
-                    x=E_feed_horn[isu],
+                    x=E_feed_horns_scatters[iii],
                     p=2,
                 ),
                 second=E_feed_horns[ifh],
                 at=0,
             )
+
         E_feed_horns[ifh] = element_wise_power(
             x=E_feed_horns[ifh],
             p=0.5,
         )
 
-    return E_feed_horns, E_feed_horns_scatters
+    return E_feed_horns
 
 
 def element_wise_power(x, p):
