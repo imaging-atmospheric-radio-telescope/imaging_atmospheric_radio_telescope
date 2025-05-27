@@ -490,6 +490,8 @@ def camera_screen_scatter_centers_to_feed_horns(
         other=E_feed_horns_scatters, num_channels=camera["num_feed_horns"]
     )
 
+    w = np.sqrt(1.0 / camera["num_scatter_centers_per_feed_horn"])
+
     for ifh in range(camera["num_feed_horns"]):
         for isu in range(camera["num_scatter_centers_per_feed_horn"]):
             iii = ifh * camera["num_scatter_centers_per_feed_horn"] + isu
@@ -507,6 +509,9 @@ def camera_screen_scatter_centers_to_feed_horns(
             x=E_feed_horns[ifh],
             p=0.5,
         )
+
+    for ifh in range(camera["num_feed_horns"]):
+        E_feed_horns[ifh] *= w
 
     return E_feed_horns
 
