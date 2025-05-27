@@ -389,7 +389,7 @@ def propagate_electric_field_from_mirror_to_sensor(
     min_time_delay_s = np.min(telescope["matrix"]["time_delays_s"])
 
     E_mirror = mirror_electric_fields
-    E_sensor = time_series.zeros(
+    E_feed_horns = time_series.zeros(
         time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
         num_channels=camera["num_feed_horns"],
@@ -399,26 +399,28 @@ def propagate_electric_field_from_mirror_to_sensor(
         dtype=E_mirror.dtype,
     )
 
-    psf_containment_mirror_to_feed_horn_E_field_scaling = np.sqrt(
+    point_spread_function_quantile_contained_in_feed_horn_scatter = (
         telescope["calibration"][
             "point_spread_function_quantile_contained_in_feed_horn"
         ]["watershed"]
+        / camera["num_scatter_centers_per_feed_horn"]
     )
 
-    geometric_mirror_to_feed_horn_E_field_scaling = np.sqrt(
-        1.0
-        / (
-            mirror["num_scatter_centers"]
-            * camera["num_scatter_centers_per_feed_horn"]
-        )
-    ) * np.sqrt(
+    psf_containment_mirror_to_feed_horn_scatter_E_field_scaling = np.sqrt(
+        point_spread_function_quantile_contained_in_feed_horn_scatter
+    )
+
+    geometric_mirror_to_feed_horn_scatter_E_field_scaling = np.sqrt(
         mirror["scatter_center_area_m2"]
         / camera["feed_horn_scatter_center_area_m2"]
     )
 
+    summation_E_field_scaling = np.sqrt(1.0 / (mirror["num_scatter_centers"]))
+
     mirror_to_feed_horn_E_field_scaling = (
-        geometric_mirror_to_feed_horn_E_field_scaling
-        * psf_containment_mirror_to_feed_horn_E_field_scaling
+        geometric_mirror_to_feed_horn_scatter_E_field_scaling
+        * psf_containment_mirror_to_feed_horn_scatter_E_field_scaling
+        * summation_E_field_scaling
     )
 
     E_feed_horns_scatters = time_series.zeros(
@@ -474,7 +476,7 @@ def propagate_electric_field_from_mirror_to_sensor(
                 relative_time_delay_s = time_delay_s - min_time_delay_s
 
                 slice_delay = (
-                    relative_time_delay_s / E_sensor.time_slice_duration_s
+                    relative_time_delay_s / E_mirror.time_slice_duration_s
                 )
 
                 # amplitude
@@ -499,15 +501,15 @@ def propagate_electric_field_from_mirror_to_sensor(
                     x=E_feed_horn[isl],
                     p=2,
                 ),
-                second=E_sensor[ifh],
+                second=E_feed_horns[ifh],
                 at=0,
             )
-        E_sensor[ifh] = element_wise_power(
-            x=E_sensor[ifh],
+        E_feed_horns[ifh] = element_wise_power(
+            x=E_feed_horns[ifh],
             p=0.5,
         )
 
-    return E_sensor, E_feed_horns_scatters
+    return E_feed_horns, E_feed_horns_scatters
 
 
 def element_wise_power(x, p):
