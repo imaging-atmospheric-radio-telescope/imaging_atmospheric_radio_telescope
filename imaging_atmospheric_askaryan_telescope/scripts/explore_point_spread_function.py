@@ -12,7 +12,7 @@ import os
 import scipy.linalg
 
 telescope_key = "medium_size_telescope"
-work_dir = f"explore_point_spread_function_{telescope_key:s}_jsum"
+work_dir = f"explore_point_spread_function_{telescope_key:s}_fho2"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -127,6 +127,7 @@ s1["geometry"]["zenith_rad"] = np.deg2rad(0.0)
 s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
 s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 1.01
 
+"""
 s2 = iaat.calibration_source.plane_wave_in_far_field.make_config()
 s2["geometry"]["azimuth_rad"] = np.deg2rad(50)
 s2["geometry"]["zenith_rad"] = (
@@ -136,10 +137,10 @@ s2["geometry"]["zenith_rad"] = (
 )
 s2["power"]["power_of_isotrop_and_point_like_emitter_W"] = 4e-1
 s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 0.99
+"""
 
 source_config["plane_waves"] = {}
 source_config["plane_waves"]["first"] = s1
-source_config["plane_waves"]["second"] = s2
 scenario_dir = os.path.join(work_dir, "response")
 
 
@@ -192,19 +193,23 @@ Ene_feed_horn_scatters_J = iaat.electric_fields.integrate_power_over_time(
         "feed_horn_scatter_center_area_m2"
     ],
 )
-Ene_pixel_J = np.zeros(telescope["sensor"]["num_feed_horns"])
+Ene_feed_horn_scatter_sum_J = np.zeros(telescope["sensor"]["num_feed_horns"])
 for iii in range(telescope["sensor"]["num_feed_horns"]):
     iii_start = iii * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
     iii_stop = (iii + 1) * telescope["sensor"][
         "num_scatter_centers_per_feed_horn"
     ]
-    Ene_pixel_J[iii] = np.sum(Ene_feed_horn_scatters_J[iii_start:iii_stop])
-Ene_pixel_eV = Ene_pixel_J / iaat.signal.ELECTRON_VOLT_J
+    Ene_feed_horn_scatter_sum_J[iii] = np.sum(
+        Ene_feed_horn_scatters_J[iii_start:iii_stop]
+    )
+Ene_feed_horn_scatter_sum_eV = (
+    Ene_feed_horn_scatter_sum_J / iaat.signal.ELECTRON_VOLT_J
+)
 
 
 iaat.investigations.point_spread_function.plot.plot_camera(
     camera=telescope["sensor"],
-    energy_feed_horns_eV=Ene_pixel_eV,
+    energy_feed_horns_eV=Ene_feed_horn_scatter_sum_eV,
     path=os.path.join(scenario_dir, "camera_from_fine.jpg"),
 )
 
@@ -267,8 +272,10 @@ for key in response.region_of_interest_keys:
         f"Expected in ROI:{Ene_expected_to_be_collected_by_mirror_eV: 5.2f}eV"
     )
     print(f"Mirror         :{Ene_mirror_eV: 5.2f}eV")
-    # print(f"Fine sum       :{np.sum(Ene_pixel_eV): 5.2f}eV")
-    print(f"Fine ROI       :{np.sum(Ene_pixel_eV[feed_horn_mask]): 5.2f}eV")
+    # print(f"Fine sum       :{np.sum(Ene_feed_horn_scatter_sum_eV): 5.2f}eV")
+    print(
+        f"Fine ROI       :{np.sum(Ene_feed_horn_scatter_sum_eV[feed_horn_mask]): 5.2f}eV"
+    )
     # print(f"Camera sum     :{np.sum(Ene_camera_eV): 5.2f}eV")
     print(f"Camera ROI     :{np.sum(Ene_camera_eV[feed_horn_mask]): 5.2f}eV")
 
