@@ -12,7 +12,7 @@ import os
 import scipy.linalg
 
 telescope_key = "medium_size_telescope"
-work_dir = f"explore_point_spread_function_{telescope_key:s}"
+work_dir = f"explore_point_spread_function_{telescope_key:s}_jsum"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -177,7 +177,7 @@ fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
 sebplt.close(fig)
 
 
-E_feed_horns = iaat.time_series.read(
+E_feed_horns_scatter = iaat.time_series.read(
     os.path.join(
         work_dir,
         "response",
@@ -187,7 +187,7 @@ E_feed_horns = iaat.time_series.read(
     )
 )
 Ene_feed_horn_scatters_J = iaat.electric_fields.integrate_power_over_time(
-    electric_fields=E_feed_horns,
+    electric_fields=E_feed_horns_scatter,
     channel_effective_area_m2=telescope["sensor"][
         "feed_horn_scatter_center_area_m2"
     ],
