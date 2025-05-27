@@ -495,10 +495,10 @@ def propagate_electric_field_from_mirror_to_sensor(
 
         # Suming up feed horn's scatter centers
         # -------------------------------------
-        for isl in range(camera["num_scatter_centers_per_feed_horn"]):
+        for isu in range(camera["num_scatter_centers_per_feed_horn"]):
             signal.add_first_to_second_at_int(
                 first=element_wise_power(
-                    x=E_feed_horn[isl],
+                    x=E_feed_horn[isu],
                     p=2,
                 ),
                 second=E_feed_horns[ifh],
