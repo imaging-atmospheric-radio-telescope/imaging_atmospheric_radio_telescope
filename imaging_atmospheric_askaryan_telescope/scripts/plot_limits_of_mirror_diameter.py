@@ -124,8 +124,8 @@ poly = np.asarray(poly)
 
 TO_GIGA = 1e-9
 
-fig = sebplt.figure(style={"rows": 720, "cols": 1280, "fontsize": 1.5})
-ax = sebplt.add_axes(fig=fig, span=[0.15, 0.2, 0.8, 0.75])
+fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
+ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
 ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1, which="both")
 contour_label_thingy = ax.contour(
     D_bin["centers"],

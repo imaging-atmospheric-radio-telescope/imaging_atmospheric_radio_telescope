@@ -568,7 +568,7 @@ for telescope_key in config["stars"]["telescopes"]:
             h1_enecon_p50[isi] = float("nan")
             h1_enecon_s68[isi] = float("nan")
 
-    enecon_lim = [0.0, 1.1]
+    enecon_lim = [0.0, 2]
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
     ax_add_uncertain_bins(
@@ -583,7 +583,7 @@ for telescope_key in config["stars"]["telescopes"]:
     ax.set_ylim(enecon_lim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
     ax.set_xlabel(XLABEL_OFF_AXIS_DEG2)
-    ax.set_ylabel("energy transport\n mirror / camera")
+    ax.set_ylabel("energy transport\n camera / mirror")
     ax_blank_format(ax=ax)
     fig.savefig(
         os.path.join(out_dir, f"{telescope_key:s}_energy_conservation.jpg")

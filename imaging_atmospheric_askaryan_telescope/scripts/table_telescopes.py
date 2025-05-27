@@ -49,6 +49,8 @@ def tab_to_latex(tab):
     return ss
 
 
+TELESCOPE_KEYS = ["crome", "medium_size_telescope", "large_size_telescope"]
+
 s = ""
 s += r"       &        CROME &       Medium &        Large \\"
 s += "\n"
@@ -112,7 +114,7 @@ tab.append(row)
 
 tab.append(comment_row("scatter area"))
 row = []
-row.append(r"$A_\text{mirror-scatter}$\,/\,(cm)$^{2}$")
+row.append(r"$A_\text{SM}$\,/\,(cm)$^{2}$")
 for key in ts:
     A_mirror_scatter_cm2 = 1e4 * ts[key]["mirror"]["scatter_center_area_m2"]
     row.append(f"{A_mirror_scatter_cm2:.0f}")
@@ -208,7 +210,7 @@ tab.append(row)
 
 tab.append(comment_row("scatter center area"))
 row = []
-row.append(r"$A_\text{camera-scatter}$\,/\,(cm)$^{2}$")
+row.append(r"$A_\text{SF}$\,/\,(cm)$^{2}$")
 for key in ts:
     A_fh_scatter_cm2 = (
         1e4 * ts[key]["sensor"]["feed_horn_scatter_center_area_m2"]
@@ -219,6 +221,23 @@ tab.append(row)
 
 with open("telescope_table_optics_camera.tex", "wt") as f:
     f.write(tab_to_latex(tab))
+
+
+# PSF containment
+# ===============
+tab = []
+row = []
+row.append(r"$Q$")
+for key in TELESCOPE_KEYS:
+    frac = ts[key]["calibration"][
+        "point_spread_function_quantile_contained_in_feed_horn"
+    ]
+    row.append(f"{frac:.2f}")
+tab.append(row)
+
+with open("telescope_table_psf_containment.tex", "wt") as f:
+    f.write(tab_to_latex(tab))
+
 
 # SCATTER
 # =======

@@ -105,7 +105,7 @@ for telescope_key in config["stars"]["telescopes"]:
     binned_power_ratio_absunc = binweigths_absunc / bincounts
 
     ylim = [1e-4, 2]
-    fig = sebplt.figure(style={"rows": 720, "cols": 1920, "fontsize": 1.5})
+    fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
     ax.plot(
         np.rad2deg(off_axis_angles_rad),
@@ -131,7 +131,7 @@ for telescope_key in config["stars"]["telescopes"]:
     )
     sebplt.close(fig)
 
-    fig = sebplt.figure(style={"rows": 720, "cols": 1920, "fontsize": 1.5})
+    fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 1.5})
     ax = sebplt.add_axes(fig=fig, span=[0.15, 0.25, 0.65, 0.65])
     sebplt.ax_add_histogram(
         ax=ax,
