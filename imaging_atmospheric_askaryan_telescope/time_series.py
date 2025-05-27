@@ -27,17 +27,20 @@ def zeros(
     )
 
 
-def zeros_like(other, num_components=None, si_unit=None):
+def zeros_like(other, num_channels=None, num_components=None, si_unit=None):
     if num_components is None:
         num_components = other.num_components
 
     if si_unit is None:
         si_unit = other.si_unit
 
+    if num_channels is None:
+        num_channels = other.num_channels
+
     return zeros(
         time_slice_duration_s=other.time_slice_duration_s,
         num_time_slices=other.num_time_slices,
-        num_channels=other.num_channels,
+        num_channels=num_channels,
         num_components=num_components,
         global_start_time_s=other.global_start_time_s,
         si_unit=si_unit,
