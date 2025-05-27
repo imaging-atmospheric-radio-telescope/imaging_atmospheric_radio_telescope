@@ -12,7 +12,7 @@ import os
 import scipy.linalg
 
 telescope_key = "medium_size_telescope"
-work_dir = f"explore_point_spread_function_{telescope_key:s}_fho2"
+work_dir = f"explore_point_spread_function_{telescope_key:s}"
 
 if not os.path.exists(work_dir):
     iaat.run.init(
@@ -127,7 +127,6 @@ s1["geometry"]["zenith_rad"] = np.deg2rad(0.0)
 s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
 s1["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 1.01
 
-"""
 s2 = iaat.calibration_source.plane_wave_in_far_field.make_config()
 s2["geometry"]["azimuth_rad"] = np.deg2rad(50)
 s2["geometry"]["zenith_rad"] = (
@@ -137,10 +136,11 @@ s2["geometry"]["zenith_rad"] = (
 )
 s2["power"]["power_of_isotrop_and_point_like_emitter_W"] = 4e-1
 s2["sine_wave"]["emission_frequency_Hz"] = lnb_input_frequency_Hz * 0.99
-"""
+
 
 source_config["plane_waves"] = {}
 source_config["plane_waves"]["first"] = s1
+source_config["plane_waves"]["second"] = s2
 scenario_dir = os.path.join(work_dir, "response")
 
 
@@ -178,7 +178,7 @@ fig.savefig(os.path.join(work_dir, "feed_horn_mesh.jpg"))
 sebplt.close(fig)
 
 
-E_feed_horns_scatter = iaat.time_series.read(
+E_feed_horns_scatters = iaat.time_series.read(
     os.path.join(
         work_dir,
         "response",
@@ -188,20 +188,17 @@ E_feed_horns_scatter = iaat.time_series.read(
     )
 )
 Ene_feed_horn_scatters_J = iaat.electric_fields.integrate_power_over_time(
-    electric_fields=E_feed_horns_scatter,
+    electric_fields=E_feed_horns_scatters,
     channel_effective_area_m2=telescope["sensor"][
         "feed_horn_scatter_center_area_m2"
     ],
 )
 Ene_feed_horn_scatter_sum_J = np.zeros(telescope["sensor"]["num_feed_horns"])
-for iii in range(telescope["sensor"]["num_feed_horns"]):
-    iii_start = iii * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
-    iii_stop = (iii + 1) * telescope["sensor"][
-        "num_scatter_centers_per_feed_horn"
-    ]
-    Ene_feed_horn_scatter_sum_J[iii] = np.sum(
-        Ene_feed_horn_scatters_J[iii_start:iii_stop]
-    )
+for ifh in range(telescope["sensor"]["num_feed_horns"]):
+    for isu in range(telescope["sensor"]["num_scatter_centers_per_feed_horn"]):
+        iii = ifh * telescope["sensor"]["num_scatter_centers_per_feed_horn"] + isu
+        Ene_feed_horn_scatter_sum_J[ifh] += Ene_feed_horn_scatters_J[iii]
+
 Ene_feed_horn_scatter_sum_eV = (
     Ene_feed_horn_scatter_sum_J / iaat.signal.ELECTRON_VOLT_J
 )
@@ -227,7 +224,7 @@ iaat.investigations.point_spread_function.plot.plot_feed_horn_scatter_centers(
 for key in response.region_of_interest_keys:
     feed_horn_mask = iaat.investigations.point_spread_function.plane_wave_response.mask_feed_horns(
         feed_horn_positions_m=telescope["sensor"]["feed_horn_positions_m"],
-        containment_radius_m=2.0 * R_airy_m,
+        containment_radius_m=3 * R_airy_m,
         azimuth_rad=response.source_config["plane_waves"][key]["geometry"][
             "azimuth_rad"
         ],
