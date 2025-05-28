@@ -475,6 +475,7 @@ for telescope_key in config["stars"]["telescopes"]:
         draw_bin_walls=True,
     )
     ax_add_fov_marker(ax_cnt, FOV_HA_DEG**2)
+    ax_cnt.set_ylim([0.0, 1.1 * np.max(h1_cnt)])
     ax_cnt.set_xlim([0.0, OFF_STOP_DEG**2])
     ax_square_format(ax=ax_cnt)
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_counts.jpg"))
