@@ -216,6 +216,14 @@ def run(work_dir, pool=None, logger=None):
     logger.debug("run jobs for 'multis' ...")
     pool.map(multis.run_job, multis_jobs)
 
+    # calibrate energy scaling using the psf plot script
+    # --------------------------------------------------
+    calib_jobs = _plot_make_calibration_jobs(work_dir=work_dir)
+    calib_jobs = _plot_drop_finished_jobs(calib_jobs)
+    logger.debug("run energy scale calibration job ...")
+    pool.map(_plot_run_job, calib_jobs)
+
+    # plot the rest
     run_plots(work_dir=work_dir, pool=pool, logger=logger)
 
 
@@ -275,6 +283,16 @@ def _plot_make_jobs(work_dir):
     for plot_script_path in plot_script_paths:
         jobs.append(["python", plot_script_path, work_dir])
     return jobs
+
+
+def _plot_make_calibration_jobs(work_dir):
+    jobs = _plot_make_jobs(work_dir=work_dir)
+    out = []
+    for job in jobs:
+        scriptname = job[1]
+        if "plot_point_spread_function" in scriptname:
+            out.append(job)
+    return out
 
 
 def _plot_run_job(job):
