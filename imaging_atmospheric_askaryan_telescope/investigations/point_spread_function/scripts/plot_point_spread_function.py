@@ -39,6 +39,12 @@ config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
 source_key = "1"
 
 
+def fit_poly1d(x, y):
+    ab, ab_cov = np.polyfit(x=x, y=y, deg=1, cov=True)
+    ab_std = np.sqrt(np.diag(ab_cov))
+    return ab, ab_std
+
+
 def report_add_source(report, telescope, plane_wave_config):
     report["source_azimuth_rad"] = plane_wave_config["geometry"]["azimuth_rad"]
     report["source_zenith_rad"] = plane_wave_config["geometry"]["zenith_rad"]
@@ -532,6 +538,22 @@ for telescope_key in config["stars"]["telescopes"]:
     # ======
     enecon = snap["feed_horn_energy_conservation_ratio"]
 
+    # identify valid energy bins to estimate scale factor in the inner part of
+    # the field-of-view.
+    psf_size_m = np.sqrt(np.mean(h1_area_p50))
+    enecon_valid_radius_m = (
+        telescope["sensor"]["camera"]["outer_radius_m"] - 2.0 * psf_size_m
+    )
+    enecon_valid_off_axis_angle_rad = iaat.utils.sky_and_screen.screen_to_sky(
+        x_m=enecon_valid_radius_m,
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
+    enecon_valid_off_axis_angle_rad = np.abs(enecon_valid_off_axis_angle_rad)
+    enecon_valid_off_axis_angle_deg = np.rad2deg(
+        enecon_valid_off_axis_angle_rad
+    )
+
+    h1_enecon_mask = oa_bin["centers"] <= enecon_valid_off_axis_angle_deg
     h1_enecon_p50 = np.zeros(oa_bin["num"])
     h1_enecon_s68 = np.zeros(oa_bin["num"])
     h1_cnt = np.zeros(oa_bin["num"])
@@ -551,13 +573,46 @@ for telescope_key in config["stars"]["telescopes"]:
             h1_enecon_p50[isi] = float("nan")
             h1_enecon_s68[isi] = float("nan")
 
-    enecon_lim = [0.0, 2]
+    eneFit, eneFit_std = fit_poly1d(
+        x=oa_bin["centers"][h1_enecon_mask],
+        y=h1_enecon_p50[h1_enecon_mask],
+    )
+    if eneFit[0] < 0.0:
+        # energy conservation falls down going off axis
+        eneS = eneFit[1]
+        eneS_std = eneFit_std[1]
+        ene_method = "linear-fit-y-axis-intersection"
+    else:
+        eneS = np.median(h1_enecon_p50[h1_enecon_mask])
+        eneS_std = percentile_spread(h1_enecon_p50[h1_enecon_mask], 68)
+        ene_method = "median-in-field-of-view"
+
+    eneF = 1 / eneS
+    eneF_std = np.sqrt((-1 / eneS**2) ** 2 * eneS_std**2)
+
+    ene_path = os.path.join(
+        psf_dir,
+        "calibration",
+        telescope_key,
+        "energy_conservation_scale_factor.json",
+    )
+    ene_report = {
+        "fitted_energy_scale_factor": eneF,
+        "fitted_energy_scale_factor_std": eneF_std,
+        "fitted_energy_conservation": eneS,
+        "fitted_energy_conservation_std": eneS_std,
+        "method": ene_method,
+    }
+    with rnw.open(ene_path, "wt") as f:
+        f.write(json_utils.dumps(ene_report, indent=4))
+
+    enecon_lim = [0.0, 1.25]
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
     ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
-        y=h1_enecon_p50,
+        y=h1_enecon_p50 * eneF,
         y_std=h1_enecon_s68,
         weights=relative_cnt,
         color="black",
@@ -566,7 +621,7 @@ for telescope_key in config["stars"]["telescopes"]:
     ax.set_ylim(enecon_lim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
     ax.set_xlabel(XLABEL_OFF_AXIS_DEG2)
-    ax.set_ylabel("energy transport\n camera / mirror")
+    ax.set_ylabel("energy conservation\nby construction")
     ax_blank_format(ax=ax)
     fig.savefig(
         os.path.join(out_dir, f"{telescope_key:s}_energy_conservation.jpg")
