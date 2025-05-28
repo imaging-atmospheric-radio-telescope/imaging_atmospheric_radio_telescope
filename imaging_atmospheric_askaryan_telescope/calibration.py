@@ -315,3 +315,9 @@ def bytes_to_npy(b):
     tmp.write(b)
     tmp.seek(0)
     return np.load(tmp)
+
+
+def read_energy_conservation_scale_factor(path):
+    with open(path, "rt") as f:
+        ec = json_utils.loads(f.read())
+    return ec

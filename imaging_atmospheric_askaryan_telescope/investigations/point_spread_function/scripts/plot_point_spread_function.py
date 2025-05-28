@@ -40,8 +40,12 @@ source_key = "1"
 
 
 def fit_poly1d(x, y):
-    ab, ab_cov = np.polyfit(x=x, y=y, deg=1, cov=True)
-    ab_std = np.sqrt(np.diag(ab_cov))
+    if len(x) > 2:
+        ab, ab_cov = np.polyfit(x=x, y=y, deg=1, cov=True)
+        ab_std = np.sqrt(np.diag(ab_cov))
+    else:
+        ab = np.polyfit(x=x, y=y, deg=1, cov=False)
+        ab_std = np.array([float("nan"), float("nan")])
     return ab, ab_std
 
 
@@ -333,7 +337,7 @@ XLABEL_OFF_AXIS_DEG2 = (
     r"(angle off the mirror's optical axis)$^{2}\,/\,(1^{\circ{}})^{2}$"
 )
 
-for telescope_key in config["stars"]["telescopes"]:
+for telescope_key in ["crome"]:  # config["stars"]["telescopes"]:
 
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
@@ -357,6 +361,7 @@ for telescope_key in config["stars"]["telescopes"]:
     psf_off_deg = np.rad2deg(snap["source_zenith_rad"])
 
     off_num_bins = int(np.sqrt(0.5 * len(psf_off_deg)))
+    off_num_bins = np.max([3, off_num_bins])
     oa_bin = binning_utils.Binning(
         bin_edges=np.linspace(
             0.0,
@@ -540,7 +545,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     # identify valid energy bins to estimate scale factor in the inner part of
     # the field-of-view.
-    psf_size_m = np.sqrt(np.mean(h1_area_p50))
+    psf_size_m = np.sqrt(np.nanmedian(h1_area_p50))
     enecon_valid_radius_m = (
         telescope["sensor"]["camera"]["outer_radius_m"] - 2.0 * psf_size_m
     )
@@ -573,19 +578,31 @@ for telescope_key in config["stars"]["telescopes"]:
             h1_enecon_p50[isi] = float("nan")
             h1_enecon_s68[isi] = float("nan")
 
-    eneFit, eneFit_std = fit_poly1d(
-        x=oa_bin["centers"][h1_enecon_mask],
-        y=h1_enecon_p50[h1_enecon_mask],
+    h1_enecon_mask = np.logical_and(
+        h1_enecon_mask,
+        np.logical_not(np.isnan(h1_enecon_p50)),
     )
-    if eneFit[0] < 0.0:
-        # energy conservation falls down going off axis
-        eneS = eneFit[1]
-        eneS_std = eneFit_std[1]
-        ene_method = "linear-fit-y-axis-intersection"
+    ene_x = oa_bin["centers"][h1_enecon_mask]
+    ene_y = h1_enecon_p50[h1_enecon_mask]
+
+    if len(ene_x) > 1:
+        eneFit, eneFit_std = fit_poly1d(
+            x=ene_x,
+            y=ene_y,
+        )
+        if eneFit[0] < 0.0:
+            # energy conservation falls down going off axis
+            eneS = eneFit[1]
+            eneS_std = eneFit_std[1]
+            ene_method = "linear-fit-y-axis-intersection"
+        else:
+            eneS = np.median(h1_enecon_p50[h1_enecon_mask])
+            eneS_std = percentile_spread(h1_enecon_p50[h1_enecon_mask], 68)
+            ene_method = "median-in-field-of-view"
     else:
-        eneS = np.median(h1_enecon_p50[h1_enecon_mask])
-        eneS_std = percentile_spread(h1_enecon_p50[h1_enecon_mask], 68)
-        ene_method = "median-in-field-of-view"
+        eneS = ene_y[0]
+        eneS_std = float("nan")
+        ene_method = "single-bin-median"
 
     eneF = 1 / eneS
     eneF_std = np.sqrt((-1 / eneS**2) ** 2 * eneS_std**2)

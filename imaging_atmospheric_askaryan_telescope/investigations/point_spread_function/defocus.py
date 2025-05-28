@@ -5,6 +5,7 @@ from ... import lownoiseblock
 from ... import signal
 from ... import production
 from ... import calibration_source
+from ... import calibration
 from ... import utils as iaat_utils
 from ... import logger as iaat_logger
 
@@ -57,6 +58,17 @@ def run_job(job):
         telescope_key=job["telescope_key"],
         sensor_distance_m=job["sensor_distance_m"],
     )
+
+    ecsf = calibration.read_energy_conservation_scale_factor(
+        path=os.path.join(
+            job["work_dir"],
+            "calibration",
+            job["telescope_key"],
+            "energy_conservation_scale_factor.json",
+        )
+    )
+    mirror_to_camera_energy_scale_factor = ecsf["fitted_energy_scale_factor"]
+
     source_frequency_Hz = np.mean(
         lownoiseblock.input_frequency_start_stop_Hz(telescope["lnb"])
     )
@@ -85,6 +97,7 @@ def run_job(job):
             telescope=telescope,
             site=site,
             timing=timing,
+            mirror_to_camera_energy_scale_factor=mirror_to_camera_energy_scale_factor,
             source_config=source_config,
             region_of_interest=True,
             region_of_interest_rad=region_of_interest_rad,

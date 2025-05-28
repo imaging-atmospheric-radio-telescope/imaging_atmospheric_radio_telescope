@@ -23,6 +23,7 @@ def make_PlaneWaveResponse(
     site,
     timing,
     source_config,
+    mirror_to_camera_energy_scale_factor=1.0,
     region_of_interest=True,
     region_of_interest_rad=np.deg2rad(0.5),
     region_of_interest_num_bins=42,
@@ -42,6 +43,7 @@ def make_PlaneWaveResponse(
         site=site,
         telescope=telescope,
         timing=timing,
+        mirror_to_camera_energy_scale_factor=mirror_to_camera_energy_scale_factor,
         thermal_noise_random_seed=random_seed + 1,
         readout_random_seed=random_seed + 2,
         camera_lnb_random_seed=random_seed + 3,
@@ -83,6 +85,7 @@ def make_PlaneWaveResponse(
                 site=site,
                 telescope=telescope_region_of_interest,
                 timing=timing,
+                mirror_to_camera_energy_scale_factor=mirror_to_camera_energy_scale_factor,
                 thermal_noise_random_seed=random_seed + 1,
                 readout_random_seed=random_seed + 2,
                 camera_lnb_random_seed=random_seed + 3,
@@ -111,6 +114,20 @@ class PlaneWaveResponse:
         smodule = self.__module__
         sname = self.__class__.__name__
         return f"{smodule:s}.{sname:s}(path='{self.path:s}')"
+
+    @property
+    def mirror_to_camera_energy_scale_factor(self):
+        if not hasattr(self, "_mirror_to_camera_energy_scale_factor"):
+            with open(
+                os.path.join(
+                    self.path, "mirror_to_camera_energy_scale_factor.json"
+                ),
+                "rt",
+            ) as f:
+                self._mirror_to_camera_energy_scale_factor = json_utils.loads(
+                    f.read()
+                )
+        return self._mirror_to_camera_energy_scale_factor
 
     @property
     def source_config(self):

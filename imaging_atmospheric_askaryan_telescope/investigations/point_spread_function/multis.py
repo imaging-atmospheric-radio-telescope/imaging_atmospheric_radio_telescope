@@ -5,6 +5,7 @@ from ... import lownoiseblock
 from ... import signal
 from ... import production
 from ... import calibration_source
+from ... import calibration
 from ... import logger as iaat_logger
 
 import os
@@ -93,6 +94,16 @@ def run_job(job):
         telescope_key=job["telescope_key"],
     )
 
+    ecsf = calibration.read_energy_conservation_scale_factor(
+        path=os.path.join(
+            job["work_dir"],
+            "calibration",
+            job["telescope_key"],
+            "energy_conservation_scale_factor.json",
+        )
+    )
+    mirror_to_camera_energy_scale_factor = ecsf["fitted_energy_scale_factor"]
+
     source_config = production.radio_from_plane_wave.make_config()
     source_config["plane_waves"] = {}
     for key in job["sources"]:
@@ -117,6 +128,7 @@ def run_job(job):
             telescope=telescope,
             site=site,
             timing=timing,
+            mirror_to_camera_energy_scale_factor=mirror_to_camera_energy_scale_factor,
             source_config=source_config,
             region_of_interest=False,
             region_of_interest_rad=None,
