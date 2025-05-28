@@ -152,7 +152,8 @@ class TimeSeries:
         out += f"    num_channels={self.num_channels:d},\n"
         out += f"    num_components={self.num_components:d},\n"
         out += f"    global_start_time_s={self.global_start_time_s:e},\n"
-        out += f"    si_unit='{self.si_unit:s}',\n"
+        if self.si_unit is not None:
+            out += f"    si_unit='{self.si_unit:s}',\n"
         out += ")\n"
         return out
 
