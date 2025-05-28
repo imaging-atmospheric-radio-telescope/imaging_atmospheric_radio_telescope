@@ -288,11 +288,26 @@ def mask_feed_horns(
         zenith_rad=zenith_rad,
     )
     p_xyz = np.array([-cx, -cy, cz])
-
     feed_horn_z_m = np.mean(feed_horn_positions_m[:, 2])
     scale_factor = feed_horn_z_m / cz
-
     expected_spot_in_camera_screen_m = p_xyz * scale_factor
+
+    return mask_feed_horns_x_y(
+        feed_horn_positions_m=feed_horn_positions_m,
+        containment_radius_m=containment_radius_m,
+        x_m=expected_spot_in_camera_screen_m[0],
+        y_m=expected_spot_in_camera_screen_m[1],
+    )
+
+
+def mask_feed_horns_x_y(
+    feed_horn_positions_m,
+    containment_radius_m,
+    x_m,
+    y_m,
+):
+    feed_horn_z_m = np.mean(feed_horn_positions_m[:, 2])
+    expected_spot_in_camera_screen_m = [x_m, y_m, feed_horn_z_m]
 
     mask = np.zeros(feed_horn_positions_m.shape[0], dtype=bool)
     for i in range(feed_horn_positions_m.shape[0]):

@@ -47,26 +47,6 @@ def make_calibration(telescope, time_oversampling=6):
         "encirclement": containment_encirclement,
     }
 
-    # feed horn scatter center
-    containment_scatter_watershed = interpolate(
-        x=telescope["sensor"]["feed_horn_scatter_center_area_m2"],
-        xp=calib["containment"]["area_quantile_watershed_m2"],
-        fp=calib["containment"]["quantiles"],
-        fmax=1.0,
-    )
-    containment_scatter_encirclement = interpolate(
-        x=telescope["sensor"]["feed_horn_scatter_center_area_m2"],
-        xp=calib["containment"]["area_quantile_encirclement_m2"],
-        fp=calib["containment"]["quantiles"],
-        fmax=1.0,
-    )
-    calib[
-        "point_spread_function_quantile_contained_in_feed_horn_scatter_center"
-    ] = {
-        "watershed": containment_scatter_watershed,
-        "encirclement": containment_scatter_encirclement,
-    }
-
     return calib
 
 
@@ -244,9 +224,6 @@ def save_calibration(path, calibration):
     fn = "point_spread_function_quantile_contained_in_feed_horn"
     with rnw.open(os.path.join(path, f"{fn:s}.json"), "wt") as f:
         f.write(json_utils.dumps(calibration[fn], indent=4))
-    fs = "point_spread_function_quantile_contained_in_feed_horn_scatter_center"
-    with rnw.open(os.path.join(path, f"{fs:s}.json"), "wt") as f:
-        f.write(json_utils.dumps(calibration[fs], indent=4))
 
 
 def load_calibration(path):
@@ -257,9 +234,6 @@ def load_calibration(path):
     fn = "point_spread_function_quantile_contained_in_feed_horn"
     with open(os.path.join(path, f"{fn:s}.json"), "rt") as f:
         calib[fn] = json_utils.loads(f.read())
-    fs = "point_spread_function_quantile_contained_in_feed_horn_scatter_center"
-    with open(os.path.join(path, f"{fs:s}.json"), "rt") as f:
-        calib[fs] = json_utils.loads(f.read())
     return calib
 
 
