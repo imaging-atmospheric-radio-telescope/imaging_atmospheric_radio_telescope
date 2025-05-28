@@ -337,7 +337,7 @@ XLABEL_OFF_AXIS_DEG2 = (
     r"(angle off the mirror's optical axis)$^{2}\,/\,(1^{\circ{}})^{2}$"
 )
 
-for telescope_key in ["crome"]:  # config["stars"]["telescopes"]:
+for telescope_key in config["stars"]["telescopes"]:
 
     telescope, site, timing = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
