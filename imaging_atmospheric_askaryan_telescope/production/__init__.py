@@ -26,15 +26,26 @@ def simulate_telescope_response(
     thermal_noise_random_seed,
     readout_random_seed,
     camera_lnb_random_seed,
+    mirror_to_camera_energy_scale_factor=1.0,
     stop_after_section=None,
     save_feed_horns_electric_fields=True,
     save_feed_horns_scatter_electric_fields=False,
     logger=None,
 ):
+    assert mirror_to_camera_energy_scale_factor >= 0
+
     logger = iaat_logger.LoggerStdout_if_logger_is_None(logger)
     os.makedirs(out_dir, exist_ok=True)
     with rnw.open(os.path.join(out_dir, "source_config.json"), "wt") as f:
         f.write(json_utils.dumps(source_config, indent=4))
+
+    with rnw.open(
+        os.path.join(out_dir, "mirror_to_camera_energy_scale_factor.json"),
+        "wt",
+    ) as f:
+        f.write(
+            json_utils.dumps(mirror_to_camera_energy_scale_factor, indent=4)
+        )
 
     # Electric fields on mirror
     # -------------------------
@@ -104,6 +115,17 @@ def simulate_telescope_response(
                         "num_time_slices"
                     ],
                 )
+            )
+
+            # apply calibration scale factor
+            # ------------------------------
+            # this factor must be estimated using the statistics of many
+            # plane wave observations.
+            # The factor is meant to account for an offset which we can not
+            # yet find an explanation for yet.
+
+            E_feed_horns_scatters[:] *= np.sqrt(
+                mirror_to_camera_energy_scale_factor
             )
 
             # feed horns scatter
