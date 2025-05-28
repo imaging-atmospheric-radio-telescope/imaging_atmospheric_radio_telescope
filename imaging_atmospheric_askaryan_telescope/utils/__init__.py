@@ -4,6 +4,7 @@ import importlib
 from scipy.stats.qmc import Sobol
 from scipy.optimize import curve_fit
 from . import scientific
+from . import sky_and_screen
 
 
 def package_path():
