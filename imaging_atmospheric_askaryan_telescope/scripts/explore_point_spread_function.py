@@ -196,7 +196,10 @@ Ene_feed_horn_scatters_J = iaat.electric_fields.integrate_power_over_time(
 Ene_feed_horn_scatter_sum_J = np.zeros(telescope["sensor"]["num_feed_horns"])
 for ifh in range(telescope["sensor"]["num_feed_horns"]):
     for isu in range(telescope["sensor"]["num_scatter_centers_per_feed_horn"]):
-        iii = ifh * telescope["sensor"]["num_scatter_centers_per_feed_horn"] + isu
+        iii = (
+            ifh * telescope["sensor"]["num_scatter_centers_per_feed_horn"]
+            + isu
+        )
         Ene_feed_horn_scatter_sum_J[ifh] += Ene_feed_horn_scatters_J[iii]
 
 Ene_feed_horn_scatter_sum_eV = (

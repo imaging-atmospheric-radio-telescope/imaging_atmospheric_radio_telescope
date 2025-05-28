@@ -152,11 +152,4 @@ def make_telescope_like_other_but_with_region_of_interest_camera(
         "point_spread_function_quantile_contained_in_feed_horn"
     ]["watershed"] = 1.0
 
-    tele["calibration"][
-        "point_spread_function_quantile_contained_in_feed_horn_scatter_center"
-    ] = {}
-    tele["calibration"][
-        "point_spread_function_quantile_contained_in_feed_horn_scatter_center"
-    ]["watershed"] = 1.0
-
     return tele

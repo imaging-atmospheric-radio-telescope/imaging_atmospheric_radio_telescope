@@ -33,6 +33,7 @@ os.makedirs(out_dir, exist_ok=True)
 config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
 
 source_key = "1"
+prng = np.random.Generator(np.random.PCG64(5))
 
 
 def records_to_recarray(a):
@@ -123,6 +124,89 @@ for telescope_key in config["defocus"]["telescopes"]:
     )
     sebplt.close(fig)
 
+    R_outer_m = telescope["mirror"]["outer_radius_m"]
+    R_inner_m = telescope["mirror"]["inner_radius_m"]
+
+    feed_horn_energies_eV = feed_horn_energies_J / iaat.signal.ELECTRON_VOLT_J
+    vmax = np.max(feed_horn_energies_eV)
+    norm = sebplt.matplotlib.colors.LogNorm(
+        vmin=1e-3 * vmax,
+        vmax=vmax,
+    )
+
+    for orientation in ["vertical", "horizontal"]:
+        iaat_plot.write_figure_colorbar(
+            path=os.path.join(
+                out_dir,
+                f"{telescope_key:s}_colorbar_{orientation:s}.jpg",
+            ),
+            label=r"energy / eV",
+            norm=norm,
+            orientation=orientation,
+        )
+
+    choice = prng.choice(a=len(Q), size=8, replace=False)
+
+    for iq in choice:
+
+        sensor_m = Q["sensor_distance_m"][iq]
+        scale_factor = np.abs(1 - (sensor_m / f_mirror))
+        r_inner = R_inner_m * scale_factor
+        r_outer = R_outer_m * scale_factor
+
+        fig = sebplt.figure(
+            style={"rows": 1920, "cols": 1920, "fontsize": 2.0}
+        )
+        ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.89, 0.89])
+        iaat.camera.ax_add_camera_feed_horn_values(
+            ax=ax,
+            camera=telescope["sensor"],
+            feed_horn_values=feed_horn_energies_eV[iq],
+            scale_function=None,
+            cmap="Blues",
+            norm=norm,
+        )
+        iaat.camera.ax_add_camera_feed_horn_edges(
+            ax=ax,
+            camera=telescope["sensor"],
+            color="black",
+            alpha=0.1,
+            linewidth=0.5,
+        )
+        sebplt.ax_add_circle(
+            ax=ax,
+            x=0.0,
+            y=0.0,
+            r=r_outer,
+            color="black",
+            linewidth=1,
+            alpha=1,
+        )
+        sebplt.ax_add_circle(
+            ax=ax,
+            x=0.0,
+            y=0.0,
+            r=r_inner,
+            color="black",
+            linestyle="--",
+            linewidth=1,
+            alpha=1,
+        )
+        ax.text(
+            x=0.05,
+            y=0.05,
+            s=r"$d$ = " + f"{sensor_m/f_mirror:.3f}" + r"$f$",
+            transform=ax.transAxes,
+            fontsize=16,
+        )
+        fig.savefig(
+            os.path.join(
+                out_dir, f"{telescope_key:s}_example_{Q['id'][iq]:06d}.jpg"
+            )
+        )
+        sebplt.close(fig)
+
+    """
     radial_bin = binning_utils.Binning(
         bin_edges=np.linspace(
             0, telescope["sensor"]["camera"]["outer_radius_m"], 17
@@ -218,3 +302,4 @@ for telescope_key in config["defocus"]["telescopes"]:
     ax_labels.set_xlabel(r"radius / m")
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_stack.jpg"))
     sebplt.close(fig)
+    """
