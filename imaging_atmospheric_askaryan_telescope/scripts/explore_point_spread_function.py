@@ -12,7 +12,7 @@ import os
 import scipy.linalg
 
 telescope_key = "medium_size_telescope"
-work_dir = f"explore_point_spread_function_{telescope_key:s}"
+work_dir = f"explore_point_spread_function_{telescope_key:s}_fib"
 
 if not os.path.exists(work_dir):
     iaat.run.init(

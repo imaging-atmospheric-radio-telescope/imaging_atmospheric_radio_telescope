@@ -39,26 +39,6 @@ config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
 source_key = "1"
 
 
-def screen_to_sky(x_m, focal_length_m):
-    return -1.0 * np.arctan(x_m / focal_length_m)
-
-
-def sky_to_screen(x_rad, focal_length_m):
-    return -1.0 * np.tan(x_rad) * focal_length_m
-
-
-def screen_area_to_sky_solid_angle(a_m2, focal_length_m):
-    d_m = np.sqrt(a_m2)
-    d_rad = screen_to_sky(d_m, focal_length_m)
-    return d_rad**2
-
-
-def screen_x_y_to_sky_az_zd(x_m, y_m, focal_length_m):
-    cx = screen_to_sky(x_m, focal_length_m)
-    cy = screen_to_sky(y_m, focal_length_m)
-    return spherical_coordinates.cx_cy_to_az_zd(cx=cx, cy=cy)
-
-
 def report_add_source(report, telescope, plane_wave_config):
     report["source_azimuth_rad"] = plane_wave_config["geometry"]["azimuth_rad"]
     report["source_zenith_rad"] = plane_wave_config["geometry"]["zenith_rad"]
@@ -83,16 +63,18 @@ def report_add_roi_analysis(report, telescope, roi_analysis):
     report["roi_area_80p_m2"] = roi_analysis["area_quantile_m2"]
     report["roi_x_m"] = roi_analysis["argmax_x_m"]
     report["roi_y_m"] = roi_analysis["argmax_y_m"]
-    az, zd = screen_x_y_to_sky_az_zd(
+    az, zd = iaat.utils.sky_and_screen.screen_x_y_to_sky_az_zd(
         x_m=report["roi_x_m"],
         y_m=report["roi_y_m"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
     report["roi_azimuth_rad"] = az
     report["roi_zenith_rad"] = zd
-    report["roi_solid_angle_80p_sr"] = screen_area_to_sky_solid_angle(
-        a_m2=report["roi_area_80p_m2"],
-        focal_length_m=telescope["mirror"]["focal_length_m"],
+    report["roi_solid_angle_80p_sr"] = (
+        iaat.utils.sky_and_screen.screen_area_to_sky_solid_angle(
+            a_m2=report["roi_area_80p_m2"],
+            focal_length_m=telescope["mirror"]["focal_length_m"],
+        )
     )
     return report
 

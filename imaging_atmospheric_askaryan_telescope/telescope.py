@@ -82,6 +82,76 @@ def make_mirror_scatter_center_positions(
     return positions
 
 
+def make_mirror_scatter_center_positions_fibonacci(
+    focal_length_m,
+    outer_radius_m,
+    inner_radius_m,
+    scatter_center_areal_density_per_m2,
+):
+    """
+    Parameters
+    ----------
+    focal_length_m : float
+        Focal-length of imaging reflector.
+    outer_radius_m : float
+        Outer radius of aperture's annulus.
+    inner_radius_m : float
+        Inner radius of aperture's annulus.
+    scatter_center_areal_density_per_m2 : float
+        Areal density of scatter-centers on imaging reflector.
+    """
+    assert focal_length_m > 0.0
+    assert outer_radius_m > 0.0
+    assert inner_radius_m > 0.0
+    assert outer_radius_m > inner_radius_m
+    assert scatter_center_areal_density_per_m2 > 0.0
+
+    A_outer_m2 = np.pi * outer_radius_m**2
+    A_inner_m2 = np.pi * inner_radius_m**2
+    A_mirror_m2 = A_outer_m2 - A_inner_m2
+
+    size = int(np.ceil(A_outer_m2 * scatter_center_areal_density_per_m2))
+
+    _xyz = make_fibonacci_disk_for_imaging_mirror(
+        outer_radius_m=outer_radius_m, focal_length_m=focal_length_m, size=size
+    )
+
+    xyz_m = []
+    r_m = []
+    for i in range(_xyz.shape[0]):
+        _r_m = np.sqrt(_xyz[i, 0] ** 2 + _xyz[i, 1] ** 2)
+        if _r_m >= inner_radius_m and _r_m <= outer_radius_m:
+            xyz_m.append(_xyz[i])
+            r_m.append(_r_m)
+    xyz_m = np.array(xyz_m)
+    r_m = np.array(r_m)
+
+    xyz_m[:, 2] = utils.make_parabola_surface_height_m(
+        distance_to_optical_axis_m=r_m,
+        focal_length_m=focal_length_m,
+    )
+    return xyz_m
+
+
+def make_fibonacci_disk_for_imaging_mirror(
+    outer_radius_m, focal_length_m, size
+):
+    f_over_D = focal_length_m / (2.0 * outer_radius_m)
+
+    theta_rad = np.arctan(1 / f_over_D)
+
+    xyz = binning_utils.sphere.fibonacci_space(
+        size=size, max_zenith_distance_rad=theta_rad
+    )
+    r_max = np.max(np.linalg.norm(xyz[:, 0:2], axis=1))
+
+    xyz[:, 2] = 0
+    xyz /= r_max
+    xyz *= outer_radius_m
+
+    return xyz
+
+
 def make_mirror(
     random_seed,
     focal_length_m,
@@ -90,18 +160,18 @@ def make_mirror(
     scatter_center_areal_density_per_m2,
 ):
     imre = {}
-    imre["random_seed"] = random_seed
     imre["focal_length_m"] = focal_length_m
     imre["outer_radius_m"] = outer_radius_m
     imre["inner_radius_m"] = inner_radius_m
     imre["diameter_m"] = 2.0 * outer_radius_m
     imre["area_m2"] = np.pi * (outer_radius_m**2 - inner_radius_m**2)
-    imre["scatter_center_positions_m"] = make_mirror_scatter_center_positions(
-        random_seed=random_seed,
-        focal_length_m=focal_length_m,
-        outer_radius_m=outer_radius_m,
-        inner_radius_m=inner_radius_m,
-        scatter_center_areal_density_per_m2=scatter_center_areal_density_per_m2,
+    imre["scatter_center_positions_m"] = (
+        make_mirror_scatter_center_positions_fibonacci(
+            focal_length_m=focal_length_m,
+            outer_radius_m=outer_radius_m,
+            inner_radius_m=inner_radius_m,
+            scatter_center_areal_density_per_m2=scatter_center_areal_density_per_m2,
+        )
     )
     imre["num_scatter_centers"] = imre["scatter_center_positions_m"].shape[0]
     imre["scatter_center_area_m2"] = (
