@@ -130,8 +130,8 @@ def estimate_power_spectrum_density_W_per_Hz_per_m2(
                             electric_field_V_per_m=_e_by_nu[nu],
                         )
                     )
-                    mat_W_per_Hz_per_m2[nu, antenna] += (
-                        _Power_W / nu_bandwidth_Hz / antenna_effective_area_m2
+                    mat_W_per_Hz_per_m2[nu, antenna] += _Power_W / (
+                        nu_bandwidth_Hz * antenna_effective_area_m2
                     )
 
     return mat_W_per_Hz_per_m2
