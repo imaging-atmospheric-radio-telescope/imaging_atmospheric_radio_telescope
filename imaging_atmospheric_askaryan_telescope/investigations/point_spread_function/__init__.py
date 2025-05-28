@@ -131,19 +131,19 @@ def init(
         "random_seed": 100,
     }
     sc["scenarios"]["central_feed_horn_scan"] = {
-        "num": either(big, 80, 8),
+        "num": either(big, 160, 8),
         "random_seed": 100,
     }
     sc["scenarios"]["fully_inside_field_of_view"] = {
-        "num": either(big, 400, 8),
+        "num": either(big, 960, 8),
         "random_seed": 100,
     }
     sc["scenarios"]["on_edge_of_field_of_view"] = {
-        "num": either(big, 80, 4),
+        "num": either(big, 160, 4),
         "random_seed": 100,
     }
     sc["scenarios"]["fully_outside_field_of_view"] = {
-        "num": either(big, 160, 8),
+        "num": either(big, 320, 8),
         "random_seed": 100,
     }
 
