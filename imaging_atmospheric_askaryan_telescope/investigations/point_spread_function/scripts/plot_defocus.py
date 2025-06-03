@@ -80,6 +80,8 @@ for telescope_key in config["defocus"]["telescopes"]:
         rec["energy_expected_from_source_J"] = energy_expected_from_source_J
         rec["sensor_distance_m"] = response.sensor["sensor_distance_m"]
         rec["energy_in_feed_horns_J"] = np.sum(response.energy_feed_horns)
+        rec["azimuth_rad"] = plane_wave_config["geometry"]["azimuth_rad"]
+        rec["zenith_rad"] = plane_wave_config["geometry"]["zenith_rad"]
         feed_horn_energies_J.append(response.energy_feed_horns)
         Q.append(rec)
 
@@ -173,10 +175,17 @@ for telescope_key in config["defocus"]["telescopes"]:
             alpha=0.1,
             linewidth=0.5,
         )
+        source_x_m, source_y_m = (
+            iaat.utils.sky_and_screen.sky_az_zd_to_screen_x_y(
+                azimuth_rad=Q["azimuth_rad"][iq],
+                zenith_rad=Q["zenith_rad"][iq],
+                focal_length_m=telescope["mirror"]["focal_length_m"],
+            )
+        )
         sebplt.ax_add_circle(
             ax=ax,
-            x=0.0,
-            y=0.0,
+            x=source_x_m,
+            y=source_y_m,
             r=r_outer,
             color="black",
             linewidth=1,
@@ -184,8 +193,8 @@ for telescope_key in config["defocus"]["telescopes"]:
         )
         sebplt.ax_add_circle(
             ax=ax,
-            x=0.0,
-            y=0.0,
+            x=source_x_m,
+            y=source_y_m,
             r=r_inner,
             color="black",
             linestyle="--",
