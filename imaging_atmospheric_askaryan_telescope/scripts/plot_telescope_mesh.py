@@ -78,7 +78,6 @@ def ax_add_camera_xy(ax, telescope, roi_width):
     camera = telescope["sensor"]
 
     fh_r = 10 * np.sqrt(camera["feed_horn_area_m2"]) / roi_width
-    print(fh_r)
 
     iaat.camera.ax_add_camera_feed_horn_edges(
         ax=ax, camera=camera, color="lightgray", linewidth=1 * fh_r
@@ -96,37 +95,10 @@ def ax_add_camera_xy(ax, telescope, roi_width):
 
 
 FIGSIZE = {"rows": 1920, "cols": 1920, "fontsize": 2.0}
-TELESCOPE_KEYS = [
-    "crome",
-    "medium_size_telescope",
-    "large_size_telescope",
-]
+TELESCOPE_KEYS = ["crome", "medium_size_telescope", "large_size_telescope"]
 
 
-fig = sebplt.figure({"rows": 640, "cols": 1920, "fontsize": 2.0})
-ax = sebplt.add_axes(
-    fig=fig,
-    span=[0, 0, 1, 1],
-    style={"spines": [], "axes": [], "grid": False},
-)
-xoff = 0.0
-for telescope_key in TELESCOPE_KEYS:
-    tele_dir = os.path.join(out_dir, telescope_key)
-    iaat.run.init(work_dir=tele_dir, telescope_key=telescope_key)
-    telescope = iaat.run.from_config(work_dir=tele_dir)["telescope"]
-    xoff += telescope["mirror"]["outer_radius_m"] * 2
-    sebplt.ax_add_circle(
-        ax=ax,
-        x=xoff,
-        y=telescope["mirror"]["outer_radius_m"],
-        r=telescope["mirror"]["outer_radius_m"],
-        color="black",
-    )
-
-ax.set_aspect("equal")
-fig.savefig(os.path.join(out_dir, f"telescope_sizes.jpg"))
-sebplt.close(fig)
-
+HH = {}
 
 for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
@@ -346,3 +318,77 @@ for telescope_key in TELESCOPE_KEYS:
 
     fig.savefig(os.path.join(tele_dir, f"telescope_side_scatch.jpg"))
     sebplt.close(fig)
+
+    # plot relative Huygens weights
+    rel_W_Huy = (
+        iaat.telescope.compute_relative_Huygens_weights_propotional_to_energy(
+            telescope_matrix_distances_m=telescope["matrix"]["distances_m"]
+        )
+    )
+
+    w_bin = binning_utils.Binning(
+        np.linspace(
+            np.min(rel_W_Huy),
+            np.max(rel_W_Huy),
+            int(np.sqrt(np.prod(rel_W_Huy.shape)) / 5),
+        )
+    )
+    w_hist = np.histogram(rel_W_Huy.flatten(), w_bin["edges"])[0]
+
+    HH[telescope_key] = {
+        "w_bin": w_bin,
+        "w_hist": w_hist,
+        "w_density": w_hist / np.sum(w_hist) / w_bin["widths"],
+    }
+
+    fig = sebplt.figure({"rows": 1080, "cols": 1920, "fontsize": 2.0})
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.2, 0.8, 0.75])
+    ax.plot(
+        HH[telescope_key]["w_bin"]["centers"],
+        HH[telescope_key]["w_density"],
+        color="black",
+    )
+    ax.set_xlim(w_bin["limits"])
+    ax.set_ylim([0, 1.1 * np.max(HH[telescope_key]["w_density"])])
+    ax.set_xlabel(r"relative Huygens weight / 1")
+    ax.set_ylabel(r"density / 1")
+    fig.savefig(
+        os.path.join(tele_dir, f"telescope_mirror_huygens_weights.jpg")
+    )
+    sebplt.close(fig)
+
+
+fig = sebplt.figure({"rows": 1080, "cols": 1920, "fontsize": 2.0})
+ax = sebplt.add_axes(fig=fig, span=[0.15, 0.2, 0.8, 0.75])
+
+_xlim = []
+_ylim = []
+for telescope_key in HH:
+    _xlim.append(HH[telescope_key]["w_bin"]["limits"])
+    _ylim.append(
+        [
+            np.min(HH[telescope_key]["w_density"]),
+            np.max(HH[telescope_key]["w_density"]),
+        ]
+    )
+_xlim = [0.9 * np.min(_xlim), 1.1 * np.max(_xlim)]
+_ylim = [0.0, 1.1 * np.max(_ylim)]
+
+ttt = {
+    "crome": ":",
+    "medium_size_telescope": "--",
+    "large_size_telescope": "-",
+}
+for telescope_key in HH:
+    ax.plot(
+        HH[telescope_key]["w_bin"]["centers"],
+        HH[telescope_key]["w_density"],
+        color="black",
+        linestyle=ttt[telescope_key],
+    )
+ax.set_xlim(_xlim)
+ax.set_ylim(_ylim)
+ax.set_xlabel(r"relative Huygens weight / 1")
+ax.set_ylabel(r"density / 1")
+fig.savefig(os.path.join(out_dir, f"huygens_weights.jpg"))
+sebplt.close(fig)
