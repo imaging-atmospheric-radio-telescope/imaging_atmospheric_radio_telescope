@@ -56,6 +56,7 @@ for telescope_key in config["stars"]["telescopes"]:
     all_response_paths = glob.glob(
         os.path.join(psf_dir, "multis", telescope_key, "*")
     )
+    all_response_paths = sorted(all_response_paths)
     num_choice = np.min([12, len(all_response_paths)])
     response_paths_choices = prng.choice(
         len(all_response_paths), size=num_choice, replace=False
