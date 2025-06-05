@@ -253,7 +253,7 @@ def save(path, psf_image):
         )
         t.write(
             filename="si_unit.txt",
-            filebytes=npy_to_bytes(psf_image["si_unit"]),
+            filebytes=str.encode(psf_image["si_unit"]),
         )
 
 
@@ -274,7 +274,7 @@ def load(path):
 
         filename, filebytes = t.read()
         assert filename == "si_unit.txt"
-        out["si_unit"] = bytes_to_npy(filebytes)
+        out["si_unit"] = bytes.decode(filebytes)
 
     return out
 
