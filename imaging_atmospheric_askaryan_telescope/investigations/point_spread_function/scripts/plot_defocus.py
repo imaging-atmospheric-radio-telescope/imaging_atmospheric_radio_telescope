@@ -55,8 +55,8 @@ for telescope_key in config["defocus"]["telescopes"]:
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
 
-    response_paths = glob.glob(
-        os.path.join(psf_dir, "defocus", telescope_key, "*")
+    response_paths = iaat.utils.filter_integer_filenames(
+        paths=glob.glob(os.path.join(psf_dir, "defocus", telescope_key, "*"))
     )
 
     feed_horn_radial_distance_m = np.linalg.norm(

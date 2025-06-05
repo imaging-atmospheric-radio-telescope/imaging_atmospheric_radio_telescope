@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import os
 import importlib
 from scipy.stats.qmc import Sobol
 from scipy.optimize import curve_fit
@@ -128,3 +129,16 @@ def hexagon_inner_radius_given_outer_radius(outer_radius):
 
 def hexagon_outer_radius_given_inner_radius(inner_radius):
     return inner_radius * (2.0 / np.sqrt(3.0))
+
+
+def filter_integer_filenames(paths):
+    actual = []
+    for candidate in paths:
+        name = os.path.basename(candidate)
+        try:
+            n = int(name)
+            actual.append(candidate)
+        except ValueError as err:
+            pass
+    actual = sorted(actual)
+    return actual
