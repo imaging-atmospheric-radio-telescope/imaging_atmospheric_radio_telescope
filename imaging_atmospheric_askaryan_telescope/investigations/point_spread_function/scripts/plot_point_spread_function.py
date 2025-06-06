@@ -39,16 +39,6 @@ config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
 source_key = "1"
 
 
-def fit_poly1d(x, y):
-    if len(x) > 2:
-        ab, ab_cov = np.polyfit(x=x, y=y, deg=1, cov=True)
-        ab_std = np.sqrt(np.diag(ab_cov))
-    else:
-        ab = np.polyfit(x=x, y=y, deg=1, cov=False)
-        ab_std = np.array([float("nan"), float("nan")])
-    return ab, ab_std
-
-
 def report_add_source(report, telescope, plane_wave_config):
     report["source_azimuth_rad"] = plane_wave_config["geometry"]["azimuth_rad"]
     report["source_zenith_rad"] = plane_wave_config["geometry"]["zenith_rad"]
@@ -87,20 +77,6 @@ def report_add_roi_analysis(report, telescope, roi_analysis):
         )
     )
     return report
-
-
-def make_feed_horns_signal_mask(feed_horn_positions_m, x_m, y_m, r_m):
-    mask = np.zeros(feed_horn_positions_m.shape[0], dtype=bool)
-    for i in range(feed_horn_positions_m.shape[0]):
-        fx, fy, _ = feed_horn_positions_m[i]
-        d = np.hypot((fx - x_m), (fy - y_m))
-        if d <= r_m:
-            mask[i] = True
-    return mask
-
-
-def ax_add_fov_marker(ax, x):
-    ax.axvline(x, linestyle="--", color="black", alpha=0.25)
 
 
 PSF_QUANTILE = 0.8
@@ -217,7 +193,7 @@ for telescope_key in config["stars"]["telescopes"]:
         sebplt.close(fig)
         """
 
-        feed_horns_signal_mask = make_feed_horns_signal_mask(
+        feed_horns_signal_mask = iaat.investigations.point_spread_function.utils.make_feed_horns_signal_mask(
             feed_horn_positions_m=telescope["sensor"]["feed_horn_positions_m"],
             x_m=roi_analysis["argmax_x_m"],
             y_m=roi_analysis["argmax_y_m"],
@@ -264,82 +240,15 @@ def read_reports(path):
     return df.to_records(index=False)
 
 
-def percentile_spread(x, p):
-    p_half = p / 2
-    x_start = np.percentile(x, 50 - p_half)
-    x_stop = np.percentile(x, 50 + p_half)
-    return x_stop - x_start
-
-
-def ax_square_format(ax):
-    xt_deg2 = np.array(ax.get_xticks())
-    xticklabels = []
-    for xx_deg2 in xt_deg2:
-        if xx_deg2 >= 0.0:
-            xtl = r"{:.2f}".format(np.sqrt(xx_deg2)) + r"$^{2}$"
-        else:
-            xtl = r""
-        xticklabels.append(xtl)
-
-    ax.set_xticks(ax.get_xticks())  # to get rid of UserWarning
-    ax.set_xticklabels(xticklabels)
-
-
-def ax_blank_format(ax):
-    xt = np.array(ax.get_xticks())
-    xticklabels = ["" for xx in xt]
-    ax.set_xticks(ax.get_xticks())  # to get rid of UserWarning
-    ax.set_xticklabels(xticklabels)
-
-
-def sci_decimals(x):
-    if x > 1.0:
-        return 0
-    else:
-        return int(np.ceil(np.abs(np.log10(x))))
-
-
-def sci_format(decimals):
-    return "{:" + f".{decimals:d}f" + "}"
-
-
-def sci_uncertainty(x, dx):
-    decimals = sci_decimals(dx)
-    sx = sci_format(decimals).format(x)
-    sdx = sci_format(decimals).format(dx)
-    return sx + "\\pm" + sdx
-
-
-def ax_add_uncertain_bins(ax, x_bin_edges, y, y_std, weights, **kwargs):
-    _num_bins = len(x_bin_edges) - 1
-
-    for ibin in range(_num_bins):
-        xx_start = x_bin_edges[ibin]
-        xx_stop = x_bin_edges[ibin + 1]
-
-        WWW = 10
-        for i in range(WWW):
-            www = (i + 1) / WWW
-
-            yy_start = y[ibin] - www * 0.5 * y_std[ibin]
-            yy_stop = y[ibin] + www * 0.5 * y_std[ibin]
-            ax.fill(
-                [xx_start, xx_stop, xx_stop, xx_start],
-                [yy_start, yy_start, yy_stop, yy_stop],
-                alpha=weights[ibin] / WWW,
-                linewidth=0.0,
-                **kwargs,
-            )
-
-
-SHOW_FIT = False
+SHOW_FIT = True
 XLABEL_OFF_AXIS_DEG2 = (
     r"(angle off the mirror's optical axis)$^{2}\,/\,(1^{\circ{}})^{2}$"
 )
 
+
 for telescope_key in config["stars"]["telescopes"]:
 
-    telescope, site, timing = (
+    telescope, _, _ = (
         iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
@@ -351,7 +260,6 @@ for telescope_key in config["stars"]["telescopes"]:
     airy_radius_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
         telescope=telescope
     )
-    airy_angle_rad = airy_radius_m / telescope["mirror"]["focal_length_m"]
     airy_area_m2 = np.pi * airy_radius_m**2
 
     cache_path = os.path.join(out_dir, telescope_key + ".jsonl")
@@ -360,15 +268,11 @@ for telescope_key in config["stars"]["telescopes"]:
     psf_area_m2 = np.pi * snap["roi_r80_m"] ** 2
     psf_off_deg = np.rad2deg(snap["source_zenith_rad"])
 
-    off_num_bins = int(np.sqrt(0.5 * len(psf_off_deg)))
-    off_num_bins = np.max([3, off_num_bins])
-    oa_bin = binning_utils.Binning(
-        bin_edges=np.linspace(
-            0.0,
-            np.rad2deg(fov["field_of_view_half_angle_rad"]) ** 2,
-            off_num_bins + 1,
+    oa_bin = (
+        iaat.investigations.point_spread_function.utils.guess_off_axis_binning(
+            num_samples=len(psf_off_deg),
+            half_angle=np.rad2deg(fov["field_of_view_half_angle_rad"]),
         )
-        ** 0.5
     )
 
     FOV_HA_DEG = np.rad2deg(fov["field_of_view_half_angle_rad"])
@@ -376,49 +280,46 @@ for telescope_key in config["stars"]["telescopes"]:
 
     # AREAL SPREAD
     # ============
-    h1_area_p50 = np.zeros(oa_bin["num"])
-    h1_area_s68 = np.zeros(oa_bin["num"])
-    h1_cnt = np.zeros(oa_bin["num"])
-
-    for isi in range(oa_bin["num"]):
-        off2_start = oa_bin["edges"][isi]
-        off2_stop = oa_bin["edges"][isi + 1]
-        off2_mask = np.logical_and(
-            psf_off_deg >= off2_start, psf_off_deg < off2_stop
+    h_psf_area = (
+        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+            x=psf_off_deg, y=psf_area_m2, edges=oa_bin["edges"]
         )
-        cnt = np.sum(off2_mask)
-        h1_cnt[isi] = cnt
-        if cnt > 0:
-            h1_area_p50[isi] = np.percentile(psf_area_m2[off2_mask], 50)
-            h1_area_s68[isi] = percentile_spread(psf_area_m2[off2_mask], 68)
-        else:
-            h1_area_p50[isi] = float("nan")
-            h1_area_s68[isi] = float("nan")
+    )
 
     AREA_SCALE = 1 / airy_area_m2
 
-    relative_cnt = np.sqrt(h1_cnt)
+    relative_cnt = np.sqrt(h_psf_area["cnt"])
     relative_cnt = relative_cnt / np.max(relative_cnt)
     relative_cnt[relative_cnt > 1] = 1.0
 
     # FIT
     try:
-        fit_coef, fit_cov = np.polyfit(
-            x=oa_bin["centers"], y=h1_area_p50 * AREA_SCALE, deg=1, cov=True
+        psf_fit, psf_fit_std = (
+            iaat.investigations.point_spread_function.utils.fit_poly1d(
+                x=oa_bin["centers"],
+                y=h_psf_area["p50"],
+            )
         )
-        fit_coef_std = np.sqrt(np.diag(fit_cov))
-        psf_fit_airy_per_deg = np.poly1d(fit_coef)
+        psf_fit_m2_per_deg = np.poly1d(psf_fit)
 
         with rnw.open(
             os.path.join(out_dir, f"{telescope_key:s}_spread.txt"), "wt"
         ) as f:
             f.write("Area/Airy = ")
             f.write("(")
-            f.write(sci_uncertainty(fit_coef[0], fit_coef_std[0]))
+            f.write(
+                iaat.utils.scientific.uncertainty(
+                    psf_fit[0] * AREA_SCALE, psf_fit_std[0] * AREA_SCALE
+                )
+            )
             f.write(")")
             f.write(" angle/deg + ")
             f.write("(")
-            f.write(sci_uncertainty(fit_coef[1], fit_coef_std[1]))
+            f.write(
+                iaat.utils.scientific.uncertainty(
+                    psf_fit[1] * AREA_SCALE, psf_fit_std[1] * AREA_SCALE
+                )
+            )
             f.write(")")
         HAVE_FIT = True
     except ValueError:
@@ -427,24 +328,26 @@ for telescope_key in config["stars"]["telescopes"]:
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
 
-    ax_add_uncertain_bins(
+    iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
-        y=h1_area_p50 * AREA_SCALE,
-        y_std=h1_area_s68 * AREA_SCALE,
+        y=h_psf_area["p50"] * AREA_SCALE,
+        y_std=h_psf_area["s68"] * AREA_SCALE,
         weights=relative_cnt,
         color="black",
     )
 
     if SHOW_FIT and HAVE_FIT:
         _xxx = np.linspace(oa_bin["start"], oa_bin["stop"], 201)
-        ax.plot(_xxx**2, psf_fit_airy_per_deg(_xxx), "-r")
+        ax.plot(_xxx**2, psf_fit_m2_per_deg(_xxx) * AREA_SCALE, "-r")
 
-    ax_add_fov_marker(ax, FOV_HA_DEG**2)
-    ylim = [0.0, 1.25 * np.nanmax(h1_area_p50) * AREA_SCALE]
+    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+        ax, FOV_HA_DEG**2
+    )
+    ylim = [0.0, 1.25 * np.nanmax(h_psf_area["p50"]) * AREA_SCALE]
     ax.set_ylim(ylim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
-    ax_blank_format(ax=ax)
+    iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     ax.set_ylabel("area containing 80% /\n" + "Airy disk")
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_spread.jpg"))
     sebplt.close(fig)
@@ -458,7 +361,7 @@ for telescope_key in config["stars"]["telescopes"]:
     sebplt.ax_add_histogram(
         ax=ax_cnt,
         bin_edges=oa_bin["edges"] ** 2,
-        bincounts=h1_cnt,
+        bincounts=h_psf_area["cnt"],
         linestyle="-",
         linecolor="black",
         linealpha=1.0,
@@ -467,10 +370,12 @@ for telescope_key in config["stars"]["telescopes"]:
         label=None,
         draw_bin_walls=True,
     )
-    ax_add_fov_marker(ax_cnt, FOV_HA_DEG**2)
-    ax_cnt.set_ylim([0.0, 1.1 * np.max(h1_cnt)])
+    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+        ax_cnt, FOV_HA_DEG**2
+    )
+    ax_cnt.set_ylim([0.0, 1.1 * np.max(h_psf_area["cnt"])])
     ax_cnt.set_xlim([0.0, OFF_STOP_DEG**2])
-    ax_square_format(ax=ax_cnt)
+    iaat.investigations.point_spread_function.plot.ax_square_format(ax=ax_cnt)
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_counts.jpg"))
     sebplt.close(fig)
 
@@ -478,42 +383,39 @@ for telescope_key in config["stars"]["telescopes"]:
     # ==========
     disto = snap["roi_zenith_rad"] / snap["source_zenith_rad"]
 
-    h1_disto_p50 = np.zeros(oa_bin["num"])
-    h1_disto_s68 = np.zeros(oa_bin["num"])
-
-    for isi in range(oa_bin["num"]):
-        off2_start = oa_bin["edges"][isi]
-        off2_stop = oa_bin["edges"][isi + 1]
-        off2_mask = np.logical_and(
-            psf_off_deg >= off2_start, psf_off_deg < off2_stop
+    h_disto = (
+        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+            x=psf_off_deg, y=disto, edges=oa_bin["edges"]
         )
-        cnt = np.sum(off2_mask)
-        if cnt > 0:
-            h1_disto_p50[isi] = np.percentile(disto[off2_mask], 50)
-            h1_disto_s68[isi] = percentile_spread(disto[off2_mask], 68)
-        else:
-            h1_disto_p50[isi] = float("nan")
-            h1_disto_s68[isi] = float("nan")
+    )
 
     try:
-        distortion_fit, distortion_fit_cov = np.polyfit(
-            x=np.rad2deg(snap["source_zenith_rad"]),
-            y=np.rad2deg(snap["roi_zenith_rad"]),
-            deg=1,
-            cov=True,
+        distortion_fit, distortion_fit_std = (
+            iaat.investigations.point_spread_function.utils.fit_poly1d(
+                x=oa_bin["centers"],
+                y=h_disto["p50"],
+            )
         )
-        distortion_fit_std = np.sqrt(np.diag(distortion_fit_cov))
         distortion_fit_fn_deg = np.poly1d(distortion_fit)
+
         with rnw.open(
             os.path.join(out_dir, f"{telescope_key:s}_distortion.txt"), "wt"
         ) as f:
-            f.write("reco angle / deg = ")
+            f.write("reco angle / true angle = ")
             f.write("(")
-            f.write(sci_uncertainty(distortion_fit[0], distortion_fit_std[0]))
+            f.write(
+                iaat.utils.scientific.uncertainty(
+                    distortion_fit[0], distortion_fit_std[0]
+                )
+            )
             f.write(")")
             f.write(" true angle + ")
             f.write("(")
-            f.write(sci_uncertainty(distortion_fit[1], distortion_fit_std[1]))
+            f.write(
+                iaat.utils.scientific.uncertainty(
+                    distortion_fit[1], distortion_fit_std[1]
+                )
+            )
             f.write(")")
         HAVE_FIT = True
     except ValueError:
@@ -521,21 +423,24 @@ for telescope_key in config["stars"]["telescopes"]:
 
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
-    ax_add_uncertain_bins(
+    iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
-        y=h1_disto_p50,
-        y_std=h1_disto_s68,
+        y=h_disto["p50"],
+        y_std=h_disto["s68"],
         weights=relative_cnt,
         color="black",
     )
     if SHOW_FIT and HAVE_FIT:
-        ax.axhline(y=distortion_fit[0], color="r")
+        _xxx = np.linspace(oa_bin["start"], oa_bin["stop"], 201)
+        ax.plot(_xxx**2, distortion_fit_fn_deg(_xxx), "-r")
 
-    ax_add_fov_marker(ax, FOV_HA_DEG**2)
+    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+        ax, FOV_HA_DEG**2
+    )
     ax.set_xlim([0.0, FOV_HA_DEG**2])
     ax.set_ylabel(r"distortion / 1")
-    ax_blank_format(ax=ax)
+    iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_distortion.jpg"))
     sebplt.close(fig)
 
@@ -545,7 +450,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     # identify valid energy bins to estimate scale factor in the inner part of
     # the field-of-view.
-    psf_size_m = np.sqrt(np.nanmedian(h1_area_p50))
+    psf_size_m = np.sqrt(np.nanmedian(h_psf_area["p50"]))
     enecon_valid_radius_m = (
         telescope["sensor"]["camera"]["outer_radius_m"] - 2.0 * psf_size_m
     )
@@ -558,37 +463,27 @@ for telescope_key in config["stars"]["telescopes"]:
         enecon_valid_off_axis_angle_rad
     )
 
-    h1_enecon_mask = oa_bin["centers"] <= enecon_valid_off_axis_angle_deg
-    h1_enecon_p50 = np.zeros(oa_bin["num"])
-    h1_enecon_s68 = np.zeros(oa_bin["num"])
-    h1_cnt = np.zeros(oa_bin["num"])
-
-    for isi in range(oa_bin["num"]):
-        off2_start = oa_bin["edges"][isi]
-        off2_stop = oa_bin["edges"][isi + 1]
-        off2_mask = np.logical_and(
-            psf_off_deg >= off2_start, psf_off_deg < off2_stop
+    h_enecon = (
+        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+            x=psf_off_deg,
+            y=snap["feed_horn_energy_conservation_ratio"],
+            edges=oa_bin["edges"],
         )
-        cnt = np.sum(off2_mask)
-        h1_cnt[isi] = cnt
-        if cnt > 0:
-            h1_enecon_p50[isi] = np.percentile(enecon[off2_mask], 50)
-            h1_enecon_s68[isi] = percentile_spread(enecon[off2_mask], 68)
-        else:
-            h1_enecon_p50[isi] = float("nan")
-            h1_enecon_s68[isi] = float("nan")
-
-    h1_enecon_mask = np.logical_and(
-        h1_enecon_mask,
-        np.logical_not(np.isnan(h1_enecon_p50)),
     )
-    ene_x = oa_bin["centers"][h1_enecon_mask]
-    ene_y = h1_enecon_p50[h1_enecon_mask]
+    h_enecon_mask = oa_bin["centers"] <= enecon_valid_off_axis_angle_deg
+    h_enecon_mask = np.logical_and(
+        h_enecon_mask,
+        np.logical_not(np.isnan(h_enecon["p50"])),
+    )
+    ene_x = oa_bin["centers"][h_enecon_mask]
+    ene_y = h_enecon["p50"][h_enecon_mask]
 
     if len(ene_x) > 1:
-        eneFit, eneFit_std = fit_poly1d(
-            x=ene_x,
-            y=ene_y,
+        eneFit, eneFit_std = (
+            iaat.investigations.point_spread_function.utils.fit_poly1d(
+                x=ene_x,
+                y=ene_y,
+            )
         )
         if eneFit[0] < 0.0:
             # energy conservation falls down going off axis
@@ -596,8 +491,10 @@ for telescope_key in config["stars"]["telescopes"]:
             eneS_std = eneFit_std[1]
             ene_method = "linear-fit-y-axis-intersection"
         else:
-            eneS = np.median(h1_enecon_p50[h1_enecon_mask])
-            eneS_std = percentile_spread(h1_enecon_p50[h1_enecon_mask], 68)
+            eneS = np.median(h_enecon["p50"][h_enecon_mask])
+            eneS_std = iaat.investigations.point_spread_function.utils.percentile_spread(
+                h_enecon["p50"][h_enecon_mask], 68
+            )
             ene_method = "median-in-field-of-view"
     else:
         eneS = ene_y[0]
@@ -626,21 +523,47 @@ for telescope_key in config["stars"]["telescopes"]:
     enecon_lim = [0.0, 1.25]
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
-    ax_add_uncertain_bins(
+    iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
-        y=h1_enecon_p50 * eneF,
-        y_std=h1_enecon_s68,
+        y=h_enecon["p50"] * eneF,
+        y_std=h_enecon["s68"],
         weights=relative_cnt,
         color="black",
     )
-    ax_add_fov_marker(ax, FOV_HA_DEG**2)
+    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+        ax, FOV_HA_DEG**2
+    )
     ax.set_ylim(enecon_lim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
     ax.set_xlabel(XLABEL_OFF_AXIS_DEG2)
     ax.set_ylabel("energy conservation\nby construction")
-    ax_blank_format(ax=ax)
+    iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     fig.savefig(
         os.path.join(out_dir, f"{telescope_key:s}_energy_conservation.jpg")
     )
     sebplt.close(fig)
+
+    summary = {
+        "off_axis_bin_deg": oa_bin,
+        "energy_conservation_1": {
+            "hist": h_enecon,
+            "fit": eneFit,
+            "fit_std": eneFit_std,
+            "fit_method": ene_method,
+        },
+        "point_spread_function_m2": {
+            "hist": h_psf_area,
+            "fit": psf_fit,
+            "fit_std": psf_fit_std,
+        },
+        "distortion_1": {
+            "hist": h_disto,
+            "fit": distortion_fit,
+            "fit_std": distortion_fit_std,
+        },
+    }
+    with open(
+        os.path.join(out_dir, f"{telescope_key:s}.summary.json"), "wt"
+    ) as f:
+        f.write(json_utils.dumps(summary, indent=4))

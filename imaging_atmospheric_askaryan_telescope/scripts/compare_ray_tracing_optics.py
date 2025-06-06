@@ -14,6 +14,7 @@ import hashlib
 import tempfile
 import json_utils
 import pandas
+import scipy.spatial
 
 
 parser = argparse.ArgumentParser(
@@ -254,7 +255,14 @@ def estimate_light_intersection_on_screen(scenery_path, run_path, seed):
 
 
 def make_psf_image(
-    telescope, scenery_path, azimuth_rad, zenith_rad, size, seed
+    telescope,
+    telescope_feed_horn_tree,
+    telescope_feed_horn_outer_radius,
+    scenery_path,
+    azimuth_rad,
+    zenith_rad,
+    size,
+    seed,
 ):
     radius_thrown_m = 1.25 * telescope["mirror"]["outer_radius_m"]
 
@@ -310,7 +318,20 @@ def make_psf_image(
             }
         )
 
-    return psf_image
+        # feed horn assignment
+        # --------------------
+        num_feed_horns = telescope_feed_horn_tree.data.shape[0]
+        feed_horn_index_bin_edges = np.linspace(
+            -0.5, num_feed_horns - 0.5, num_feed_horns + 1
+        )
+        dd_m, ii = telescope_feed_horn_tree.query(xy)
+        valid = dd_m <= telescope_feed_horn_outer_radius
+        valid = valid.astype(float)
+        feed_horn_image = np.histogram(
+            ii, bins=feed_horn_index_bin_edges, weights=valid
+        )[0]
+
+    return psf_image, feed_horn_image
 
 
 def report_add_roi_analysis(report, telescope, roi_analysis):
@@ -333,10 +354,11 @@ def report_add_roi_analysis(report, telescope, roi_analysis):
     return report
 
 
+NUM_EVENTS = 1000
 SIZE = 10_000
 PSF_QUANTILE = 0.8
 
-for telescope_key in ["crome", "medium_size_telescope"]:
+for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
 
     scenery_path = os.path.join(tele_dir, f"{telescope_key:s}.tar")
@@ -352,9 +374,19 @@ for telescope_key in ["crome", "medium_size_telescope"]:
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
+    telescope_feed_horn_tree = scipy.spatial.cKDTree(
+        telescope["sensor"]["feed_horn_positions_m"][:, 0:2]
+    )
+    telescope_feed_horn_outer_radius = (
+        iaat.utils.hexagon_outer_radius_given_inner_radius(
+            telescope["sensor"]["camera"]["feed_horn_inner_radius_m"]
+        )
+    )
+    airy_radius_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+        telescope=telescope
+    )
 
-    num_events = 1000
-    seeds_expected = set(np.arange(num_events))
+    seeds_expected = set(np.arange(NUM_EVENTS))
 
     reports_path = os.path.join(tele_dir, "report.jsonl")
     if not os.path.exists(reports_path):
@@ -382,8 +414,10 @@ for telescope_key in ["crome", "medium_size_telescope"]:
 
         # event_path = os.path.join(tele_dir, f"{seed:06d}.tar")
         # if True:  # not os.path.exists(event_path):
-        psf_image = make_psf_image(
+        psf_image, feed_horn_image = make_psf_image(
             telescope=telescope,
+            telescope_feed_horn_tree=telescope_feed_horn_tree,
+            telescope_feed_horn_outer_radius=telescope_feed_horn_outer_radius,
             scenery_path=scenery_path,
             azimuth_rad=azimuth_rad,
             zenith_rad=zenith_rad,
@@ -421,6 +455,37 @@ for telescope_key in ["crome", "medium_size_telescope"]:
             )
         )
 
+        feed_horns_signal_mask = iaat.investigations.point_spread_function.utils.make_feed_horns_signal_mask(
+            feed_horn_positions_m=telescope["sensor"]["feed_horn_positions_m"],
+            x_m=roi_analysis["argmax_x_m"],
+            y_m=roi_analysis["argmax_y_m"],
+            r_m=2 * airy_radius_m,
+        )
+        feed_horns_background_mask = np.logical_not(feed_horns_signal_mask)
+
+        energy_signal_J = feed_horn_image[feed_horns_signal_mask]
+        energy_background_J = feed_horn_image[feed_horns_background_mask]
+
+        total_energy_signal_J = np.sum(energy_signal_J)
+        mean_energy_signal_J = np.mean(energy_signal_J)
+        median_energy_background_J = np.percentile(energy_background_J, 50)
+
+        signal_to_noise_ratio = (
+            mean_energy_signal_J / median_energy_background_J
+        )
+        energy_conservation_ratio = (
+            total_energy_signal_J / report["source_expected_energy_J"]
+        )
+
+        report["feed_horn_energy_conservation_ratio"] = (
+            energy_conservation_ratio
+        )
+        report["feed_horn_total_energy_signal_J"] = total_energy_signal_J
+        report["feed_horn_median_energy_background_J"] = (
+            median_energy_background_J
+        )
+        report["feed_horn_signal_to_noise_ratio"] = signal_to_noise_ratio
+
         reports.append(report)
     json_utils.lines.write(reports_path, reports)
 
@@ -431,16 +496,16 @@ def read_reports(path):
     return df.to_records(index=False)
 
 
-for telescope_key in ["crome", "medium_size_telescope"]:
+for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
     reports_path = os.path.join(tele_dir, "report.jsonl")
-    snaps = read_reports(reports_path)
+    snap = read_reports(reports_path)
 
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 2.0})
-    ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.9])
+    ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
     ax.plot(
-        np.rad2deg(snaps["source_zenith_rad"]),
-        np.pi * snaps["roi_r80_m"] ** 2,
+        np.rad2deg(snap["source_zenith_rad"]),
+        np.pi * snap["roi_r80_m"] ** 2,
         color="black",
         alpha=0.1,
         linewidth=0.0,
@@ -450,11 +515,11 @@ for telescope_key in ["crome", "medium_size_telescope"]:
     sebplt.close(fig)
 
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 2.0})
-    ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.9])
+    ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
     ax.plot(
-        np.rad2deg(snaps["source_zenith_rad"]),
-        np.rad2deg(snaps["roi_zenith_rad"])
-        / np.rad2deg(snaps["source_zenith_rad"]),
+        np.rad2deg(snap["source_zenith_rad"]),
+        np.rad2deg(snap["roi_zenith_rad"])
+        / np.rad2deg(snap["source_zenith_rad"]),
         color="black",
         alpha=0.1,
         linewidth=0.0,
@@ -462,3 +527,60 @@ for telescope_key in ["crome", "medium_size_telescope"]:
     )
     fig.savefig(os.path.join(tele_dir, f"distortion_simple.jpg"))
     sebplt.close(fig)
+
+    fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 2.0})
+    ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
+    ax.plot(
+        np.rad2deg(snap["source_zenith_rad"]),
+        snap["feed_horn_energy_conservation_ratio"],
+        color="black",
+        alpha=0.1,
+        linewidth=0.0,
+        marker="o",
+    )
+    fig.savefig(os.path.join(tele_dir, f"energy_conservation_simple.jpg"))
+    sebplt.close(fig)
+
+    # Analysis
+
+    psf_off_deg = np.rad2deg(snap["source_zenith_rad"])
+
+    oa_bin = (
+        iaat.investigations.point_spread_function.utils.guess_off_axis_binning(
+            num_samples=len(psf_off_deg),
+            half_angle=np.rad2deg(fov["field_of_view_half_angle_rad"]),
+        )
+    )
+
+    psf_area_m2 = np.pi * snap["roi_r80_m"] ** 2
+    h_psf_area = (
+        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+            x=psf_off_deg, y=psf_area_m2, edges=oa_bin["edges"]
+        )
+    )
+
+    disto = snap["roi_zenith_rad"] / snap["source_zenith_rad"]
+    h_disto = (
+        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+            x=psf_off_deg, y=disto, edges=oa_bin["edges"]
+        )
+    )
+
+    h_enecon = (
+        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+            x=psf_off_deg,
+            y=snap["feed_horn_energy_conservation_ratio"],
+            edges=oa_bin["edges"],
+        )
+    )
+
+    summary = {
+        "off_axis_bin_deg": oa_bin,
+        "energy_conservation_1": h_enecon,
+        "point_spread_function_m2": h_psf_area,
+        "distortion_1": h_disto,
+    }
+    with open(
+        os.path.join(out_dir, f"{telescope_key:s}.summary.json"), "wt"
+    ) as f:
+        f.write(json_utils.dumps(summary, indent=4))

@@ -274,7 +274,10 @@ def load(path):
 
         filename, filebytes = t.read()
         assert filename == "si_unit.txt"
-        out["si_unit"] = bytes.decode(filebytes)
+        try:
+            out["si_unit"] = bytes.decode(filebytes)
+        except UnicodeDecodeError:
+            out["si_unit"] = bytes_to_npy(filebytes)
 
     return out
 
