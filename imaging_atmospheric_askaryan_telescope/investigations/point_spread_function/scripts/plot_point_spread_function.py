@@ -148,51 +148,6 @@ for telescope_key in config["stars"]["telescopes"]:
             )
         )
 
-        """
-        fig = sebplt.figure(style={"rows": 1920, "cols": 1920, "fontsize": 1.5})
-        ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.65, 0.65])
-        ax_cmap = sebplt.add_axes(fig=fig, span=[0.83, 0.15, 0.025, 0.65])
-        norm = sebplt.matplotlib.colors.PowerNorm(
-            vmin=1e-3 * np.max(Ene_roi_J),
-            vmax=np.max(Ene_roi_J),
-            gamma=1 / 2.0,
-        )
-        im = ax.pcolormesh(
-            x_bin_edges_m,
-            y_bin_edges_m,
-            Ene_roi_J.T,
-            cmap="Blues",
-            norm=norm,
-        )
-        ax.plot(roi_analysis["argmax_x_m"], roi_analysis["argmax_y_m"], marker="o", color="red")
-        sebplt.ax_add_circle(
-            ax=ax,
-            x=roi_analysis["argmax_x_m"],
-            y=roi_analysis["argmax_y_m"],
-            r=roi_analysis["radius_quantile_m"],
-            linestyle="--",
-            color="red",
-        )
-        sebplt.ax_add_circle(
-            ax=ax,
-            x=roi_analysis["argmax_x_m"],
-            y=roi_analysis["argmax_y_m"],
-            r=report["roi_r80_m"],
-            linestyle="--",
-            color="green",
-        )
-        ax.set_xlim([min(x_bin_edges_m), max(x_bin_edges_m)])
-        ax.set_ylim([min(y_bin_edges_m), max(y_bin_edges_m)])
-        ax.set_xlabel("x / m")
-        ax.set_ylabel("y / m")
-        ax.set_aspect("equal")
-        sebplt.plt.colorbar(im, cax=ax_cmap)
-        ax_cmap.set_ylabel(r"Energy / eV")
-
-        fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_{report['id']:06d}.jpg"))
-        sebplt.close(fig)
-        """
-
         feed_horns_signal_mask = iaat.investigations.point_spread_function.utils.make_feed_horns_signal_mask(
             feed_horn_positions_m=telescope["sensor"]["feed_horn_positions_m"],
             x_m=roi_analysis["argmax_x_m"],
@@ -234,12 +189,6 @@ for telescope_key in config["stars"]["telescopes"]:
     json_utils.lines.write(cache_path, reports)
 
 
-def read_reports(path):
-    reports = json_utils.lines.read(path)
-    df = pandas.DataFrame.from_records(reports)
-    return df.to_records(index=False)
-
-
 SHOW_FIT = True
 XLABEL_OFF_AXIS_DEG2 = (
     r"(angle off the mirror's optical axis)$^{2}\,/\,(1^{\circ{}})^{2}$"
@@ -263,7 +212,9 @@ for telescope_key in config["stars"]["telescopes"]:
     airy_area_m2 = np.pi * airy_radius_m**2
 
     cache_path = os.path.join(out_dir, telescope_key + ".jsonl")
-    snap = read_reports(cache_path)
+    snap = iaat.investigations.point_spread_function.utils.read_jsonl_reports_into_recarray(
+        cache_path
+    )
 
     psf_area_m2 = np.pi * snap["roi_r80_m"] ** 2
     psf_off_deg = np.rad2deg(snap["source_zenith_rad"])

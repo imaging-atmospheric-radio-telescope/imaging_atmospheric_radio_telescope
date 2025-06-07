@@ -11,6 +11,7 @@ import os
 import copy
 import spherical_coordinates
 import binning_utils
+import pandas
 
 
 def serial_pool_if_None(pool):
@@ -224,3 +225,9 @@ def guess_off_axis_binning(num_samples, half_angle):
         ** 0.5
     )
     return oa_bin
+
+
+def read_jsonl_reports_into_recarray(path):
+    reports = json_utils.lines.read(path)
+    df = pandas.DataFrame.from_records(reports)
+    return df.to_records(index=False)

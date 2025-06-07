@@ -490,16 +490,19 @@ for telescope_key in TELESCOPE_KEYS:
     json_utils.lines.write(reports_path, reports)
 
 
-def read_reports(path):
-    reports = json_utils.lines.read(path)
-    df = pandas.DataFrame.from_records(reports)
-    return df.to_records(index=False)
-
-
 for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
+
+    telescope = iaat.run.from_config(work_dir=tele_dir)["telescope"]
+    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+        sensor=telescope["sensor"],
+        focal_length_m=telescope["mirror"]["focal_length_m"],
+    )
+
     reports_path = os.path.join(tele_dir, "report.jsonl")
-    snap = read_reports(reports_path)
+    snap = iaat.investigations.point_spread_function.utils.read_jsonl_reports_into_recarray(
+        reports_path
+    )
 
     fig = sebplt.figure(style={"rows": 1080, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
@@ -558,11 +561,23 @@ for telescope_key in TELESCOPE_KEYS:
             x=psf_off_deg, y=psf_area_m2, edges=oa_bin["edges"]
         )
     )
+    psf_fit, psf_fit_std = (
+        iaat.investigations.point_spread_function.utils.fit_poly1d(
+            x=oa_bin["centers"],
+            y=h_psf_area["p50"],
+        )
+    )
 
     disto = snap["roi_zenith_rad"] / snap["source_zenith_rad"]
     h_disto = (
         iaat.investigations.point_spread_function.utils.histogram_p50_s68(
             x=psf_off_deg, y=disto, edges=oa_bin["edges"]
+        )
+    )
+    distortion_fit, distortion_fit_std = (
+        iaat.investigations.point_spread_function.utils.fit_poly1d(
+            x=oa_bin["centers"],
+            y=h_disto["p50"],
         )
     )
 
@@ -573,12 +588,31 @@ for telescope_key in TELESCOPE_KEYS:
             edges=oa_bin["edges"],
         )
     )
+    eneFit, eneFit_std = (
+        iaat.investigations.point_spread_function.utils.fit_poly1d(
+            x=oa_bin["centers"],
+            y=h_enecon["p50"],
+        )
+    )
 
     summary = {
         "off_axis_bin_deg": oa_bin,
-        "energy_conservation_1": h_enecon,
-        "point_spread_function_m2": h_psf_area,
-        "distortion_1": h_disto,
+        "energy_conservation_1": {
+            "hist": h_enecon,
+            "fit": eneFit,
+            "fit_std": eneFit_std,
+            "fit_method": "linear-fit-y-axis-intersection",
+        },
+        "point_spread_function_m2": {
+            "hist": h_psf_area,
+            "fit": psf_fit,
+            "fit_std": psf_fit_std,
+        },
+        "distortion_1": {
+            "hist": h_disto,
+            "fit": distortion_fit,
+            "fit_std": distortion_fit_std,
+        },
     }
     with open(
         os.path.join(out_dir, f"{telescope_key:s}.summary.json"), "wt"
