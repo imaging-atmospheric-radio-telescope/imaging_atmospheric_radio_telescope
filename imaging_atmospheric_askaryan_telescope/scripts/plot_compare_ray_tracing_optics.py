@@ -165,7 +165,7 @@ for telescope_key in TELESCOPE_KEYS:
     # ax.set_ylim(ylim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
     iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
-    ax.set_ylabel("area containing 80% /\n" + "Airy disk")
+    ax.set_ylabel("area containing 80% /\n" + "radio light Airy disk")
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_spread.jpg"))
     sebplt.close(fig)
 
@@ -197,7 +197,7 @@ for telescope_key in TELESCOPE_KEYS:
     )
     ax.set_ylim(enecon_lim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
-    ax.set_ylabel("energy conservation / 1")
+    ax.set_ylabel("actual energy /\nexpected energy")
     iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     fig.savefig(
         os.path.join(out_dir, f"{telescope_key:s}_energy_conservation.jpg")
@@ -228,7 +228,7 @@ for telescope_key in TELESCOPE_KEYS:
         ax, FOV_HA_DEG**2
     )
     ax.set_xlim([0.0, FOV_HA_DEG**2])
-    ax.set_ylabel(r"distortion / 1")
+    ax.set_ylabel("actual angle /\nexpected angle")
     iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_distortion.jpg"))
     sebplt.close(fig)
