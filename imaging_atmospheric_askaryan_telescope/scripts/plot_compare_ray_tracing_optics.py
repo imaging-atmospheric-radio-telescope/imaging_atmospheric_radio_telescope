@@ -51,6 +51,10 @@ def read_json(path):
 
 TELESCOPE_KEYS = ["crome", "medium_size_telescope", "large_size_telescope"]
 
+XLABEL_OFF_AXIS_DEG2 = (
+    r"(angle off the mirror's optical axis)$^{2}\,/\,(1^{\circ{}})^{2}$"
+)
+
 for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(ray_dir, telescope_key)
 
@@ -93,6 +97,49 @@ for telescope_key in TELESCOPE_KEYS:
     relative_cnt = relative_cnt / np.max(relative_cnt)
     relative_cnt[relative_cnt > 1] = 1.0
 
+    # COUNTS
+    # ======
+    fig = sebplt.figure(style={"rows": 600, "cols": 1920, "fontsize": 2.0})
+    ax_cnt = sebplt.add_axes(fig=fig, span=[0.2, 0.4, 0.75, 0.55])
+    ax_cnt.set_xlabel(XLABEL_OFF_AXIS_DEG2)
+    ax_cnt.set_ylabel("statistics")
+    sebplt.ax_add_histogram(
+        ax=ax_cnt,
+        bin_edges=wav["off_axis_bin_deg"]["edges"] ** 2,
+        bincounts=wav["point_spread_function_m2"]["hist"]["cnt"],
+        linestyle="-",
+        linecolor="black",
+        linealpha=1.0,
+        face_color="black",
+        face_alpha=None,
+        label=None,
+        draw_bin_walls=True,
+    )
+    sebplt.ax_add_histogram(
+        ax=ax_cnt,
+        bin_edges=ray["off_axis_bin_deg"]["edges"] ** 2,
+        bincounts=ray["point_spread_function_m2"]["hist"]["cnt"],
+        linestyle="-",
+        linecolor="blue",
+        linealpha=1.0,
+        face_color="blue",
+        face_alpha=None,
+        label=None,
+        draw_bin_walls=True,
+    )
+    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+        ax_cnt, FOV_HA_DEG**2
+    )
+    ax_cnt.set_ylim(
+        [0.0, 1.1 * np.max(wav["point_spread_function_m2"]["hist"]["cnt"])]
+    )
+    ax_cnt.set_xlim([0.0, OFF_STOP_DEG**2])
+    iaat.investigations.point_spread_function.plot.ax_square_format(ax=ax_cnt)
+    fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_counts.jpg"))
+    sebplt.close(fig)
+
+    # SPREAD
+    # ======
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
     iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
@@ -122,6 +169,8 @@ for telescope_key in TELESCOPE_KEYS:
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_spread.jpg"))
     sebplt.close(fig)
 
+    # ENERGY
+    # ======
     enecon_lim = [0.0, 1.25]
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
@@ -155,6 +204,8 @@ for telescope_key in TELESCOPE_KEYS:
     )
     sebplt.close(fig)
 
+    # DISTORTION
+    # ==========
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
     iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
