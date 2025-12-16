@@ -37,6 +37,7 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope.telescopes",
         "imaging_atmospheric_askaryan_telescope.investigations",
         "imaging_atmospheric_askaryan_telescope.investigations.point_spread_function",
+        "imaging_atmospheric_askaryan_telescope.investigations.airshower_response",
     ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
