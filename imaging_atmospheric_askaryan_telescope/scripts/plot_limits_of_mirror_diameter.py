@@ -41,22 +41,6 @@ def valid_airy_Nus(theta_D_Nu, D_bin_centers, Nu_bin_centers, theta_threshold):
     return np.array(Ds), np.array(Nus)
 
 
-def ax_add_box_gradient(
-    ax, xlim, ylim, alpha_start, alpha_stop, num=255, **kwargs
-):
-    alphas = np.linspace(alpha_start, alpha_stop, num)
-    x_edges = np.linspace(xlim[0], xlim[1], num + 1)
-    for i in range(num):
-        print(alphas[i])
-        ax.fill_between(
-            x=[x_edges[i], x_edges[i + 1]],
-            y1=[ylim[0], ylim[0]],
-            y2=[ylim[1], ylim[1]],
-            alpha=alphas[i],
-            **kwargs,
-        )
-
-
 def get_mean_input_frequency(telescope):
     lnb = iaat.lownoiseblock.init(key=telescope["lnb_key"])
     nu_start_Hz, nu_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
@@ -65,10 +49,12 @@ def get_mean_input_frequency(telescope):
     return np.mean([nu_start_Hz, nu_stop_Hz])
 
 
+def linear_weight(x, x_start, x_stop):
+    return np.interp(x=x, xp=[x_start, x_stop], fp=[0, 1])
+
+
 D_bin = binning_utils.Binning(bin_edges=np.linspace(1, 30, 201))
 Nu_bin = binning_utils.Binning(bin_edges=np.geomspace(1e9, 100e9, 301))
-
-D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M = 23.0
 
 
 lst = iaat.telescopes.init("large_size_telescope")
@@ -83,7 +69,10 @@ crome = iaat.telescopes.init("crome")
 crome_nu_Hz = get_mean_input_frequency(telescope=crome)
 crome_marker = r"$\mathbf{C}$"
 
+# populate Airy angle
+# -------------------
 theta = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
+airy_resolution_map = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
 for iD in range(D_bin["num"]):
     for iNu in range(Nu_bin["num"]):
         theta[iD, iNu] = airy_full_angle(
@@ -92,6 +81,41 @@ for iD in range(D_bin["num"]):
                 frequency=Nu_bin["centers"][iNu]
             ),
         )
+        airy_resolution_map[iD, iNu] = 1.0 - linear_weight(
+            x_start=np.deg2rad(0.3),
+            x_stop=np.deg2rad(0.45),
+            x=theta[iD, iNu],
+        )
+
+
+# populate atmospheric attenuation limits
+# ---------------------------------------
+atmo_Nu_start = 25e9
+atmo_Nu_stop = 100e9
+atmo_attenuation_map = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
+for iD in range(D_bin["num"]):
+    for iNu in range(Nu_bin["num"]):
+        Nu = np.mean([Nu_bin["edges"][iNu], Nu_bin["edges"][iNu + 1]])
+        atmo_attenuation_map[iD, iNu] = 1.0 - linear_weight(
+            x_start=atmo_Nu_start, x_stop=atmo_Nu_stop, x=Nu
+        )
+
+
+# populate depth-of-field limits
+# ------------------------------
+HESS2_MIRROR_D_M = 30.0
+D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M = 23.0
+depth_of_field_map = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
+for iD in range(D_bin["num"]):
+    D = np.mean([D_bin["edges"][iD], D_bin["edges"][iD + 1]])
+    _w = 1.0 - linear_weight(
+        x_start=D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M,
+        x_stop=HESS2_MIRROR_D_M,
+        x=D,
+    )
+    for iNu in range(Nu_bin["num"]):
+        depth_of_field_map[iD, iNu] = _w
+
 
 theta_deg = np.rad2deg(theta)
 theta_levels_deg = [
@@ -110,17 +134,6 @@ vD, vNu = valid_airy_Nus(
     Nu_bin_centers=Nu_bin["centers"],
     theta_threshold=0.30,
 )
-
-# make valid regime polygon
-# -------------------------
-poly = []
-iii = 0
-while vD[iii] <= D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M:
-    poly.append([vD[iii], vNu[iii]])
-    iii += 1
-poly.append([vD[iii], Nu_bin["stop"]])
-poly.append([min(vD), Nu_bin["stop"]])
-poly = np.asarray(poly)
 
 TO_GIGA = 1e-9
 
@@ -174,17 +187,14 @@ ax_add_marker(
     color="black",
     fontsize=marker_fontsize,
 )
-fill_alpha = 0.15
-HESS2_MIRROR_D_M = 28
-ax.fill(poly[:, 0], poly[:, 1] * TO_GIGA, color="black", alpha=fill_alpha)
-ax_add_box_gradient(
-    ax=ax,
-    xlim=[D_DEPTH_OF_FIELD_LIMIT_AT_ALTITUDE_2000M, HESS2_MIRROR_D_M],
-    ylim=np.array([min(poly[:, 1]), max(poly[:, 1])]) * TO_GIGA,
-    alpha_start=fill_alpha,
-    alpha_stop=0.0,
-    color="black",
-    linewidth=0.0,
+ax.pcolormesh(
+    D_bin["edges"],
+    Nu_bin["edges"] * TO_GIGA,
+    1.0
+    - 0.5
+    * (depth_of_field_map * atmo_attenuation_map * airy_resolution_map).T,
+    norm=sebplt.plt_colors.PowerNorm(vmin=0.0, vmax=1.0, gamma=1.0),
+    cmap="Grays_r",
 )
 ax.set_xlim([0.0, D_bin["stop"]])
 ax.set_ylim(Nu_bin["limits"] * TO_GIGA)
