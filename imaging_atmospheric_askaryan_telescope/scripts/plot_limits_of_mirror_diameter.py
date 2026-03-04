@@ -192,7 +192,7 @@ ax.pcolormesh(
     D_bin["edges"],
     Nu_bin["edges"] * TO_GIGA,
     1.0
-    - 0.5
+    - 0.25
     * (depth_of_field_map * atmo_attenuation_map * airy_resolution_map).T,
     norm=sebplt.plt_colors.PowerNorm(vmin=0.0, vmax=1.0, gamma=1.0),
     cmap="Grays_r",
