@@ -90,6 +90,7 @@ for iD in range(D_bin["num"]):
 
 # populate atmospheric attenuation limits
 # ---------------------------------------
+# See liebe1993propagation
 atmo_Nu_start = 25e9
 atmo_Nu_stop = 100e9
 atmo_attenuation_map = np.zeros(shape=(D_bin["num"], Nu_bin["num"]))
