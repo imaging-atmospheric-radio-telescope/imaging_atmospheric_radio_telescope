@@ -61,28 +61,6 @@ freq_labels = [
 # ==================================================
 
 
-def butter_bandpass_filter(E, f_low, f_high, dt, order=4):
-    """
-    Butterworth bandpass filter along the time axis.
-
-    E: (N_pix, N_samples, 3)
-    dt: sampling interval in seconds
-    f_low: low cutoff frequency (Hz)
-    f_high: high cutoff frequency (Hz)
-    order: filter order
-
-    Returns:
-        E_filtered: filtered electric field array
-    """
-    fs = 1 / dt  # Sampling frequency
-    sos = butter(order, [f_low, f_high], btype="bandpass", fs=fs, output="sos")
-    # Apply filter along axis=1 (time axis) for each component
-    E_filtered = np.zeros_like(E)
-    for i in range(3):
-        E_filtered[:, :, i] = sosfilt(sos, E[:, :, i], axis=1)
-    return E_filtered
-
-
 def compute_energy_freqband(E, dt, f_band=None):
     """
     Compute energy per pixel with optional Butterworth bandpass filter.
@@ -91,7 +69,13 @@ def compute_energy_freqband(E, dt, f_band=None):
         feed_horn_energies_eV : array of shape (N_pix,)
     """
     if f_band is not None:
-        E = butter_bandpass_filter(E, f_band[0], f_band[1], dt)
+        E = iaat.signal.butter_bandpass_filter(
+            amplitudes=E,
+            frequency_start=f_band[0],
+            frequency_stop=f_band[1],
+            time_slice_duration=dt,
+            axis=1,
+        )
 
     E2 = E[:, :, 0] ** 2 + E[:, :, 1] ** 2 + E[:, :, 2] ** 2
     P_W = iaat.signal.calculate_antenna_power_W(
