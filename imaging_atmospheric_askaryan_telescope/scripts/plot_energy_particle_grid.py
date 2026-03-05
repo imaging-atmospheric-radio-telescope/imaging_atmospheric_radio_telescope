@@ -5,6 +5,8 @@ import json
 from collections import defaultdict
 
 import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_askaryan_telescope.investigations.airshower_response
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -12,8 +14,6 @@ import matplotlib.gridspec as gridspec
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.cm import ScalarMappable
-
-from scipy.signal import butter, sosfilt
 
 # ==================================================
 # User configuration
@@ -52,54 +52,6 @@ particle_cmaps = {
     "proton": ("Blues", r"$p$"),
     "iron": ("Blues", r"Fe"),
 }
-
-
-# # ==================================================
-# # Electric field amplitude computation
-# # ==================================================
-
-# def compute_energy(fh):
-#     """
-#     Compute energy per pixel.
-
-#     Returns:
-#         E_amp : array of shape (N_pix,)
-#                 energy in eV
-#     """
-#     feed_horn_energies_J = iaat.electric_fields.integrate_power_over_time(
-#         electric_fields = fh,
-#         channel_effective_area_m2 = telescope["mirror"]["area_m2"],
-#         )
-#     feed_horn_energies_eV = feed_horn_energies_J / iaat.signal.ELECTRON_VOLT_J
-
-#     return feed_horn_energies_eV
-
-
-def compute_energy_freqband(E, dt, f_band=None):
-    """
-    Compute energy per pixel with optional Butterworth bandpass filter.
-
-    Returns:
-        feed_horn_energies_eV : array of shape (N_pix,)
-    """
-    if f_band is not None:
-        E = iaat.signal.butter_bandpass_filter(
-            amplitudes=E,
-            frequency_start=f_band[0],
-            frequency_stop=f_band[1],
-            time_slice_duration=dt,
-            axis=1,
-        )
-
-    E2 = E[:, :, 0] ** 2 + E[:, :, 1] ** 2 + E[:, :, 2] ** 2
-    P_W = iaat.signal.calculate_antenna_power_W(
-        effective_area_m2=telescope["mirror"]["area_m2"],
-        electric_field_V_per_m=np.sqrt(E2),
-    )
-    Ene_J = np.sum(P_W, axis=1) * dt
-    feed_horn_energies_eV = Ene_J / iaat.signal.ELECTRON_VOLT_J
-
-    return feed_horn_energies_eV
 
 
 # ==================================================
@@ -155,7 +107,12 @@ for work_dir in work_dirs:
 
     E = fh._x  # (N_pix, N_samples, 3)
 
-    E_amp = compute_energy_freqband(E, dt, f_band=(3.0e9, 10.0e9))
+    E_amp = iaat.investigations.airshower_response.compute_energy_freqband(
+        E=E,
+        dt=dt,
+        f_band=(3.0e9, 10.0e9),
+        antenna_effective_area_m2=telescope["sensor"]["feed_horn_area_m2"],
+    )
 
     data[energy_TeV][particle] = E_amp
 

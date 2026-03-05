@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_askaryan_telescope.investigations.airshower_response
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import LogNorm
 from numpy.fft import rfft, rfftfreq
 import os
-from scipy.signal import butter, sosfilt
 
 RANDOM_SEED = 23
 work_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_1PeV_50K"
@@ -113,39 +113,27 @@ feed_horn_energies_eV = feed_horn_energies_J / iaat.signal.ELECTRON_VOLT_J
 deposited_power = feed_horn_energies_eV
 
 
-def compute_energy_freqband(E, dt, f_band=None):
-    """
-    Compute energy per pixel with optional Butterworth bandpass filter.
-
-    Returns:
-        feed_horn_energies_eV : array of shape (N_pix,)
-    """
-    if f_band is not None:
-        E = iaat.signal.butter_bandpass_filter(
-            amplitudes=E,
-            frequency_start=f_band[0],
-            frequency_stop=f_band[1],
-            time_slice_duration=dt,
-            axis=1,
-        )
-
-    E2 = E[:, :, 0] ** 2 + E[:, :, 1] ** 2 + E[:, :, 2] ** 2
-    P_W = iaat.signal.calculate_antenna_power_W(
-        effective_area_m2=telescope["mirror"]["area_m2"],
-        electric_field_V_per_m=np.sqrt(E2),
-    )
-    Ene_J = np.sum(P_W, axis=1) * dt
-    feed_horn_energies_eV = Ene_J / iaat.signal.ELECTRON_VOLT_J
-
-    return feed_horn_energies_eV
-
-
 dt = fh.time_slice_duration_s  # seconds
 f_band = (7.0e9, 10.0e9)
 E = fh._x  # (N_pix, N_samples, 3)
 
-deposited_power = compute_energy_freqband(E, dt, f_band)
-waveforms = butter_bandpass_filter(E, f_band[0], f_band[1], dt) * V_to_uV
+deposited_power = (
+    iaat.investigations.airshower_response.compute_energy_freqband(
+        E=E,
+        dt=dt,
+        f_band=f_band,
+        antenna_effective_area_m2=telescope["sensor"]["feed_horn_area_m2"],
+    )
+)
+waveforms = (
+    iaat.signal.butter_bandpass_filter(
+        amplitudes=E,
+        frequency_start=f_band[0],
+        frequency_stop=f_band[1],
+        time_slice_duration=dt,
+    )
+    * V_to_uV
+)
 
 
 # --------------------------------------------------
