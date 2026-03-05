@@ -47,12 +47,7 @@ cbar_label_fs = 16
 # ==================================================
 # Frequency bands for gamma-ray filtering
 # ==================================================
-freq_bands = [
-    (0.3e9, 1.0e9),
-    (1.0e9, 3.0e9),
-    (3.0e9, 7.0e9),
-    (7.0e9, 12.0e9)
-]
+freq_bands = [(0.3e9, 1.0e9), (1.0e9, 3.0e9), (3.0e9, 7.0e9), (7.0e9, 12.0e9)]
 freq_labels = [
     "0.3–1 GHz",
     "1–3 GHz",
@@ -69,35 +64,36 @@ freq_labels = [
 def butter_bandpass_filter(E, f_low, f_high, dt, order=4):
     """
     Butterworth bandpass filter along the time axis.
-    
+
     E: (N_pix, N_samples, 3)
     dt: sampling interval in seconds
     f_low: low cutoff frequency (Hz)
     f_high: high cutoff frequency (Hz)
     order: filter order
-    
+
     Returns:
         E_filtered: filtered electric field array
     """
     fs = 1 / dt  # Sampling frequency
-    sos = butter(order, [f_low, f_high], btype='bandpass', fs=fs, output='sos')
+    sos = butter(order, [f_low, f_high], btype="bandpass", fs=fs, output="sos")
     # Apply filter along axis=1 (time axis) for each component
     E_filtered = np.zeros_like(E)
     for i in range(3):
         E_filtered[:, :, i] = sosfilt(sos, E[:, :, i], axis=1)
     return E_filtered
 
+
 def compute_energy_freqband(E, dt, f_band=None):
     """
     Compute energy per pixel with optional Butterworth bandpass filter.
-    
+
     Returns:
         feed_horn_energies_eV : array of shape (N_pix,)
     """
     if f_band is not None:
         E = butter_bandpass_filter(E, f_band[0], f_band[1], dt)
 
-    E2 = E[:, :, 0]**2 + E[:, :, 1]**2 + E[:, :, 2]**2
+    E2 = E[:, :, 0] ** 2 + E[:, :, 1] ** 2 + E[:, :, 2] ** 2
     P_W = iaat.signal.calculate_antenna_power_W(
         effective_area_m2=telescope["mirror"]["area_m2"],
         electric_field_V_per_m=np.sqrt(E2),
@@ -106,6 +102,7 @@ def compute_energy_freqband(E, dt, f_band=None):
     feed_horn_energies_eV = Ene_J / iaat.signal.ELECTRON_VOLT_J
 
     return feed_horn_energies_eV
+
 
 # ==================================================
 # Telescope & geometry setup
@@ -117,8 +114,7 @@ config = iaat.investigations.point_spread_function.utils.read_config(
 )
 
 telescope, timing, _ = (
-    iaat.investigations.point_spread_function.utils
-    .make_telescope_timing_and_site(
+    iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
         work_dir=psf_investigation_dir,
         config=config,
         telescope_key=telescope_key,
@@ -134,7 +130,9 @@ polygons = [edge_vertices[idx, :2] for idx in edge_map]
 # ==================================================
 # Load gamma-ray simulations and compute filtered amplitudes
 # ==================================================
-data_gamma = defaultdict(dict)  # data_gamma[energy_TeV][freq_band_index] = E_amp_array
+data_gamma = defaultdict(
+    dict
+)  # data_gamma[energy_TeV][freq_band_index] = E_amp_array
 
 for work_dir in work_dirs:
     with open(os.path.join(work_dir, "source_config.json"), "r") as f:
@@ -155,7 +153,7 @@ for work_dir in work_dirs:
 
     E = fh._x  # (N_pix, N_samples, 3)
     for i_band, f_band in enumerate(freq_bands):
-        E_amp = compute_energy_freqband(E, dt, f_band = f_band)
+        E_amp = compute_energy_freqband(E, dt, f_band=f_band)
         data_gamma[energy_TeV][i_band] = E_amp
 
 energies = sorted(data_gamma.keys())
@@ -168,8 +166,8 @@ n_cols = len(freq_bands)
 fig = plt.figure(figsize=(4.8 * n_cols, 3.5 * n_rows))
 gs = gridspec.GridSpec(
     n_rows,
-    n_cols, 
-    wspace = -0.4, 
+    n_cols,
+    wspace=-0.4,
     hspace=0.1,
 )
 
@@ -210,9 +208,9 @@ for i, energy in enumerate(energies):
             ax.set_title(freq_labels[j], fontsize=label_fs)
         if j == 0:
             ax.set_ylabel(f"{energy:.0f} TeV", fontsize=label_fs)
-        if j == n_cols-1:
+        if j == n_cols - 1:
             cbar.set_label(r"Energy / eV", fontsize=cbar_label_fs)
-        
+
 
 # ==================================================
 # Save figure

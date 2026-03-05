@@ -9,10 +9,10 @@ import os
 from scipy.signal import butter, sosfilt
 
 RANDOM_SEED = 23
-work_dir = '/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_1PeV_50K'
-psf_investigation_dir = '/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/2025-06-03-psf'
+work_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_1PeV_50K"
+psf_investigation_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/2025-06-03-psf"
 
-telescope_key = 'large_size_telescope'
+telescope_key = "large_size_telescope"
 source_config = iaat.production.radio_from_airshower.make_config()
 source_config = {}
 source_config["__type__"] = "airshower"
@@ -27,15 +27,19 @@ source_config["primary_particle"] = {
 }
 source_config["corsika_coreas_executable_path"] = None
 
-site = iaat.sites.init('karlsruhe')
+site = iaat.sites.init("karlsruhe")
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_investigation_dir)
+config = iaat.investigations.point_spread_function.utils.read_config(
+    psf_investigation_dir
+)
 
-telescope, timing, _ = iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
-    work_dir=psf_investigation_dir,
-    config=config,
-    telescope_key=telescope_key,
-    sensor_distance_m=None,
+telescope, timing, _ = (
+    iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        work_dir=psf_investigation_dir,
+        config=config,
+        telescope_key=telescope_key,
+        sensor_distance_m=None,
+    )
 )
 
 ecsf = iaat.calibration.read_energy_conservation_scale_factor(
@@ -49,16 +53,16 @@ ecsf = iaat.calibration.read_energy_conservation_scale_factor(
 mirror_to_camera_energy_scale_factor = ecsf["fitted_energy_scale_factor"]
 
 iaat.production.simulate_telescope_response(
-        out_dir=work_dir,
-        source_config=source_config,
-        site=site,
-        telescope=telescope,
-        timing=timing,
-        thermal_noise_random_seed=RANDOM_SEED + 1,
-        readout_random_seed=RANDOM_SEED + 2,
-        camera_lnb_random_seed=RANDOM_SEED + 3,
-        mirror_to_camera_energy_scale_factor=mirror_to_camera_energy_scale_factor,
-    )
+    out_dir=work_dir,
+    source_config=source_config,
+    site=site,
+    telescope=telescope,
+    timing=timing,
+    thermal_noise_random_seed=RANDOM_SEED + 1,
+    readout_random_seed=RANDOM_SEED + 2,
+    camera_lnb_random_seed=RANDOM_SEED + 3,
+    mirror_to_camera_energy_scale_factor=mirror_to_camera_energy_scale_factor,
+)
 
 
 # --------------------------------------------------
@@ -66,7 +70,9 @@ iaat.production.simulate_telescope_response(
 # --------------------------------------------------
 
 fh = iaat.time_series.read(
-    os.path.join(work_dir, "feed_horns/electric_fields.tar") #feed_horns #lnb_signal_output #lnb_signal_and_noise_output
+    os.path.join(
+        work_dir, "feed_horns/electric_fields.tar"
+    )  # feed_horns #lnb_signal_output #lnb_signal_and_noise_output
 )
 
 positions = telescope["sensor"]["feed_horn_positions_m"]
@@ -77,7 +83,7 @@ edge_vertices = telescope["sensor"]["camera"]["feed_horn_edge_vertices_m"]
 V_to_uV = 1e6
 s_to_ns = 1e9
 
-waveforms = fh._x * V_to_uV   # shape: (N_pixels, N_samples, 3)   # µV/m
+waveforms = fh._x * V_to_uV  # shape: (N_pixels, N_samples, 3)   # µV/m
 time_axis = fh.make_time_bin_edges()[:-1] * s_to_ns
 
 xpos = positions[:, 0]
@@ -99,45 +105,47 @@ sum_xyz = np.sqrt(sum_x**2 + sum_y**2 + sum_z**2)
 # --------------------------------------------------
 
 feed_horn_energies_J = iaat.electric_fields.integrate_power_over_time(
-    electric_fields = fh,
-    channel_effective_area_m2 = telescope["mirror"]["area_m2"],
-    )
+    electric_fields=fh,
+    channel_effective_area_m2=telescope["mirror"]["area_m2"],
+)
 feed_horn_energies_eV = feed_horn_energies_J / iaat.signal.ELECTRON_VOLT_J
 
 deposited_power = feed_horn_energies_eV
 
+
 def butter_bandpass_filter(E, f_low, f_high, dt, order=4):
     """
     Butterworth bandpass filter along the time axis.
-    
+
     E: (N_pix, N_samples, 3)
     dt: sampling interval in seconds
     f_low: low cutoff frequency (Hz)
     f_high: high cutoff frequency (Hz)
     order: filter order
-    
+
     Returns:
         E_filtered: filtered electric field array
     """
     fs = 1 / dt  # Sampling frequency
-    sos = butter(order, [f_low, f_high], btype='bandpass', fs=fs, output='sos')
+    sos = butter(order, [f_low, f_high], btype="bandpass", fs=fs, output="sos")
     # Apply filter along axis=1 (time axis) for each component
     E_filtered = np.zeros_like(E)
     for i in range(3):
         E_filtered[:, :, i] = sosfilt(sos, E[:, :, i], axis=1)
     return E_filtered
 
+
 def compute_energy_freqband(E, dt, f_band=None):
     """
     Compute energy per pixel with optional Butterworth bandpass filter.
-    
+
     Returns:
         feed_horn_energies_eV : array of shape (N_pix,)
     """
     if f_band is not None:
         E = butter_bandpass_filter(E, f_band[0], f_band[1], dt)
 
-    E2 = E[:, :, 0]**2 + E[:, :, 1]**2 + E[:, :, 2]**2
+    E2 = E[:, :, 0] ** 2 + E[:, :, 1] ** 2 + E[:, :, 2] ** 2
     P_W = iaat.signal.calculate_antenna_power_W(
         effective_area_m2=telescope["mirror"]["area_m2"],
         electric_field_V_per_m=np.sqrt(E2),
@@ -147,27 +155,25 @@ def compute_energy_freqband(E, dt, f_band=None):
 
     return feed_horn_energies_eV
 
+
 dt = fh.time_slice_duration_s  # seconds
 f_band = (7.0e9, 10.0e9)
 E = fh._x  # (N_pix, N_samples, 3)
 
 deposited_power = compute_energy_freqband(E, dt, f_band)
-waveforms = butter_bandpass_filter(E, f_band[0], f_band[1], dt) * V_to_uV 
+waveforms = butter_bandpass_filter(E, f_band[0], f_band[1], dt) * V_to_uV
 
 
 # --------------------------------------------------
 # Build hexagon polygons
 # --------------------------------------------------
 
-polygons = [
-    edge_vertices[idx, :2]
-    for idx in edge_map
-]
+polygons = [edge_vertices[idx, :2] for idx in edge_map]
 
 plots = [
-    (sum_x,   "Peak waveform – X pol"),
-    (sum_y,   "Peak waveform – Y pol"),
-    (sum_z,   "Peak waveform – Z pol"),
+    (sum_x, "Peak waveform – X pol"),
+    (sum_y, "Peak waveform – Y pol"),
+    (sum_z, "Peak waveform – Z pol"),
     (deposited_power, "Deposited power"),
 ]
 
@@ -192,7 +198,7 @@ for ax, (data, title) in zip(axes.flat, plots):
         cmap="Blues",
         edgecolors="k",
         linewidths=0.2,
-        norm=norm 
+        norm=norm,
     )
 
     ax.add_collection(coll)
@@ -205,14 +211,14 @@ for ax, (data, title) in zip(axes.flat, plots):
 
     # Add colorbar
     if title == "Deposited power":
-        fig.colorbar(coll, ax=ax, label=r"Energy / eV")#r"Deposited power [W/m$^{2}$]")
+        fig.colorbar(
+            coll, ax=ax, label=r"Energy / eV"
+        )  # r"Deposited power [W/m$^{2}$]")
     else:
         fig.colorbar(coll, ax=ax, label=r"Peak electric field [$\mu$V/m]")
 
 plt.savefig(
-    f"{work_dir}/summed_waveforms_per_pixel.png",
-    dpi=300,
-    bbox_inches="tight"
+    f"{work_dir}/summed_waveforms_per_pixel.png", dpi=300, bbox_inches="tight"
 )
 plt.close()
 
@@ -231,8 +237,7 @@ else:
     raise ValueError("Deposited power not found in plots")
 
 norm = LogNorm(
-    vmin=deposited_power[deposited_power > 0].min(),
-    vmax=deposited_power.max()
+    vmin=deposited_power[deposited_power > 0].min(), vmax=deposited_power.max()
 )
 
 coll = PolyCollection(
@@ -241,7 +246,7 @@ coll = PolyCollection(
     cmap="Blues",
     edgecolors="k",
     linewidths=0.2,
-    norm=norm
+    norm=norm,
 )
 
 ax.add_collection(coll)
@@ -263,14 +268,8 @@ cbar = fig.colorbar(coll, ax=ax)
 cbar.set_label(r"Energy / eV", fontsize=cbar_label_fs)
 cbar.ax.tick_params(labelsize=tick_fs)
 
-plt.savefig(
-    f"{work_dir}/deposited_power.png",
-    dpi=300,
-    bbox_inches="tight"
-)
+plt.savefig(f"{work_dir}/deposited_power.png", dpi=300, bbox_inches="tight")
 plt.close()
-
-
 
 
 # --------------------------------------------------
@@ -290,8 +289,8 @@ print("Peak amplitude [V/m]:", sum_xyz[idx_max])
 wf = waveforms[idx_max]
 
 wf_mag = np.sqrt(
-    wf[:, 0]**2 +
-    wf[:, 1]**2 #+
+    wf[:, 0] ** 2
+    + wf[:, 1] ** 2  # +
     # wf[:, 2]**2
 )
 
@@ -332,13 +331,9 @@ for i_pol, label in enumerate(["x", "y", "z"]):
     fft_vals = rfft(wf[:, i_pol])
 
     # One-sided power spectral density
-    psd_pol = (np.abs(fft_vals)**2) / (Z0 * fs * n)
+    psd_pol = (np.abs(fft_vals) ** 2) / (Z0 * fs * n)
 
     psd[label] = psd_pol
-
-
-
-
 
 
 # --------------------------------------------------
@@ -359,7 +354,7 @@ axes[0].set_xlim([110, 130])
 axes[0].set_xlabel("Time [ns]", fontsize=label_fs)
 axes[0].set_ylabel(r"Electric field [$\mu$V/m]", fontsize=label_fs)
 axes[0].legend(fontsize=legend_fs)
-axes[0].tick_params(axis='both', which='major', labelsize=tick_fs)
+axes[0].tick_params(axis="both", which="major", labelsize=tick_fs)
 
 # ---- Frequency domain (individual polarizations) ----
 axes[1].plot(freqs, psd["x"], label=r"$E_x$")
@@ -370,13 +365,11 @@ axes[1].set_ylabel(r"PSD [W m$^{-2}$  Hz$^{-1}$]", fontsize=label_fs)
 axes[1].set_xscale("log")
 axes[1].set_yscale("log")
 axes[1].legend(fontsize=legend_fs)
-axes[1].tick_params(axis='both', which='major', labelsize=tick_fs)
+axes[1].tick_params(axis="both", which="major", labelsize=tick_fs)
 
 plt.savefig(
     f"{work_dir}/brightest_pixel_waveform_and_spectrum.png",
     dpi=300,
-    bbox_inches="tight"
+    bbox_inches="tight",
 )
 plt.close()
-
-

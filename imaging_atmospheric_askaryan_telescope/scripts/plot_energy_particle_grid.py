@@ -48,9 +48,9 @@ cbar_label_fs = 16
 particle_order = ["gamma", "proton", "iron"]
 
 particle_cmaps = {
-    "gamma":  ("Blues", r"$\gamma$"),
+    "gamma": ("Blues", r"$\gamma$"),
     "proton": ("Blues", r"$p$"),
-    "iron":   ("Blues", r"Fe"),
+    "iron": ("Blues", r"Fe"),
 }
 
 
@@ -78,35 +78,36 @@ particle_cmaps = {
 def butter_bandpass_filter(E, f_low, f_high, dt, order=4):
     """
     Butterworth bandpass filter along the time axis.
-    
+
     E: (N_pix, N_samples, 3)
     dt: sampling interval in seconds
     f_low: low cutoff frequency (Hz)
     f_high: high cutoff frequency (Hz)
     order: filter order
-    
+
     Returns:
         E_filtered: filtered electric field array
     """
     fs = 1 / dt  # Sampling frequency
-    sos = butter(order, [f_low, f_high], btype='bandpass', fs=fs, output='sos')
+    sos = butter(order, [f_low, f_high], btype="bandpass", fs=fs, output="sos")
     # Apply filter along axis=1 (time axis) for each component
     E_filtered = np.zeros_like(E)
     for i in range(3):
         E_filtered[:, :, i] = sosfilt(sos, E[:, :, i], axis=1)
     return E_filtered
 
+
 def compute_energy_freqband(E, dt, f_band=None):
     """
     Compute energy per pixel with optional Butterworth bandpass filter.
-    
+
     Returns:
         feed_horn_energies_eV : array of shape (N_pix,)
     """
     if f_band is not None:
         E = butter_bandpass_filter(E, f_band[0], f_band[1], dt)
 
-    E2 = E[:, :, 0]**2 + E[:, :, 1]**2 + E[:, :, 2]**2
+    E2 = E[:, :, 0] ** 2 + E[:, :, 1] ** 2 + E[:, :, 2] ** 2
     P_W = iaat.signal.calculate_antenna_power_W(
         effective_area_m2=telescope["mirror"]["area_m2"],
         electric_field_V_per_m=np.sqrt(E2),
@@ -128,8 +129,7 @@ config = iaat.investigations.point_spread_function.utils.read_config(
 )
 
 telescope, timing, _ = (
-    iaat.investigations.point_spread_function.utils
-    .make_telescope_timing_and_site(
+    iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
         work_dir=psf_investigation_dir,
         config=config,
         telescope_key=telescope_key,
@@ -140,10 +140,7 @@ telescope, timing, _ = (
 edge_map = telescope["sensor"]["camera"]["feed_horn_edge_mapping"]
 edge_vertices = telescope["sensor"]["camera"]["feed_horn_edge_vertices_m"]
 
-polygons = [
-    edge_vertices[idx, :2]
-    for idx in edge_map
-]
+polygons = [edge_vertices[idx, :2] for idx in edge_map]
 
 
 # ==================================================
@@ -164,12 +161,8 @@ for work_dir in work_dirs:
     energy_GeV = source_config["primary_particle"]["energy_GeV"]
     energy_TeV = energy_GeV / 1e3
 
-
     fh = iaat.time_series.read(
-        os.path.join(
-            work_dir,
-            "feed_horns/electric_fields.tar" 
-        )
+        os.path.join(work_dir, "feed_horns/electric_fields.tar")
     )
 
     # E_amp = compute_energy(fh)
@@ -181,7 +174,7 @@ for work_dir in work_dirs:
     E_amp = compute_energy_freqband(E, dt, f_band=(3.0e9, 10.0e9))
 
     data[energy_TeV][particle] = E_amp
-    
+
     energies.add(energy_TeV)
 
 energy_list = sorted(energies)
@@ -198,21 +191,17 @@ n_cols = len(particle_order)
 fig = plt.figure(figsize=(4.8 * n_cols, 3.5 * n_rows))
 gs = gridspec.GridSpec(
     n_rows,
-    n_cols, 
-    wspace = -0.2, 
+    n_cols,
+    wspace=-0.2,
     hspace=0.1,
 )
 
 
-
 for i, energy in enumerate(energy_list):
 
-    row_E = np.concatenate([
-        data[energy][p]
-        for p in particle_order
-        if p in data[energy]
-    ])
-
+    row_E = np.concatenate(
+        [data[energy][p] for p in particle_order if p in data[energy]]
+    )
 
     for j, particle in enumerate(particle_order):
 
@@ -255,10 +244,8 @@ for i, energy in enumerate(energy_list):
         if j == 0:
             ax.set_ylabel(f"{energy:.0f} TeV", fontsize=label_fs)
 
-        if j == n_cols-1:
+        if j == n_cols - 1:
             cbar.set_label(r"Energy / eV", fontsize=cbar_label_fs)
-
-
 
 
 # ==================================================
@@ -268,6 +255,6 @@ for i, energy in enumerate(energy_list):
 plt.savefig(
     "electric_field_amplitude_energy_particle_grid.png",
     dpi=300,
-    bbox_inches="tight"
+    bbox_inches="tight",
 )
 plt.close()
