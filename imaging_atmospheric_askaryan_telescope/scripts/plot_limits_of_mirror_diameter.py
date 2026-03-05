@@ -138,6 +138,11 @@ vD, vNu = valid_airy_Nus(
 
 TO_GIGA = 1e-9
 
+cmap = sebplt.plt_colors.LinearSegmentedColormap.from_list(
+    "blue2white",
+    ["blue", "white"],
+)
+
 fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 1.5})
 ax = sebplt.add_axes(fig=fig, span=[0.15, 0.15, 0.8, 0.8])
 ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1, which="both")
@@ -192,10 +197,10 @@ ax.pcolormesh(
     D_bin["edges"],
     Nu_bin["edges"] * TO_GIGA,
     1.0
-    - 0.25
+    - 0.33
     * (depth_of_field_map * atmo_attenuation_map * airy_resolution_map).T,
     norm=sebplt.plt_colors.PowerNorm(vmin=0.0, vmax=1.0, gamma=1.0),
-    cmap="Grays_r",
+    cmap=cmap,
 )
 ax.set_xlim([0.0, D_bin["stop"]])
 ax.set_ylim(Nu_bin["limits"] * TO_GIGA)
