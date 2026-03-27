@@ -61,8 +61,8 @@ setuptools.setup(
         "thin_lens>=0.0.3",
         "optic_object_wavefronts>=1.3.17",
     ],
-    license="MIT",
     classifiers=[
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
         "Natural Language :: English",
