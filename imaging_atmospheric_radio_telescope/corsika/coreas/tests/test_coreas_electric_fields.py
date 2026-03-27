@@ -5,7 +5,7 @@ import os
 
 
 def test_write_read():
-    with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="iart_") as tmp:
         for seed in range(5):
             raw = iart.corsika.coreas.coreas_electric_fields.init_random(
                 seed=seed

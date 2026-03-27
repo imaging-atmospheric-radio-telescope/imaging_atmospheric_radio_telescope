@@ -27,7 +27,7 @@ def test_simulate_mirror_electric_fields_manual():
         "time_upper_boundary_s": +100e3 / SPEED_OF_LIGHT_M_PER_S,
     }
 
-    with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="iart_") as tmp:
         iart.production.radio_from_airshower._simulate_mirror_electric_fields_manual(
             out_dir=tmp,
             event_id=event_id,

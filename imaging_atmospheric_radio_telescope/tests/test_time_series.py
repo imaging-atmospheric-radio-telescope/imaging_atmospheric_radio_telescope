@@ -5,7 +5,7 @@ import tempfile
 
 
 def test_write_read():
-    with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="iart_") as tmp:
         path = os.path.join(tmp, f"E.ts.tar")
 
         for seed in range(10):
