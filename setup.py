@@ -60,7 +60,7 @@ setuptools.setup(
         "solid_angle_utils>=0.1.2",
         "thin_lens>=0.0.3",
         "optic_object_wavefronts>=1.3.17",
-        "astropy>=7.2.0",
+        "astropy",
     ],
     classifiers=[
         "License :: OSI Approved :: MIT License",
