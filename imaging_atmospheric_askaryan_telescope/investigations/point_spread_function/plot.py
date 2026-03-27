@@ -164,3 +164,50 @@ def plot_feed_horn_scatter_centers(camera, energy_feed_horns_scatter_eV, path):
 
     fig.savefig(path)
     sebplt.close(fig)
+
+
+def ax_add_fov_marker(ax, x):
+    ax.axvline(x, linestyle="--", color="black", alpha=0.25)
+
+
+def ax_square_format(ax):
+    xt_deg2 = np.array(ax.get_xticks())
+    xticklabels = []
+    for xx_deg2 in xt_deg2:
+        if xx_deg2 >= 0.0:
+            xtl = r"{:.2f}".format(np.sqrt(xx_deg2)) + r"$^{2}$"
+        else:
+            xtl = r""
+        xticklabels.append(xtl)
+
+    ax.set_xticks(ax.get_xticks())  # to get rid of UserWarning
+    ax.set_xticklabels(xticklabels)
+
+
+def ax_blank_format(ax):
+    xt = np.array(ax.get_xticks())
+    xticklabels = ["" for xx in xt]
+    ax.set_xticks(ax.get_xticks())  # to get rid of UserWarning
+    ax.set_xticklabels(xticklabels)
+
+
+def ax_add_uncertain_bins(ax, x_bin_edges, y, y_std, weights, **kwargs):
+    _num_bins = len(x_bin_edges) - 1
+
+    for ibin in range(_num_bins):
+        xx_start = x_bin_edges[ibin]
+        xx_stop = x_bin_edges[ibin + 1]
+
+        WWW = 10
+        for i in range(WWW):
+            www = (i + 1) / WWW
+
+            yy_start = y[ibin] - www * 0.5 * y_std[ibin]
+            yy_stop = y[ibin] + www * 0.5 * y_std[ibin]
+            ax.fill(
+                [xx_start, xx_stop, xx_stop, xx_start],
+                [yy_start, yy_start, yy_stop, yy_stop],
+                alpha=weights[ibin] / WWW,
+                linewidth=0.0,
+                **kwargs,
+            )

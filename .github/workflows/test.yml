@@ -1,6 +1,6 @@
 name: test
 
-on: [push]
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.11"]
 
     steps:
       - uses: actions/checkout@v3
@@ -24,4 +24,4 @@ jobs:
           python -m pip install .
       - name: Test with pytest
         run: |
-          pytest .
+          pytest -m "not requires_corsika" .

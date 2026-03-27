@@ -128,7 +128,9 @@ def uninstall(build_dir=None):
     print("Uninstall CORSIKA CoREAS ... Done")
 
 
-def install(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
+def install(
+    build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None
+):
     """
     Install CORSIKA CoREAS for the
     'imaging atmospheric askaryan telescope' package.
@@ -208,11 +210,11 @@ def install(build_dir=None, corsika_tar_gz_path=None, corsika_config_path=None):
     for atmprof in glob.glob("bernlohr/atmprof*"):
         shutil.copy(atmprof, "run")
 
-
     if os.path.exists(get_corsika_executable_path()):
         print("Building CORSIKA CoREAS ... SUCCESS.")
     else:
         print("Building CORSIKA CoREAS ... FAIL.")
+
 
 def is_expected_version(corsika_tar_gz_path):
     """

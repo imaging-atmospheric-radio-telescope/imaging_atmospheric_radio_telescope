@@ -10,6 +10,8 @@ import json_utils
 import os
 import copy
 import spherical_coordinates
+import binning_utils
+import pandas
 
 
 def serial_pool_if_None(pool):
@@ -153,3 +155,79 @@ def make_telescope_like_other_but_with_region_of_interest_camera(
     ]["watershed"] = 1.0
 
     return tele
+
+
+def make_feed_horns_signal_mask(feed_horn_positions_m, x_m, y_m, r_m):
+    mask = np.zeros(feed_horn_positions_m.shape[0], dtype=bool)
+    for i in range(feed_horn_positions_m.shape[0]):
+        fx, fy, _ = feed_horn_positions_m[i]
+        d = np.hypot((fx - x_m), (fy - y_m))
+        if d <= r_m:
+            mask[i] = True
+    return mask
+
+
+def histogram_p50_s68(x, y, edges):
+    num = len(edges) - 1
+    p50 = np.zeros(num)
+    s68 = np.zeros(num)
+    cnt = np.zeros(num)
+
+    for i in range(num):
+        start = edges[i]
+        stop = edges[i + 1]
+        mask = np.logical_and(x >= start, x < stop)
+        cnt[i] = np.sum(mask)
+        if cnt[i] > 0:
+            p50[i] = np.percentile(y[mask], 50)
+            s68[i] = percentile_spread(y[mask], 68)
+        else:
+            p50[i] = float("nan")
+            s68[i] = float("nan")
+    return {"p50": p50, "s68": s68, "cnt": cnt}
+
+
+def percentile_spread(x, p):
+    p_half = p / 2
+    x_start = np.percentile(x, 50 - p_half)
+    x_stop = np.percentile(x, 50 + p_half)
+    return x_stop - x_start
+
+
+def fit_poly1d(x, y):
+    """
+    Fiting:
+
+    y = a*x + b
+
+    Returns
+    -------
+    [a, b], [a_std, b_std]
+    """
+    if len(x) > 2:
+        ab, ab_cov = np.polyfit(x=x, y=y, deg=1, cov=True)
+        ab_std = np.sqrt(np.diag(ab_cov))
+    else:
+        ab = np.polyfit(x=x, y=y, deg=1, cov=False)
+        ab_std = np.array([float("nan"), float("nan")])
+    return ab, ab_std
+
+
+def guess_off_axis_binning(num_samples, half_angle):
+    off_num_bins = int(np.sqrt(0.5 * num_samples))
+    off_num_bins = np.max([3, off_num_bins])
+    oa_bin = binning_utils.Binning(
+        bin_edges=np.linspace(
+            0.0,
+            half_angle**2,
+            off_num_bins + 1,
+        )
+        ** 0.5
+    )
+    return oa_bin
+
+
+def read_jsonl_reports_into_recarray(path):
+    reports = json_utils.lines.read(path)
+    df = pandas.DataFrame.from_records(reports)
+    return df.to_records(index=False)

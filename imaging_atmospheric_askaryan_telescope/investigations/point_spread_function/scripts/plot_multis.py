@@ -52,12 +52,13 @@ for telescope_key in config["stars"]["telescopes"]:
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
-
-    all_response_paths = glob.glob(
-        os.path.join(psf_dir, "multis", telescope_key, "*")
+    all_response_paths = iaat.utils.filter_integer_filenames(
+        paths=glob.glob(os.path.join(psf_dir, "multis", telescope_key, "*"))
     )
+    all_response_paths = sorted(all_response_paths)
+    num_choice = np.min([12, len(all_response_paths)])
     response_paths_choices = prng.choice(
-        len(all_response_paths), size=12, replace=False
+        len(all_response_paths), size=num_choice, replace=False
     )
     response_paths = []
     for response_paths_choice in response_paths_choices:

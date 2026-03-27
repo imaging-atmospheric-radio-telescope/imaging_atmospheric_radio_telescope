@@ -3,6 +3,8 @@ How strong is the electric field seen by a comercial lnb of the ASTRA-universal
 satellite?
 """
 
+import numpy as np
+
 # Estimate the max. areal power density ASTRA creates on earth
 vacuum_impedance_ohm = 120 * np.pi
 speed_of_light_m_per_s = 299792458.0

@@ -15,7 +15,7 @@ from . import theory
 from . import lownoiseblock
 
 
-def make_mirror_scatter_center_positions(
+def make_mirror_scatter_center_positions_rectangular(
     random_seed,
     focal_length_m,
     outer_radius_m,
@@ -83,14 +83,18 @@ def make_mirror_scatter_center_positions(
 
 
 def make_mirror_scatter_center_positions_fibonacci(
+    random_seed,
     focal_length_m,
     outer_radius_m,
     inner_radius_m,
     scatter_center_areal_density_per_m2,
+    random_weight=0.5,
 ):
     """
     Parameters
     ----------
+    random_seed : int
+        Seed for probe positions.
     focal_length_m : float
         Focal-length of imaging reflector.
     outer_radius_m : float
@@ -105,6 +109,11 @@ def make_mirror_scatter_center_positions_fibonacci(
     assert inner_radius_m > 0.0
     assert outer_radius_m > inner_radius_m
     assert scatter_center_areal_density_per_m2 > 0.0
+    assert random_weight > 0.0
+
+    prng = np.random.Generator(np.random.PCG64(random_seed))
+    s_m = 1.0 / np.sqrt(scatter_center_areal_density_per_m2)
+    rs_m = s_m * (1 / 2) * random_weight
 
     A_outer_m2 = np.pi * outer_radius_m**2
     A_inner_m2 = np.pi * inner_radius_m**2
@@ -112,25 +121,38 @@ def make_mirror_scatter_center_positions_fibonacci(
 
     size = int(np.ceil(A_outer_m2 * scatter_center_areal_density_per_m2))
 
-    _xyz = make_fibonacci_disk_for_imaging_mirror(
+    fibo_xyz_m = make_fibonacci_disk_for_imaging_mirror(
         outer_radius_m=outer_radius_m, focal_length_m=focal_length_m, size=size
     )
 
     xyz_m = []
     r_m = []
-    for i in range(_xyz.shape[0]):
-        _r_m = np.sqrt(_xyz[i, 0] ** 2 + _xyz[i, 1] ** 2)
-        if _r_m >= inner_radius_m and _r_m <= outer_radius_m:
-            xyz_m.append(_xyz[i])
-            r_m.append(_r_m)
+    for i in range(fibo_xyz_m.shape[0]):
+        dxx, dyy = draw_random_point_in_disk(
+            prng=prng, radius_inner=0.0, radius_outer=rs_m
+        )
+        xx = fibo_xyz_m[i, 0] + dxx
+        yy = fibo_xyz_m[i, 1] + dyy
+        rr = np.sqrt(xx**2 + yy**2)
+        if rr >= inner_radius_m and rr <= outer_radius_m:
+            zz = utils.make_parabola_surface_height_m(
+                distance_to_optical_axis_m=rr,
+                focal_length_m=focal_length_m,
+            )
+            print(xx, yy, zz)
+            xyz_m.append([xx, yy, zz])
     xyz_m = np.array(xyz_m)
-    r_m = np.array(r_m)
 
-    xyz_m[:, 2] = utils.make_parabola_surface_height_m(
-        distance_to_optical_axis_m=r_m,
-        focal_length_m=focal_length_m,
-    )
     return xyz_m
+
+
+def draw_random_point_in_disk(prng, radius_inner, radius_outer):
+    azimuth = prng.uniform(low=0, high=2 * np.pi)
+    u = prng.uniform(low=0, high=1)
+    rr = np.sqrt(radius_inner**2 + (radius_outer**2 - radius_inner**2) * u)
+    x = rr * np.cos(azimuth)
+    y = rr * np.sin(azimuth)
+    return x, y
 
 
 def make_fibonacci_disk_for_imaging_mirror(
@@ -152,6 +174,65 @@ def make_fibonacci_disk_for_imaging_mirror(
     return xyz
 
 
+def make_mirror_scatter_center_positions_fully_random(
+    random_seed,
+    focal_length_m,
+    outer_radius_m,
+    inner_radius_m,
+    scatter_center_areal_density_per_m2,
+    uniformity=0.5,
+):
+    assert focal_length_m > 0.0
+    assert outer_radius_m > 0.0
+    assert inner_radius_m > 0.0
+    assert outer_radius_m > inner_radius_m
+    assert scatter_center_areal_density_per_m2 > 0.0
+    assert 0.0 < uniformity < 0.9
+
+    prng = np.random.Generator(np.random.PCG64(random_seed))
+
+    A_outer_m2 = np.pi * outer_radius_m**2
+    A_inner_m2 = np.pi * inner_radius_m**2
+    A_mirror_m2 = A_outer_m2 - A_inner_m2
+
+    M = int(np.ceil(A_mirror_m2 * scatter_center_areal_density_per_m2))
+    ds = 1.0 / np.sqrt(scatter_center_areal_density_per_m2)
+    rs = ds / 2 * (1.0 + uniformity)
+
+    xyz_m = np.zeros(shape=(M, 3))
+    m = 0
+    while m < M:
+        tree = spatial.cKDTree(xyz_m[0:m, :])
+
+        xx, yy = draw_random_point_in_disk(
+            prng=prng,
+            radius_inner=inner_radius_m,
+            radius_outer=outer_radius_m,
+        )
+        rr = np.sqrt(xx**2 + yy**2)
+        zz = utils.make_parabola_surface_height_m(
+            distance_to_optical_axis_m=rr,
+            focal_length_m=focal_length_m,
+        )
+        point = np.array([xx, yy, zz])
+
+        neighbors = tree.query_ball_point(x=point, r=rs)
+        if len(neighbors) == 0:
+            xyz_m[m, :] = point
+            m += 1
+
+    return xyz_m
+
+
+def compute_relative_Huygens_weights_propotional_to_energy(
+    telescope_matrix_distances_m,
+):
+    Area_Huygens = 4 * np.pi * telescope_matrix_distances_m**2
+    rel_Area_Huygens = Area_Huygens / np.mean(Area_Huygens)
+    rel_weights_Huygens = 1.0 / rel_Area_Huygens
+    return rel_weights_Huygens
+
+
 def make_mirror(
     random_seed,
     focal_length_m,
@@ -166,7 +247,8 @@ def make_mirror(
     imre["diameter_m"] = 2.0 * outer_radius_m
     imre["area_m2"] = np.pi * (outer_radius_m**2 - inner_radius_m**2)
     imre["scatter_center_positions_m"] = (
-        make_mirror_scatter_center_positions_fibonacci(
+        make_mirror_scatter_center_positions_fully_random(
+            random_seed=random_seed,
             focal_length_m=focal_length_m,
             outer_radius_m=outer_radius_m,
             inner_radius_m=inner_radius_m,
@@ -484,6 +566,12 @@ def propagate_electric_field_from_mirror_to_sensor(
         * summation_E_field_scaling
     )
 
+    relative_Huygens_E_field_scaling = np.sqrt(
+        compute_relative_Huygens_weights_propotional_to_energy(
+            telescope_matrix_distances_m=telescope["matrix"]["distances_m"]
+        )
+    )
+
     E_feed_horns_scatters = time_series.zeros(
         time_slice_duration_s=E_mirror.time_slice_duration_s,
         num_time_slices=num_time_slices,
@@ -537,7 +625,9 @@ def propagate_electric_field_from_mirror_to_sensor(
                 # amplitude
                 # ---------
                 signal.add_first_to_second_at_float(
-                    first=mirror_to_feed_horn_E_field_scaling * E_mirror[imi],
+                    first=mirror_to_feed_horn_E_field_scaling
+                    * relative_Huygens_E_field_scaling[ifh, imi]
+                    * E_mirror[imi],
                     second=E_feed_horn[isu],
                     at=slice_delay,
                 )

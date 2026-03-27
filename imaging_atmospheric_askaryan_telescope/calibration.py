@@ -253,7 +253,7 @@ def save(path, psf_image):
         )
         t.write(
             filename="si_unit.txt",
-            filebytes=npy_to_bytes(psf_image["si_unit"]),
+            filebytes=str.encode(psf_image["si_unit"]),
         )
 
 
@@ -274,7 +274,10 @@ def load(path):
 
         filename, filebytes = t.read()
         assert filename == "si_unit.txt"
-        out["si_unit"] = bytes_to_npy(filebytes)
+        try:
+            out["si_unit"] = bytes.decode(filebytes)
+        except UnicodeDecodeError:
+            out["si_unit"] = bytes_to_npy(filebytes)
 
     return out
 
@@ -315,3 +318,9 @@ def bytes_to_npy(b):
     tmp.write(b)
     tmp.seek(0)
     return np.load(tmp)
+
+
+def read_energy_conservation_scale_factor(path):
+    with open(path, "rt") as f:
+        ec = json_utils.loads(f.read())
+    return ec

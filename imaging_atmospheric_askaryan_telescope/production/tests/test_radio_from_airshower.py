@@ -3,8 +3,10 @@ import numpy as np
 import json_utils
 import os
 import tempfile
+import pytest
 
 
+@pytest.mark.requires_corsika
 def test_simulate_mirror_electric_fields_manual():
     SPEED_OF_LIGHT_M_PER_S = iaat.signal.SPEED_OF_LIGHT_M_PER_S
     event_id = 103

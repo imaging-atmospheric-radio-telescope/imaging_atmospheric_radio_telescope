@@ -142,7 +142,7 @@ and
 
 This response is written to ``work_dir/events/gamma/000100``. In there is the
 electric field vs. time of the ``probe`` antenna, the scatter centers on the
-``mirror``, and feed horn ``sensor``s in the camera. The probe antenna is only
+``mirror``, and feed horn ``sensor`` in the camera. The probe antenna is only
 used to estimate the time window for the electric field output of the mirror's
 scatter centers.
 

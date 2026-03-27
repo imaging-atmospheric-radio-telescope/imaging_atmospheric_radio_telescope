@@ -37,6 +37,8 @@ setuptools.setup(
         "imaging_atmospheric_askaryan_telescope.telescopes",
         "imaging_atmospheric_askaryan_telescope.investigations",
         "imaging_atmospheric_askaryan_telescope.investigations.point_spread_function",
+        "imaging_atmospheric_askaryan_telescope.investigations.airshower_response",
+        "imaging_atmospheric_askaryan_telescope.sites",
     ],
     package_data={
         "imaging_atmospheric_askaryan_telescope": [
@@ -49,16 +51,19 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        # "sebastians_matplotlib_addons>=0.0.17",
+        "sebastians_matplotlib_addons>=0.0.19",
         "json_utils_sebastian-achim-mueller>=0.0.5",
         "rename_after_writing>=0.0.12",
         "homogeneous_transformation>=0.0.1.1.7.2",
         "spherical_coordinates>=0.1.8",
         "binning_utils_sebastian-achim-mueller>=0.0.20",
         "solid_angle_utils>=0.1.2",
+        "thin_lens>=0.0.3",
+        "optic_object_wavefronts>=1.3.17",
+        "astropy",
     ],
-    license="MIT",
     classifiers=[
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
         "Natural Language :: English",

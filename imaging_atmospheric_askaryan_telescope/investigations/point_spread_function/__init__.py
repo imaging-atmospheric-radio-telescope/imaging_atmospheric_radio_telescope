@@ -127,7 +127,7 @@ def init(
         "scenarios": {},
     }
     sc["scenarios"]["representative_guide_stars"] = {
-        "num": 5,
+        "num": either(big, 5, 3),
         "random_seed": 100,
     }
     sc["scenarios"]["central_feed_horn_scan"] = {
@@ -158,7 +158,7 @@ def init(
         ),
         "start_sensor_distance_f": 0.99,
         "stop_sensor_distance_f": 1.05,
-        "num": either(big, 64, 16),
+        "num": either(big, 64, 8),
     }
     with rnw.open(os.path.join(config_dir, "defocus.json"), "wt") as f:
         f.write(json_utils.dumps(defocus_config, indent=4))
@@ -169,7 +169,7 @@ def init(
         "random_seed": 120,
         "power_density_start_W_per_m2": 1e-12,
         "power_density_stop_W_per_m2": 3e-12,
-        "num": either(big, 320, 16),
+        "num": either(big, 320, 8),
     }
     with rnw.open(os.path.join(config_dir, "multis.json"), "wt") as f:
         f.write(json_utils.dumps(multis_config, indent=4))
@@ -188,8 +188,29 @@ def run(work_dir, pool=None, logger=None):
     logger.debug("run jobs for 'calibrate' ...")
     pool.map(_calibrate_run_job, calib_jobs)
 
+    logger.debug("make jobs for 'stars energy calibration' ...")
+    star_jobs = stars.make_jobs_for_energy_calibration(
+        work_dir=work_dir, config=config
+    )
+    logger.debug(
+        f"{len(star_jobs):d} 'stars energy calibration' jobs in total."
+    )
+    star_jobs = stars.drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
+    logger.debug(f"{len(star_jobs):d} jobs are missing and need to be run.")
+    logger.debug("run jobs for 'stars energy calibration' ...")
+    pool.map(stars.run_job, star_jobs)
+
+    # calibrate energy scaling using the psf plot script
+    # --------------------------------------------------
+    calib_jobs = _plot_make_calibration_jobs(work_dir=work_dir)
+    calib_jobs = _plot_drop_finished_jobs(calib_jobs)
+    logger.debug("run energy scale calibration job ...")
+    pool.map(_plot_run_job, calib_jobs)
+
     logger.debug("make jobs for 'stars' ...")
-    star_jobs = stars.make_jobs(work_dir=work_dir, config=config)
+    star_jobs = stars.make_jobs_which_need_energy_calibration(
+        work_dir=work_dir, config=config
+    )
     logger.debug(f"{len(star_jobs):d} star jobs in total.")
     star_jobs = stars.drop_finished_jobs(work_dir=work_dir, jobs=star_jobs)
     logger.debug(f"{len(star_jobs):d} jobs are missing and need to be run.")
@@ -215,13 +236,6 @@ def run(work_dir, pool=None, logger=None):
     logger.debug(f"{len(multis_jobs):d} jobs are missing and need to be run.")
     logger.debug("run jobs for 'multis' ...")
     pool.map(multis.run_job, multis_jobs)
-
-    # calibrate energy scaling using the psf plot script
-    # --------------------------------------------------
-    calib_jobs = _plot_make_calibration_jobs(work_dir=work_dir)
-    calib_jobs = _plot_drop_finished_jobs(calib_jobs)
-    logger.debug("run energy scale calibration job ...")
-    pool.map(_plot_run_job, calib_jobs)
 
     # plot the rest
     run_plots(work_dir=work_dir, pool=pool, logger=logger)
