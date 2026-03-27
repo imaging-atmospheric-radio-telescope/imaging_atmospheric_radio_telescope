@@ -51,7 +51,7 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        # "sebastians_matplotlib_addons>=0.0.17",
+        "sebastians_matplotlib_addons>=0.0.19",
         "json_utils_sebastian-achim-mueller>=0.0.5",
         "rename_after_writing>=0.0.12",
         "homogeneous_transformation>=0.0.1.1.7.2",
