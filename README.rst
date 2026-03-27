@@ -30,7 +30,7 @@ Clone the python package from GitHub.
 
 .. code-block:: bash
 
-    git clone git@github.com:relleums/imaging_atmospheric_radio_telescope.git
+    git clone git@github.com:imaging-atmospheric-radio-telescope/imaging_atmospheric_radio_telescope.git
 
 
 and install it using ``pip``.
