@@ -264,8 +264,8 @@ Initially this package was named ``Imaing Atmospheric Askaryan Telescope``.
 .. |BlackStyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
-.. |TestStatus| image:: https://github.com/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/actions/workflows/test.yml/badge.svg?branch=main
-    :target: https://github.com/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/actions/workflows/test.yml
+.. |TestStatus| image:: https://github.com/imaging-atmospheric-radio-telescope/imaging_atmospheric_radio_telescope/actions/workflows/test.yml/badge.svg?branch=main
+    :target: https://github.com/imaging-atmospheric-radio-telescope/imaging_atmospheric_radio_telescope/actions/workflows/test.yml
 
 .. |PyPiStatus| image:: https://img.shields.io/pypi/v/imaging_atmospheric_radio_telescope
     :target: https://pypi.org/project/imaging_atmospheric_radio_telescope
@@ -276,4 +276,4 @@ Initially this package was named ``Imaing Atmospheric Askaryan Telescope``.
 .. |MITLicenseBadge| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 
-.. |example_event| image:: https://github.com/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/blob/main/readme/example_event.gif
+.. |example_event| image:: https://github.com/imaging-atmospheric-radio-telescope/imaging_atmospheric_radio_telescope/blob/main/readme/example_event.gif
