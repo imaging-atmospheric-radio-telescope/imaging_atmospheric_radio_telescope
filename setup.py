@@ -23,7 +23,7 @@ setuptools.setup(
     ),
     long_description=long_description,
     long_description_content_type="text/x-rst",
-    url="https://github.com/relleums/imaging_atmospheric_radio_telescope",
+    url="https://github.com/imaging-atmospheric-radio-telescope/imaging_atmospheric_radio_telescope",
     author="Sebastian Achim Mueller, Anne TImmermans",
     author_email="timmermans@mpi-hd.mpg.de",
     packages=[
