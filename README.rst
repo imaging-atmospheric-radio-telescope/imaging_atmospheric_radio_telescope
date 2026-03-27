@@ -44,10 +44,12 @@ Enter the python package directory.
 
 .. code-block:: bash
 
-    cd imaging_atmospheric_radio_telescope
+    cd imaging_atmospheric_radio_telescope/
 
-Ask the developers of ``CORSIKA`` for the ``username`` and ``password``.
-Download ``corsika-77100.tar.gz`` from KIT and save it in:
+The python package can be used without simulating air showers. But if one wants
+to simulate air showers one needs ``CORSIKA``. Ask the developers of
+``CORSIKA`` for the ``username`` and ``password``. Download
+``corsika-77100.tar.gz`` and save it in:
 
 .. code-block:: bash
 
@@ -66,7 +68,7 @@ calling:
     imaging_atmospheric_radio_telescope.corsika.build.install()
 
 
-If all works out as expected, you should see:
+in python. If all works out you see:
 
 .. code-block::
 
@@ -77,7 +79,7 @@ If all works out as expected, you should see:
 Uninstall
 *********
 
-First uninstall the ``CORSIKA`` build.
+First, in python uninstall the ``CORSIKA`` build.
 
 .. code-block:: python
 
@@ -86,7 +88,7 @@ First uninstall the ``CORSIKA`` build.
     imaging_atmospheric_radio_telescope.corsika.build.uninstall()
 
 
-Finally, uninstall the python package.
+Finally, on the commandline uninstall the python package.
 
 .. code-block:: bash
 
@@ -150,17 +152,18 @@ scatter centers.
 ****
 Test
 ****
+Move to the python package's root directory and call:
 
 .. code-block:: bash
 
-    pytest imaging_atmospheric_radio_telescope/
+    pytest .
 
 
-An depricated example of a single event and some plots.
+To run the tests without ``CORSIKA`` call:
 
 .. code-block:: bash
 
-    python imaging_atmospheric_radio_telescope/scripts/test.py
+    pytest -m "not requires_corsika" .
 
 
 ************
