@@ -24,8 +24,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/x-rst",
     url="https://github.com/relleums/imaging_atmospheric_askaryan_telescope",
-    author="Sebastian Achim Mueller",
-    author_email="sebastian-achim.mueller@mpi-hd.mpg.de",
+    author="Sebastian Achim Mueller, Anne TImmermans",
+    author_email="timmermans@mpi-hd.mpg.de",
     packages=[
         "imaging_atmospheric_askaryan_telescope",
         "imaging_atmospheric_askaryan_telescope.utils",
