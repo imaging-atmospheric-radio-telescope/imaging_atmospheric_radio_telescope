@@ -1,4 +1,4 @@
-from imaging_atmospheric_askaryan_telescope.calibration_source import (
+from imaging_atmospheric_radio_telescope.calibration_source import (
     sine_wave_ramp,
 )
 import numpy as np

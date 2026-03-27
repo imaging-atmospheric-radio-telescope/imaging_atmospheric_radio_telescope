@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import glob
 import binning_utils
@@ -29,44 +29,44 @@ psf_dir = args.psf_dir
 out_dir = os.path.join(psf_dir, "plots", scenario_key)
 os.makedirs(out_dir, exist_ok=True)
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 source_key = "1"
 for telescope_key in config["stars"]["telescopes"]:
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
-    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+    fov = iart.investigations.point_spread_function.utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
 
     response_paths = (
-        iaat.investigations.point_spread_function.stars.list_response_paths(
+        iart.investigations.point_spread_function.stars.list_response_paths(
             work_dir=psf_dir,
             telescope_key=telescope_key,
             scenario_key=scenario_key,
         )
     )
 
-    radius_airy_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+    radius_airy_m = iart.telescope.calculate_airy_disk_radius_in_focal_plane(
         telescope=telescope
     )
 
     snaps = {}
 
     for response_path in response_paths:
-        response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+        response = iart.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
             response_path
         )
         response_index = int(os.path.basename(response_path))
 
         plane_wave_config = response.source_config["plane_waves"][source_key]
 
-        energy_expected_from_source_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        energy_expected_from_source_J = iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
             config=plane_wave_config,
             area_m2=telescope["mirror"]["area_m2"],
         )
@@ -142,7 +142,7 @@ for telescope_key in config["stars"]["telescopes"]:
             cmap="Blues",
             norm=norm,
         )
-        iaat.camera.ax_add_camera_feed_horn_edges(
+        iart.camera.ax_add_camera_feed_horn_edges(
             ax=ax,
             camera=telescope["sensor"],
             color="black",

@@ -1,4 +1,4 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 
 
@@ -8,7 +8,7 @@ def test_add_integet():
     second = np.zeros(10)
 
     np.testing.assert_almost_equal(second[0], 0)
-    iaat.signal.add_first_to_second_at_int(first=first, second=second, at=0)
+    iart.signal.add_first_to_second_at_int(first=first, second=second, at=0)
     np.testing.assert_almost_equal(second[0], 1)
 
     np.testing.assert_array_almost_equal(second[1:], np.zeros(9))
@@ -21,7 +21,7 @@ def test_add_float_simple():
     AT = 0.2
 
     np.testing.assert_almost_equal(second[0], 0)
-    iaat.signal.add_first_to_second_at_float(first=first, second=second, at=AT)
+    iart.signal.add_first_to_second_at_float(first=first, second=second, at=AT)
     np.testing.assert_almost_equal(second[0], 1 - AT)
     np.testing.assert_almost_equal(second[1], AT)
     np.testing.assert_array_almost_equal(second[2:], np.zeros(8))
@@ -34,7 +34,7 @@ def test_add_float_negativ():
         second = np.zeros(10)
 
         np.testing.assert_almost_equal(second[0], 0)
-        iaat.signal.add_first_to_second_at_float(
+        iart.signal.add_first_to_second_at_float(
             first=first, second=second, at=at
         )
         np.testing.assert_almost_equal(second[0], 1 - np.abs(at))

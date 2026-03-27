@@ -1,12 +1,12 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 
 
 def assert_write_read_almost_equal(positions_asl_m):
-    text = iaat.corsika.coreas.antenna_list.dumps(
+    text = iart.corsika.coreas.antenna_list.dumps(
         positions_asl_m, prefix="hans"
     )
-    positions_asl_m_back = iaat.corsika.coreas.antenna_list.loads(text=text)
+    positions_asl_m_back = iart.corsika.coreas.antenna_list.loads(text=text)
     np.testing.assert_array_almost_equal(
         actual=positions_asl_m_back,
         desired=positions_asl_m,

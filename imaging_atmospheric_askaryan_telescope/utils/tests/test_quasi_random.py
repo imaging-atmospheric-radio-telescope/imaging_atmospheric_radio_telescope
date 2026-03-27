@@ -1,16 +1,16 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 
 
 def test_same_seed_yields_same_results():
-    qrng_a = iaat.utils.QuasiRandomGenerator(seed=1)
+    qrng_a = iart.utils.QuasiRandomGenerator(seed=1)
 
     A = []
     for i in range(1000):
         a = qrng_a.uniform()
         A.append(a)
 
-    qrng_b = iaat.utils.QuasiRandomGenerator(seed=1)
+    qrng_b = iart.utils.QuasiRandomGenerator(seed=1)
 
     B = []
     for i in range(1000):
@@ -21,7 +21,7 @@ def test_same_seed_yields_same_results():
 
 
 def test_shape():
-    qrng = iaat.utils.QuasiRandomGenerator(seed=1)
+    qrng = iart.utils.QuasiRandomGenerator(seed=1)
 
     a = qrng.uniform(size=None)
     assert np.array(a).shape == ()
@@ -37,7 +37,7 @@ def test_shape():
 
 
 def test_low_high():
-    qrng = iaat.utils.QuasiRandomGenerator(seed=1)
+    qrng = iart.utils.QuasiRandomGenerator(seed=1)
 
     for low in np.linspace(-1, 1, 10):
         for high in low + np.linspace(0, 2, 10):

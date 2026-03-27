@@ -10,7 +10,7 @@ from . import sky_and_screen
 
 def package_path():
     return str(
-        importlib.resources.files("imaging_atmospheric_askaryan_telescope")
+        importlib.resources.files("imaging_atmospheric_radio_telescope")
     )
 
 

@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import spherical_coordinates
 import binning_utils
@@ -29,7 +29,7 @@ psf_dir = args.psf_dir
 out_dir = os.path.join(psf_dir, "plots", scenario_key)
 os.makedirs(out_dir, exist_ok=True)
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 power_ratio_threshold = 0.1
 
@@ -37,17 +37,17 @@ source_key = "1"
 for telescope_key in config["stars"]["telescopes"]:
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
-    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+    fov = iart.investigations.point_spread_function.utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
 
     response_paths = (
-        iaat.investigations.point_spread_function.stars.list_response_paths(
+        iart.investigations.point_spread_function.stars.list_response_paths(
             work_dir=psf_dir,
             telescope_key=telescope_key,
             scenario_key=scenario_key,
@@ -60,12 +60,12 @@ for telescope_key in config["stars"]["telescopes"]:
     power_ratios = []
 
     for response_path in response_paths:
-        response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+        response = iart.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
             response_path
         )
         plane_wave_config = response.source_config["plane_waves"][source_key]
 
-        energy_expected_from_source_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        energy_expected_from_source_J = iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
             config=plane_wave_config,
             area_m2=telescope["mirror"]["area_m2"],
         )
@@ -106,7 +106,7 @@ for telescope_key in config["stars"]["telescopes"]:
                 vmin=1e-3,
                 vmax=1e-1,
             )
-            im = iaat.camera.ax_add_camera_feed_horn_scatter_values(
+            im = iart.camera.ax_add_camera_feed_horn_scatter_values(
                 ax=ax,
                 camera=telescope["sensor"],
                 feed_horn_scatter_values=response.energy_feed_horns_scatter
@@ -115,7 +115,7 @@ for telescope_key in config["stars"]["telescopes"]:
                 norm=norm,
                 scale_function=m2deg,
             )
-            iaat.camera.ax_add_camera_feed_horn_edges(
+            iart.camera.ax_add_camera_feed_horn_edges(
                 ax=ax,
                 camera=telescope["sensor"],
                 color="black",
@@ -175,7 +175,7 @@ for telescope_key in config["stars"]["telescopes"]:
                 markersize=10.0,
                 color="black",
             )
-            im = iaat.camera.ax_add_camera_feed_horn_values(
+            im = iart.camera.ax_add_camera_feed_horn_values(
                 ax=ax,
                 camera=telescope["sensor"],
                 feed_horn_values=response.energy_feed_horns

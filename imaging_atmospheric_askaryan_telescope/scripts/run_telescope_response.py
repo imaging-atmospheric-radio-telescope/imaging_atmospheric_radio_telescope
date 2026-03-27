@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import imaging_atmospheric_askaryan_telescope as iaat
-import imaging_atmospheric_askaryan_telescope.investigations.airshower_response
+import imaging_atmospheric_radio_telescope as iart
+import imaging_atmospheric_radio_telescope.investigations.airshower_response
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
@@ -9,11 +9,11 @@ from numpy.fft import rfft, rfftfreq
 import os
 
 RANDOM_SEED = 23
-work_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_1PeV_50K"
-psf_investigation_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/2025-06-03-psf"
+work_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_1PeV_50K"
+psf_investigation_dir = "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/2025-06-03-psf"
 
 telescope_key = "large_size_telescope"
-source_config = iaat.production.radio_from_airshower.make_config()
+source_config = iart.production.radio_from_airshower.make_config()
 source_config = {}
 source_config["__type__"] = "airshower"
 source_config["event_id"] = 1000
@@ -27,14 +27,14 @@ source_config["primary_particle"] = {
 }
 source_config["corsika_coreas_executable_path"] = None
 
-site = iaat.sites.init("karlsruhe")
+site = iart.sites.init("karlsruhe")
 
-config = iaat.investigations.point_spread_function.utils.read_config(
+config = iart.investigations.point_spread_function.utils.read_config(
     psf_investigation_dir
 )
 
 telescope, timing, _ = (
-    iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+    iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
         work_dir=psf_investigation_dir,
         config=config,
         telescope_key=telescope_key,
@@ -42,7 +42,7 @@ telescope, timing, _ = (
     )
 )
 
-ecsf = iaat.calibration.read_energy_conservation_scale_factor(
+ecsf = iart.calibration.read_energy_conservation_scale_factor(
     path=os.path.join(
         psf_investigation_dir,
         "calibration",
@@ -52,7 +52,7 @@ ecsf = iaat.calibration.read_energy_conservation_scale_factor(
 )
 mirror_to_camera_energy_scale_factor = ecsf["fitted_energy_scale_factor"]
 
-iaat.production.simulate_telescope_response(
+iart.production.simulate_telescope_response(
     out_dir=work_dir,
     source_config=source_config,
     site=site,
@@ -69,7 +69,7 @@ iaat.production.simulate_telescope_response(
 # Load data
 # --------------------------------------------------
 
-fh = iaat.time_series.read(
+fh = iart.time_series.read(
     os.path.join(
         work_dir, "feed_horns/electric_fields.tar"
     )  # feed_horns #lnb_signal_output #lnb_signal_and_noise_output
@@ -104,11 +104,11 @@ sum_xyz = np.sqrt(sum_x**2 + sum_y**2 + sum_z**2)
 # Deposited power per pixel (±250 samples around peak)
 # --------------------------------------------------
 
-feed_horn_energies_J = iaat.electric_fields.integrate_power_over_time(
+feed_horn_energies_J = iart.electric_fields.integrate_power_over_time(
     electric_fields=fh,
     channel_effective_area_m2=telescope["mirror"]["area_m2"],
 )
-feed_horn_energies_eV = feed_horn_energies_J / iaat.signal.ELECTRON_VOLT_J
+feed_horn_energies_eV = feed_horn_energies_J / iart.signal.ELECTRON_VOLT_J
 
 deposited_power = feed_horn_energies_eV
 
@@ -118,7 +118,7 @@ f_band = (7.0e9, 10.0e9)
 E = fh._x  # (N_pix, N_samples, 3)
 
 deposited_power = (
-    iaat.investigations.airshower_response.compute_energy_freqband(
+    iart.investigations.airshower_response.compute_energy_freqband(
         E=E,
         dt=dt,
         f_band=f_band,
@@ -126,7 +126,7 @@ deposited_power = (
     )
 )
 waveforms = (
-    iaat.signal.butter_bandpass_filter(
+    iart.signal.butter_bandpass_filter(
         amplitudes=E,
         frequency_start=f_band[0],
         frequency_stop=f_band[1],

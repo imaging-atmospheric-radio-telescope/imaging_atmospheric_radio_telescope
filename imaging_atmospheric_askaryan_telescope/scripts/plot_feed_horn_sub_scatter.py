@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import optic_object_wavefronts
 import posixpath
@@ -32,7 +32,7 @@ feed_horn_inner_radius_m = 0.03
 focal_ratio_1 = 1.4
 feed_horn_oversampling_order = 1
 
-cc = iaat.camera.make_camera(
+cc = iart.camera.make_camera(
     sensor_outer_radius_m=screen_radius_m,
     sensor_distance_m=32.2,
     feed_horn_inner_radius_m=feed_horn_inner_radius_m,
@@ -44,11 +44,11 @@ fig = sebplt.figure(style={"rows": 1280, "cols": 1280, "fontsize": 2.3})
 ax = sebplt.add_axes(
     fig=fig, span=[0, 0, 1, 1], style={"spines": [], "axes": [], "grid": False}
 )
-iaat.camera.ax_add_camera(ax=ax, camera=cc, color="black")
+iart.camera.ax_add_camera(ax=ax, camera=cc, color="black")
 
 
-iaat.camera.ax_add_camera_feed_horn_edges(ax=ax, camera=cc, color="lightgray")
-iaat.camera.ax_add_camera_feed_horn_scatter_centers(
+iart.camera.ax_add_camera_feed_horn_edges(ax=ax, camera=cc, color="lightgray")
+iart.camera.ax_add_camera_feed_horn_scatter_centers(
     ax=ax,
     camera=cc,
     marker="o",
@@ -57,7 +57,7 @@ iaat.camera.ax_add_camera_feed_horn_scatter_centers(
     markeredgewidth=0.0,
     color="black",
 )
-iaat.camera.ax_add_camera_feed_horn_centers(
+iart.camera.ax_add_camera_feed_horn_centers(
     ax=ax, camera=cc, marker="+", color="black"
 )
 

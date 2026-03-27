@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 import os
 import io
@@ -7,7 +7,7 @@ import thin_lens
 
 
 psf_dir = "2025-05-22_psf"
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 OBJECT_DISTANCE_M = 10e3
 
@@ -21,7 +21,7 @@ for telescope_key in config["telescopes"]:
     )
 
     t, _, _ = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir,
             config=config,
             telescope_key=telescope_key,
@@ -266,7 +266,7 @@ tab.append(row)
 row = []
 row.append(r"$\nu_\text{start}$/GHz")
 for key in ts:
-    nu_start_Hz, _ = iaat.lownoiseblock.input_frequency_start_stop_Hz(
+    nu_start_Hz, _ = iart.lownoiseblock.input_frequency_start_stop_Hz(
         ts[key]["lnb"]
     )
     row.append(f"{nu_start_Hz *1e-9:.2f}")
@@ -275,7 +275,7 @@ tab.append(row)
 row = []
 row.append(r"$\nu_\text{stop}$/GHz")
 for key in ts:
-    _, nu_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
+    _, nu_stop_Hz = iart.lownoiseblock.input_frequency_start_stop_Hz(
         ts[key]["lnb"]
     )
     row.append(f"{nu_stop_Hz *1e-9:.2f}")
@@ -284,7 +284,7 @@ tab.append(row)
 row = []
 row.append(r"$\delta \nu$/MHz")
 for key in ts:
-    nu_start_Hz, nu_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
+    nu_start_Hz, nu_stop_Hz = iart.lownoiseblock.input_frequency_start_stop_Hz(
         ts[key]["lnb"]
     )
     bandwidth_Hz = nu_stop_Hz - nu_start_Hz
@@ -304,7 +304,7 @@ row.append(r"$\nu_\text{local-oscillator}$/GHz")
 for key in ts:
     nu_LO = ts[key]["lnb"]["local_oscillator_frequency_Hz"]
     nu_LO_std = ts[key]["lnb"]["local_oscillator_frequency_std_Hz"]
-    nu_str = iaat.utils.scientific.uncertainty(
+    nu_str = iart.utils.scientific.uncertainty(
         x=nu_LO * 1e-9, dx=nu_LO_std * 1e-9
     )
     row.append("$" + nu_str + "$")

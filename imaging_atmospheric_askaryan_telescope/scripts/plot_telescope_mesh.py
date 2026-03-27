@@ -2,8 +2,8 @@ import argparse
 import os
 import binning_utils
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import optic_object_wavefronts as oow
 import numpy as np
 import spherical_histogram
@@ -79,11 +79,11 @@ def ax_add_camera_xy(ax, telescope, roi_width):
 
     fh_r = 10 * np.sqrt(camera["feed_horn_area_m2"]) / roi_width
 
-    iaat.camera.ax_add_camera_feed_horn_edges(
+    iart.camera.ax_add_camera_feed_horn_edges(
         ax=ax, camera=camera, color="lightgray", linewidth=1 * fh_r
     )
 
-    iaat.camera.ax_add_camera_feed_horn_scatter_centers(
+    iart.camera.ax_add_camera_feed_horn_scatter_centers(
         ax=ax,
         camera=camera,
         marker="o",
@@ -103,8 +103,8 @@ HH = {}
 for telescope_key in TELESCOPE_KEYS:
     tele_dir = os.path.join(out_dir, telescope_key)
 
-    iaat.run.init(work_dir=tele_dir, telescope_key=telescope_key)
-    telescope = iaat.run.from_config(work_dir=tele_dir)["telescope"]
+    iart.run.init(work_dir=tele_dir, telescope_key=telescope_key)
+    telescope = iart.run.from_config(work_dir=tele_dir)["telescope"]
 
     close_up_items = {
         "camera": {
@@ -321,7 +321,7 @@ for telescope_key in TELESCOPE_KEYS:
 
     # plot relative Huygens weights
     rel_W_Huy = (
-        iaat.telescope.compute_relative_Huygens_weights_propotional_to_energy(
+        iart.telescope.compute_relative_Huygens_weights_propotional_to_energy(
             telescope_matrix_distances_m=telescope["matrix"]["distances_m"]
         )
     )

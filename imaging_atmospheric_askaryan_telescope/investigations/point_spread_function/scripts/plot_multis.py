@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import spherical_coordinates
 import binning_utils
@@ -30,7 +30,7 @@ psf_dir = args.psf_dir
 out_dir = os.path.join(psf_dir, "plots", scenario_key)
 os.makedirs(out_dir, exist_ok=True)
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 prng = np.random.Generator(np.random.PCG64(5))
 
@@ -44,15 +44,15 @@ source_plot = {
 for telescope_key in config["stars"]["telescopes"]:
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
-    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+    fov = iart.investigations.point_spread_function.utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
-    all_response_paths = iaat.utils.filter_integer_filenames(
+    all_response_paths = iart.utils.filter_integer_filenames(
         paths=glob.glob(os.path.join(psf_dir, "multis", telescope_key, "*"))
     )
     all_response_paths = sorted(all_response_paths)
@@ -66,7 +66,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     r_roi = 4 * telescope["sensor"]["camera"]["feed_horn_inner_radius_m"]
 
-    nu_start_Hz, nu_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
+    nu_start_Hz, nu_stop_Hz = iart.lownoiseblock.input_frequency_start_stop_Hz(
         telescope["lnb"]
     )
     frequency_bin = binning_utils.Binning(
@@ -75,7 +75,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     for response_path in response_paths:
         response_id = int(os.path.basename(response_path))
-        response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+        response = iart.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
             response_path
         )
 
@@ -87,7 +87,7 @@ for telescope_key in config["stars"]["telescopes"]:
             s_config = response.source_config["plane_waves"][skey]
 
             expected_energies_J[skey] = (
-                iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+                iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
                     config=s_config,
                     area_m2=telescope["mirror"]["area_m2"],
                 )
@@ -96,14 +96,14 @@ for telescope_key in config["stars"]["telescopes"]:
                 "emission_frequency_Hz"
             ]
             expected_screen[skey] = (
-                iaat.utils.sky_and_screen.sky_az_zd_to_screen_x_y(
+                iart.utils.sky_and_screen.sky_az_zd_to_screen_x_y(
                     azimuth_rad=s_config["geometry"]["azimuth_rad"],
                     zenith_rad=s_config["geometry"]["zenith_rad"],
                     focal_length_m=telescope["mirror"]["focal_length_m"],
                 )
             )
             masks[skey] = (
-                iaat.investigations.point_spread_function.plane_wave_response.mask_feed_horns(
+                iart.investigations.point_spread_function.plane_wave_response.mask_feed_horns(
                     feed_horn_positions_m=telescope["sensor"][
                         "feed_horn_positions_m"
                     ],
@@ -125,12 +125,12 @@ for telescope_key in config["stars"]["telescopes"]:
                     response.energy_feed_horns[masks[skey]]
                 )
 
-                E_feed_horns_roi = iaat.time_series.zeros_like(
+                E_feed_horns_roi = iart.time_series.zeros_like(
                     response.E_feed_horns, num_channels=np.sum(masks[skey])
                 )
                 E_feed_horns_roi[:] = response.E_feed_horns[masks[skey]]
 
-                power_density_W_per_Hz_per_m2 = iaat.electric_fields.estimate_power_spectrum_density_W_per_Hz_per_m2(
+                power_density_W_per_Hz_per_m2 = iart.electric_fields.estimate_power_spectrum_density_W_per_Hz_per_m2(
                     electric_fields=E_feed_horns_roi,
                     antenna_effective_area_m2=telescope["sensor"][
                         "feed_horn_area_m2"
@@ -184,7 +184,7 @@ for telescope_key in config["stars"]["telescopes"]:
             sebplt.close(fig)
 
             feed_horn_energies_eV = (
-                response.energy_feed_horns / iaat.signal.ELECTRON_VOLT_J
+                response.energy_feed_horns / iart.signal.ELECTRON_VOLT_J
             )
             vmax = np.max(feed_horn_energies_eV)
             norm = sebplt.matplotlib.colors.PowerNorm(
@@ -210,7 +210,7 @@ for telescope_key in config["stars"]["telescopes"]:
             ax = sebplt.add_axes(
                 fig=fig, span=[-0.05, -0.05, 1.1, 1.1], style=sebplt.AXES_BLANK
             )
-            iaat.camera.ax_add_camera_feed_horn_values(
+            iart.camera.ax_add_camera_feed_horn_values(
                 ax=ax,
                 camera=telescope["sensor"],
                 feed_horn_values=feed_horn_energies_eV,
@@ -218,7 +218,7 @@ for telescope_key in config["stars"]["telescopes"]:
                 cmap="Blues",
                 norm=norm,
             )
-            iaat.camera.ax_add_camera_feed_horn_edges(
+            iart.camera.ax_add_camera_feed_horn_edges(
                 ax=ax,
                 camera=telescope["sensor"],
                 color="black",
@@ -251,7 +251,7 @@ for telescope_key in config["stars"]["telescopes"]:
             )
             _x = 0
             for skey in source_keyes:
-                e_eV = expected_energies_J[skey] / iaat.signal.ELECTRON_VOLT_J
+                e_eV = expected_energies_J[skey] / iart.signal.ELECTRON_VOLT_J
                 n_GHZ = expected_frequency_Hz[skey] / GIGA
                 ax.plot(
                     _x + np.array([0.025, 0.125]),

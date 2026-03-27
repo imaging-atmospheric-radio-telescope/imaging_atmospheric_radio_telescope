@@ -1,4 +1,4 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 
 
@@ -12,7 +12,7 @@ def test_make_sine():
         (3 / 2) * PI,
         (4 / 2) * PI,
     ]:
-        t, a = iaat.signal.make_sin(
+        t, a = iart.signal.make_sin(
             frequency=1.0,
             time_slice_duration=1e-3,
             num_time_slices=10_000,

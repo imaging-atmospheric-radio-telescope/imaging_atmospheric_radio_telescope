@@ -1,5 +1,5 @@
 import sebastians_matplotlib_addons as seb
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import tempfile
 import os
 import numpy as np
@@ -192,18 +192,18 @@ def save_image_slices_energy_deposite(
         eney = readout_energy_J[:, :, 1]
         estr = "deposited energy / J"
     elif units == "electron_volt":
-        enex = readout_energy_J[:, :, 0] / iaat.signal.ELECTRON_VOLT_J
-        eney = readout_energy_J[:, :, 1] / iaat.signal.ELECTRON_VOLT_J
+        enex = readout_energy_J[:, :, 0] / iart.signal.ELECTRON_VOLT_J
+        eney = readout_energy_J[:, :, 1] / iart.signal.ELECTRON_VOLT_J
         estr = "deposited energy / eV"
     elif units == "black_body_temperature":
         assert bandwidth_Hz != None
         px_W = readout_energy_J[:, :, 0] / readout_time_slice_duration_s  # W
         py_W = readout_energy_J[:, :, 1] / readout_time_slice_duration_s  # W
-        enex = iaat.signal.radiated_power_to_blackbody_temperature(
+        enex = iart.signal.radiated_power_to_blackbody_temperature(
             power_W=px_W,
             bandwidth_Hz=bandwidth_Hz,
         )
-        eney = iaat.signal.radiated_power_to_blackbody_temperature(
+        eney = iart.signal.radiated_power_to_blackbody_temperature(
             power_W=py_W,
             bandwidth_Hz=bandwidth_Hz,
         )
@@ -375,7 +375,7 @@ def write_figure_electric_fields_power_density_spectrum(
         shape=(ef["num_antennas"], 1 + (num_time_slices_to_average_over // 2))
     )
 
-    E_amplitude = iaat.electric_fields.get_combined_norm_of_components(
+    E_amplitude = iart.electric_fields.get_combined_norm_of_components(
         electric_fields=electric_fields,
         component_mask=component_mask,
     )
@@ -385,7 +385,7 @@ def write_figure_electric_fields_power_density_spectrum(
         (
             f_antenna_bin_edges,
             pds_antenna,
-        ) = iaat.signal.estimate_power_spectrum_density(
+        ) = iart.signal.estimate_power_spectrum_density(
             amplitudes=E_amplitude[antenna, :],
             time_slice_duration_s=ef["time_slice_duration_s"],
             num_time_slices_to_average_over=num_time_slices_to_average_over,
@@ -398,7 +398,7 @@ def write_figure_electric_fields_power_density_spectrum(
                 _last_f_antenna_bin_edges, f_antenna_bin_edges
             )
 
-    antenna_bin_edges = iaat.electric_fields.make_antenna_bin_edges(
+    antenna_bin_edges = iart.electric_fields.make_antenna_bin_edges(
         electric_fields=ef
     )
 

@@ -1,11 +1,11 @@
 import numpy as np
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import json_numpy
 import math
 
 # setup
 # -----
-config = iaat.run.from_config("run")
+config = iart.run.from_config("run")
 telescope = config["telescope"]
 timing = config["timing"]
 
@@ -14,7 +14,7 @@ timing = config["timing"]
 prng = np.random.Generator(np.random.PCG64(42))
 
 electric_field_thermal_noise_amplitude_V_per_m = (
-    iaat.signal.calculate_electric_field_strength_of_thermal_noise_V_per_m(
+    iart.signal.calculate_electric_field_strength_of_thermal_noise_V_per_m(
         antenna_temperature_K=telescope["lnb"]["noise_temperature_K"],
         antenna_bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],
         antenna_effective_area_m2=telescope["lnb"]["effective_area_m2"],
@@ -49,7 +49,7 @@ for block in range(10):
         size=noise_num_time_slices,
     )
 
-    _noise_power = iaat.signal.calculate_antenna_power_W(
+    _noise_power = iart.signal.calculate_antenna_power_W(
         effective_area_m2=telescope["lnb"]["effective_area_m2"],
         electric_field_V_per_m=noise_efield_leaving_lnb,
     )
@@ -114,10 +114,10 @@ p = 1 - math.erf(sigma / np.sqrt(2))
 
 trigger_energy_threshold_J = trigger_energy_mean + sigma * trigger_energy_std
 trigger_energy_threshold_eV = (
-    trigger_energy_threshold_J / iaat.signal.ELECTRON_VOLT_J
+    trigger_energy_threshold_J / iart.signal.ELECTRON_VOLT_J
 )
 trigger_energy_threshold_K = (
-    iaat.signal.radiated_power_to_blackbody_temperature(
+    iart.signal.radiated_power_to_blackbody_temperature(
         power_W=trigger_energy_threshold_J
         / timing["readout"]["time_slice_duration_s"],
         bandwidth_Hz=telescope["lnb"]["intermediate_bandwidth_Hz"],

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import os
 import binning_utils
@@ -22,7 +22,7 @@ def ax_add_marker(ax, x, y, s, **kwargs):
 
 
 def airy_full_angle(D, l):
-    return 2.0 * iaat.theory.airy_angle(mirror_diameter=D, wavelength=l)
+    return 2.0 * iart.theory.airy_angle(mirror_diameter=D, wavelength=l)
 
 
 def contour_fmt_deg(x):
@@ -42,8 +42,8 @@ def valid_airy_Nus(theta_D_Nu, D_bin_centers, Nu_bin_centers, theta_threshold):
 
 
 def get_mean_input_frequency(telescope):
-    lnb = iaat.lownoiseblock.init(key=telescope["lnb_key"])
-    nu_start_Hz, nu_stop_Hz = iaat.lownoiseblock.input_frequency_start_stop_Hz(
+    lnb = iart.lownoiseblock.init(key=telescope["lnb_key"])
+    nu_start_Hz, nu_stop_Hz = iart.lownoiseblock.input_frequency_start_stop_Hz(
         lnb=lnb
     )
     return np.mean([nu_start_Hz, nu_stop_Hz])
@@ -57,15 +57,15 @@ D_bin = binning_utils.Binning(bin_edges=np.linspace(1, 30, 201))
 Nu_bin = binning_utils.Binning(bin_edges=np.geomspace(1e9, 100e9, 301))
 
 
-lst = iaat.telescopes.init("large_size_telescope")
+lst = iart.telescopes.init("large_size_telescope")
 lst_nu_Hz = get_mean_input_frequency(telescope=lst)
 lst_marker = r"$\mathbf{L}$"
 
-mst = iaat.telescopes.init("medium_size_telescope")
+mst = iart.telescopes.init("medium_size_telescope")
 mst_nu_Hz = get_mean_input_frequency(telescope=mst)
 mst_marker = r"$\mathbf{M}$"
 
-crome = iaat.telescopes.init("crome")
+crome = iart.telescopes.init("crome")
 crome_nu_Hz = get_mean_input_frequency(telescope=crome)
 crome_marker = r"$\mathbf{C}$"
 
@@ -77,7 +77,7 @@ for iD in range(D_bin["num"]):
     for iNu in range(Nu_bin["num"]):
         theta[iD, iNu] = airy_full_angle(
             D=D_bin["centers"][iD],
-            l=iaat.signal.frequency_to_wavelength(
+            l=iart.signal.frequency_to_wavelength(
                 frequency=Nu_bin["centers"][iNu]
             ),
         )

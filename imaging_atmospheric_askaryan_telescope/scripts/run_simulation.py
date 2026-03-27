@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 
 import numpy as np
 import json_utils
@@ -11,13 +11,13 @@ import os
 work_dir = "run3"
 
 if not os.path.exists(work_dir):
-    iaat.run.init(
+    iart.run.init(
         work_dir=work_dir,
         site_key="namibia",
         telescope_key="large_size_telescope",
     )
 
-askaryan = iaat.run.from_config(work_dir=work_dir)
+askaryan = iart.run.from_config(work_dir=work_dir)
 telescope = askaryan["telescope"]
 timing = askaryan["timing"]
 site = askaryan["site"]
@@ -26,7 +26,7 @@ site = askaryan["site"]
 random_seed = 1405
 
 if False:
-    source_config = iaat.production.radio_from_airshower.make_config()
+    source_config = iart.production.radio_from_airshower.make_config()
     source_config["event_id"] = random_seed
     source_config["primary_particle"]["key"] = "gamma"
     source_config["primary_particle"]["azimuth_rad"] = np.deg2rad(30)
@@ -35,13 +35,13 @@ if False:
     source_config["primary_particle"]["core_west_m"] = 20.0
     source_config["primary_particle"]["energy_GeV"] = 1_000.0
 else:
-    source_config = iaat.production.radio_from_plane_wave.make_config()
+    source_config = iart.production.radio_from_plane_wave.make_config()
     s1 = source_config["plane_waves"]["first"]
     s1["geometry"]["azimuth_rad"] = np.deg2rad(220)
     s1["geometry"]["zenith_rad"] = np.deg2rad(1.7)
     s1["geometry"][
         "distance_to_plane_defining_time_zero_m"
-    ] = iaat.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
+    ] = iart.corsika.TOP_OF_ATMOSPHERE_ALTITUDE_M
     s1["power"]["power_of_isotrop_and_point_like_emitter_W"] = 2e-1
     s1["power"]["distance_to_isotrop_and_point_like_emitter_m"] = 100e3
     s1["sine_wave"]["emission_frequency_Hz"] = 11.1e9
@@ -57,7 +57,7 @@ out_dir = os.path.join(
 # ----------------
 prng = np.random.Generator(np.random.PCG64(random_seed))
 
-iaat.production.simulate_telescope_response(
+iart.production.simulate_telescope_response(
     out_dir=out_dir,
     source_config=source_config,
     site=site,
@@ -101,8 +101,8 @@ for part in ["probe", "mirror", "feed_horns"]:
         channels_label = "channels / 1"
         roi_time = None
         roi_frequency = None
-        A_effective_m2 = iaat.signal.calculate_antenna_effective_area(
-            wavelength=iaat.signal.frequency_to_wavelength(
+        A_effective_m2 = iart.signal.calculate_antenna_effective_area(
+            wavelength=iart.signal.frequency_to_wavelength(
                 frequency=telescope["lnb"]["local_oscillator_frequency_Hz"]
             ),
             gain=1.0,
@@ -115,7 +115,7 @@ for part in ["probe", "mirror", "feed_horns"]:
     fig_path = os.path.join(plot_dir, f"{part:s}_electric_fields.jpg")
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
-        E_field = iaat.time_series.read(field_path)
+        E_field = iart.time_series.read(field_path)
         iaat_plot.write_figure_electric_fields_overview(
             electric_fields=E_field,
             path=fig_path,
@@ -132,10 +132,10 @@ for part in ["probe", "mirror", "feed_horns"]:
     fig_path = os.path.join(out_dir, "plot", f"{part}_power_density.jpg")
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
-        E_field = iaat.time_series.read(field_path)
+        E_field = iart.time_series.read(field_path)
         E_field_norm = E_field.norm_components()
 
-        _power = iaat.signal.calculate_antenna_power_W(
+        _power = iart.signal.calculate_antenna_power_W(
             effective_area_m2=A_effective_m2,
             electric_field_V_per_m=E_field_norm[:],
         )
@@ -163,9 +163,9 @@ for part in ["probe", "mirror", "feed_horns"]:
     )
     if not os.path.exists(fig_path) and os.path.exists(field_path):
         print("plot", fig_path)
-        E_field = iaat.time_series.read(field_path)
+        E_field = iart.time_series.read(field_path)
 
-        Prho_W_per_Hz_per_m2 = iaat.electric_fields.estimate_power_spectrum_density_W_per_Hz_per_m2(
+        Prho_W_per_Hz_per_m2 = iart.electric_fields.estimate_power_spectrum_density_W_per_Hz_per_m2(
             electric_fields=E_field,
             antenna_effective_area_m2=A_effective_m2,
             frequency_bin_edges_Hz=frequency_bin_edges_Hz,
@@ -189,38 +189,38 @@ for part in ["probe", "mirror", "feed_horns"]:
 # check energy conservation
 # -------------------------
 if True:
-    E_mirror = iaat.time_series.read(
+    E_mirror = iart.time_series.read(
         os.path.join(out_dir, "mirror", "electric_fields.tar")
     )
 
-    E_feed_horns = iaat.time_series.read(
+    E_feed_horns = iart.time_series.read(
         os.path.join(out_dir, "feed_horns", "electric_fields.tar")
     )
 
-    En_mirror_J = iaat.electric_fields.integrate_power_over_time(
+    En_mirror_J = iart.electric_fields.integrate_power_over_time(
         electric_fields=E_mirror,
         channel_effective_area_m2=telescope["mirror"][
             "scatter_center_area_m2"
         ],
     )
-    En_sensor_J = iaat.electric_fields.integrate_power_over_time(
+    En_sensor_J = iart.electric_fields.integrate_power_over_time(
         electric_fields=E_feed_horns,
         channel_effective_area_m2=telescope["sensor"]["feed_horn_area_m2"],
     )
 
-    En_mirror_eV = np.sum(En_mirror_J) / iaat.signal.ELECTRON_VOLT_J
-    En_sensor_eV = np.sum(En_sensor_J) / iaat.signal.ELECTRON_VOLT_J
+    En_mirror_eV = np.sum(En_mirror_J) / iart.signal.ELECTRON_VOLT_J
+    En_sensor_eV = np.sum(En_sensor_J) / iart.signal.ELECTRON_VOLT_J
 
     print("Energy on mirror", En_mirror_eV, "eV")
     print("Energy on feed horns", En_sensor_eV, "eV")
 
     if source_config["__type__"] == "plane_wave":
-        expected_energy_on_mirror_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        expected_energy_on_mirror_J = iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
             config=s1,
             area_m2=telescope["mirror"]["area_m2"],
         )
         expected_energy_on_mirror_eV = (
-            expected_energy_on_mirror_J / iaat.signal.ELECTRON_VOLT_J
+            expected_energy_on_mirror_J / iart.signal.ELECTRON_VOLT_J
         )
         print(
             "Energy expected from source", expected_energy_on_mirror_eV, "eV"
@@ -233,11 +233,11 @@ fig_path = os.path.join(plot_dir, "lnb_input_gain.jpg")
 if not os.path.exists(fig_path):
     _lnb_bench_frequency_Hz = np.geomspace(8e9, 16e9, 100)
     _lnb_start_Hz, _lnb_stop_Hz = (
-        iaat.lownoiseblock.input_frequency_start_stop_Hz(lnb=telescope["lnb"])
+        iart.lownoiseblock.input_frequency_start_stop_Hz(lnb=telescope["lnb"])
     )
-    _lnb_bench_gain = iaat.signal.butter_bench(
+    _lnb_bench_gain = iart.signal.butter_bench(
         frequencies=_lnb_bench_frequency_Hz,
-        bandpass=iaat.signal.butter_bandpass_filter,
+        bandpass=iart.signal.butter_bandpass_filter,
         filter_config={
             "frequency_start": _lnb_start_Hz,
             "frequency_stop": _lnb_stop_Hz,
@@ -256,9 +256,9 @@ if not os.path.exists(fig_path):
 fig_path = os.path.join(plot_dir, "lnb_output_gain.jpg")
 if not os.path.exists(fig_path):
     _lnb_bench_frequency_Hz = np.geomspace(0.1e9, 10e9, 100)
-    _lnb_bench_gain = iaat.signal.butter_bench(
+    _lnb_bench_gain = iart.signal.butter_bench(
         frequencies=_lnb_bench_frequency_Hz,
-        bandpass=iaat.signal.butter_bandpass_filter,
+        bandpass=iart.signal.butter_bandpass_filter,
         filter_config={
             "frequency_start": telescope["lnb"][
                 "intermediate_frequency_start_Hz"
@@ -279,16 +279,16 @@ if not os.path.exists(fig_path):
     )
 
 
-E_feed_horns = iaat.time_series.read(
+E_feed_horns = iart.time_series.read(
     os.path.join(out_dir, "feed_horns", "electric_fields.tar")
 )
 
-E_lnb_output = iaat.time_series.read(
+E_lnb_output = iart.time_series.read(
     os.path.join(out_dir, "lnb_signal_and_noise_output", "electric_fields.tar")
 )
 
 # efield to power
-total_power_leaving_lnb = iaat.signal.calculate_antenna_power_W(
+total_power_leaving_lnb = iart.signal.calculate_antenna_power_W(
     effective_area_m2=telescope["lnb"]["effective_area_m2"],
     electric_field_V_per_m=E_lnb_output[:],
 )
@@ -320,7 +320,7 @@ if not os.path.exists(fig_path_power_leaving_lnb):
         roi_time=[5e-9, 10e-9],
     )
 
-readout_energy = iaat.time_series.read(
+readout_energy = iart.time_series.read(
     os.path.join(out_dir, "lnb_readout", "energies.ts.tar")
 )
 
@@ -339,14 +339,14 @@ if not os.path.exists(fig_path_readout_gain):
     )
     _readout_bench_gain = np.zeros(_readout_bench_frequency.shape)
     for _i, _ff in enumerate(_readout_bench_frequency):
-        _t, _Ain = iaat.signal.make_sin(
+        _t, _Ain = iart.signal.make_sin(
             frequency=_ff,
             time_slice_duration=timing["electric_fields"][
                 "time_slice_duration_s"
             ],
             num_time_slices=1000 * 10,
         )
-        _Aout = iaat.signal.integrate_sliding_window(
+        _Aout = iart.signal.integrate_sliding_window(
             signal=_Ain,
             time_slice_duration=1
             / timing["readout"]["integrates_num_simulation_time_slices"],

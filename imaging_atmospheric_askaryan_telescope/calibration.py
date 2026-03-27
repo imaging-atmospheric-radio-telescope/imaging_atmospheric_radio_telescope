@@ -88,7 +88,7 @@ def make_point_spread_function_image(
     )
 
     if work_dir is None:
-        work_dir_handle = tempfile.TemporaryDirectory(prefix="iaat-")
+        work_dir_handle = tempfile.TemporaryDirectory(prefix="iart-")
         work_dir = work_dir_handle.name
     else:
         work_dir_handle = None

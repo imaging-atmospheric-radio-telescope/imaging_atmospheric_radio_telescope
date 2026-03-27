@@ -1,4 +1,4 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 import tempfile
 import os
@@ -7,18 +7,18 @@ import os
 def test_write_read():
     with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:
         for seed in range(5):
-            raw = iaat.corsika.coreas.coreas_electric_fields.init_random(
+            raw = iart.corsika.coreas.coreas_electric_fields.init_random(
                 seed=seed
             )
             path = os.path.join(tmp, f"E_{seed:d}")
-            iaat.corsika.coreas.coreas_electric_fields.write(
+            iart.corsika.coreas.coreas_electric_fields.write(
                 path=path, coreas_electric_fields=raw
             )
 
-            raw_back = iaat.corsika.coreas.coreas_electric_fields.read(
+            raw_back = iart.corsika.coreas.coreas_electric_fields.read(
                 path=path
             )
 
-            iaat.corsika.coreas.coreas_electric_fields.assert_almost_eqaul(
+            iart.corsika.coreas.coreas_electric_fields.assert_almost_eqaul(
                 actual=raw_back, desired=raw
             )

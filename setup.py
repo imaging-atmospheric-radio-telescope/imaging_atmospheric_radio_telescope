@@ -6,7 +6,7 @@ with open("README.rst", "r", encoding="utf-8") as f:
 
 
 with open(
-    os.path.join("imaging_atmospheric_askaryan_telescope", "version.py")
+    os.path.join("imaging_atmospheric_radio_telescope", "version.py")
 ) as f:
     txt = f.read()
     last_line = txt.splitlines()[-1]
@@ -15,7 +15,7 @@ with open(
 
 
 setuptools.setup(
-    name="imaging_atmospheric_askaryan_telescope",
+    name="imaging_atmospheric_radio_telescope",
     version=version,
     description=(
         "Simulate and investigate the "
@@ -23,25 +23,25 @@ setuptools.setup(
     ),
     long_description=long_description,
     long_description_content_type="text/x-rst",
-    url="https://github.com/relleums/imaging_atmospheric_askaryan_telescope",
+    url="https://github.com/relleums/imaging_atmospheric_radio_telescope",
     author="Sebastian Achim Mueller, Anne TImmermans",
     author_email="timmermans@mpi-hd.mpg.de",
     packages=[
-        "imaging_atmospheric_askaryan_telescope",
-        "imaging_atmospheric_askaryan_telescope.utils",
-        "imaging_atmospheric_askaryan_telescope.corsika",
-        "imaging_atmospheric_askaryan_telescope.corsika.build",
-        "imaging_atmospheric_askaryan_telescope.corsika.coreas",
-        "imaging_atmospheric_askaryan_telescope.calibration_source",
-        "imaging_atmospheric_askaryan_telescope.production",
-        "imaging_atmospheric_askaryan_telescope.telescopes",
-        "imaging_atmospheric_askaryan_telescope.investigations",
-        "imaging_atmospheric_askaryan_telescope.investigations.point_spread_function",
-        "imaging_atmospheric_askaryan_telescope.investigations.airshower_response",
-        "imaging_atmospheric_askaryan_telescope.sites",
+        "imaging_atmospheric_radio_telescope",
+        "imaging_atmospheric_radio_telescope.utils",
+        "imaging_atmospheric_radio_telescope.corsika",
+        "imaging_atmospheric_radio_telescope.corsika.build",
+        "imaging_atmospheric_radio_telescope.corsika.coreas",
+        "imaging_atmospheric_radio_telescope.calibration_source",
+        "imaging_atmospheric_radio_telescope.production",
+        "imaging_atmospheric_radio_telescope.telescopes",
+        "imaging_atmospheric_radio_telescope.investigations",
+        "imaging_atmospheric_radio_telescope.investigations.point_spread_function",
+        "imaging_atmospheric_radio_telescope.investigations.airshower_response",
+        "imaging_atmospheric_radio_telescope.sites",
     ],
     package_data={
-        "imaging_atmospheric_askaryan_telescope": [
+        "imaging_atmospheric_radio_telescope": [
             os.path.join("corsika", "build", "resources", "config.h"),
             os.path.join("telescopes", "resources", "*.json"),
             os.path.join("sites", "resources", "*.json"),

@@ -1,4 +1,4 @@
-from imaging_atmospheric_askaryan_telescope.calibration_source.plane_wave_in_far_field import (
+from imaging_atmospheric_radio_telescope.calibration_source.plane_wave_in_far_field import (
     compile_homogeneous_transformation,
 )
 from numpy.testing import assert_array_almost_equal

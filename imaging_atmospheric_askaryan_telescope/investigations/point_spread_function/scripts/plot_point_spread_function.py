@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import spherical_coordinates
 import binning_utils
@@ -34,7 +34,7 @@ psf_dir = args.psf_dir
 out_dir = os.path.join(psf_dir, "plots", scenario_key)
 os.makedirs(out_dir, exist_ok=True)
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 source_key = "1"
 
@@ -46,7 +46,7 @@ def report_add_source(report, telescope, plane_wave_config):
         "polarization_angle_rad"
     ]
     report["source_expected_energy_J"] = (
-        iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
             config=plane_wave_config,
             area_m2=telescope["mirror"]["area_m2"],
         )
@@ -63,7 +63,7 @@ def report_add_roi_analysis(report, telescope, roi_analysis):
     report["roi_area_80p_m2"] = roi_analysis["area_quantile_m2"]
     report["roi_x_m"] = roi_analysis["argmax_x_m"]
     report["roi_y_m"] = roi_analysis["argmax_y_m"]
-    az, zd = iaat.utils.sky_and_screen.screen_x_y_to_sky_az_zd(
+    az, zd = iart.utils.sky_and_screen.screen_x_y_to_sky_az_zd(
         x_m=report["roi_x_m"],
         y_m=report["roi_y_m"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
@@ -71,7 +71,7 @@ def report_add_roi_analysis(report, telescope, roi_analysis):
     report["roi_azimuth_rad"] = az
     report["roi_zenith_rad"] = zd
     report["roi_solid_angle_80p_sr"] = (
-        iaat.utils.sky_and_screen.screen_area_to_sky_solid_angle(
+        iart.utils.sky_and_screen.screen_area_to_sky_solid_angle(
             a_m2=report["roi_area_80p_m2"],
             focal_length_m=telescope["mirror"]["focal_length_m"],
         )
@@ -88,33 +88,33 @@ for telescope_key in config["stars"]["telescopes"]:
         continue
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
     response_paths = (
-        iaat.investigations.point_spread_function.stars.list_response_paths(
+        iart.investigations.point_spread_function.stars.list_response_paths(
             work_dir=psf_dir,
             telescope_key=telescope_key,
             scenario_key="fully_inside_field_of_view",
         )
     )
     response_paths += (
-        iaat.investigations.point_spread_function.stars.list_response_paths(
+        iart.investigations.point_spread_function.stars.list_response_paths(
             work_dir=psf_dir,
             telescope_key=telescope_key,
             scenario_key="on_edge_of_field_of_view",
         )
     )
 
-    airy_radius_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+    airy_radius_m = iart.telescope.calculate_airy_disk_radius_in_focal_plane(
         telescope=telescope
     )
     airy_angle_rad = airy_radius_m / telescope["mirror"]["focal_length_m"]
 
     reports = []
     for response_path in response_paths:
-        response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+        response = iart.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
             response_path
         )
 
@@ -131,14 +131,14 @@ for telescope_key in config["stars"]["telescopes"]:
         x_bin_edges_m, y_bin_edges_m, Ene_roi_J = response.energy_roi(
             source_key
         )
-        roi_analysis = iaat.investigations.point_spread_function.power_image_analysis.analyse_image(
+        roi_analysis = iart.investigations.point_spread_function.power_image_analysis.analyse_image(
             x_bin_edges_m=x_bin_edges_m,
             y_bin_edges_m=y_bin_edges_m,
             image=Ene_roi_J,
             containment_quantile=0.8,
         )
         report["roi_r80_m"] = (
-            iaat.investigations.point_spread_function.power_image_analysis.encircle_containment(
+            iart.investigations.point_spread_function.power_image_analysis.encircle_containment(
                 x_bin_edges_m=x_bin_edges_m,
                 y_bin_edges_m=y_bin_edges_m,
                 image=Ene_roi_J,
@@ -148,7 +148,7 @@ for telescope_key in config["stars"]["telescopes"]:
             )
         )
 
-        feed_horns_signal_mask = iaat.investigations.point_spread_function.utils.make_feed_horns_signal_mask(
+        feed_horns_signal_mask = iart.investigations.point_spread_function.utils.make_feed_horns_signal_mask(
             feed_horn_positions_m=telescope["sensor"]["feed_horn_positions_m"],
             x_m=roi_analysis["argmax_x_m"],
             y_m=roi_analysis["argmax_y_m"],
@@ -198,21 +198,21 @@ XLABEL_OFF_AXIS_DEG2 = (
 for telescope_key in config["stars"]["telescopes"]:
 
     telescope, _, _ = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
-    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+    fov = iart.investigations.point_spread_function.utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
-    airy_radius_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+    airy_radius_m = iart.telescope.calculate_airy_disk_radius_in_focal_plane(
         telescope=telescope
     )
     airy_area_m2 = np.pi * airy_radius_m**2
 
     cache_path = os.path.join(out_dir, telescope_key + ".jsonl")
-    snap = iaat.investigations.point_spread_function.utils.read_jsonl_reports_into_recarray(
+    snap = iart.investigations.point_spread_function.utils.read_jsonl_reports_into_recarray(
         cache_path
     )
 
@@ -220,7 +220,7 @@ for telescope_key in config["stars"]["telescopes"]:
     psf_off_deg = np.rad2deg(snap["source_zenith_rad"])
 
     oa_bin = (
-        iaat.investigations.point_spread_function.utils.guess_off_axis_binning(
+        iart.investigations.point_spread_function.utils.guess_off_axis_binning(
             num_samples=len(psf_off_deg),
             half_angle=np.rad2deg(fov["field_of_view_half_angle_rad"]),
         )
@@ -232,7 +232,7 @@ for telescope_key in config["stars"]["telescopes"]:
     # AREAL SPREAD
     # ============
     h_psf_area = (
-        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+        iart.investigations.point_spread_function.utils.histogram_p50_s68(
             x=psf_off_deg, y=psf_area_m2, edges=oa_bin["edges"]
         )
     )
@@ -246,7 +246,7 @@ for telescope_key in config["stars"]["telescopes"]:
     # FIT
     try:
         psf_fit, psf_fit_std = (
-            iaat.investigations.point_spread_function.utils.fit_poly1d(
+            iart.investigations.point_spread_function.utils.fit_poly1d(
                 x=oa_bin["centers"],
                 y=h_psf_area["p50"],
             )
@@ -259,7 +259,7 @@ for telescope_key in config["stars"]["telescopes"]:
             f.write("Area/Airy = ")
             f.write("(")
             f.write(
-                iaat.utils.scientific.uncertainty(
+                iart.utils.scientific.uncertainty(
                     psf_fit[0] * AREA_SCALE, psf_fit_std[0] * AREA_SCALE
                 )
             )
@@ -267,7 +267,7 @@ for telescope_key in config["stars"]["telescopes"]:
             f.write(" angle/deg + ")
             f.write("(")
             f.write(
-                iaat.utils.scientific.uncertainty(
+                iart.utils.scientific.uncertainty(
                     psf_fit[1] * AREA_SCALE, psf_fit_std[1] * AREA_SCALE
                 )
             )
@@ -279,7 +279,7 @@ for telescope_key in config["stars"]["telescopes"]:
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
 
-    iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
+    iart.investigations.point_spread_function.plot.ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
         y=h_psf_area["p50"] * AREA_SCALE,
@@ -292,13 +292,13 @@ for telescope_key in config["stars"]["telescopes"]:
         _xxx = np.linspace(oa_bin["start"], oa_bin["stop"], 201)
         ax.plot(_xxx**2, psf_fit_m2_per_deg(_xxx) * AREA_SCALE, "-r")
 
-    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+    iart.investigations.point_spread_function.plot.ax_add_fov_marker(
         ax, FOV_HA_DEG**2
     )
     ylim = [0.0, 1.25 * np.nanmax(h_psf_area["p50"]) * AREA_SCALE]
     ax.set_ylim(ylim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
-    iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
+    iart.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     ax.set_ylabel("area containing 80% /\n" + "Airy disk")
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_spread.jpg"))
     sebplt.close(fig)
@@ -321,12 +321,12 @@ for telescope_key in config["stars"]["telescopes"]:
         label=None,
         draw_bin_walls=True,
     )
-    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+    iart.investigations.point_spread_function.plot.ax_add_fov_marker(
         ax_cnt, FOV_HA_DEG**2
     )
     ax_cnt.set_ylim([0.0, 1.1 * np.max(h_psf_area["cnt"])])
     ax_cnt.set_xlim([0.0, OFF_STOP_DEG**2])
-    iaat.investigations.point_spread_function.plot.ax_square_format(ax=ax_cnt)
+    iart.investigations.point_spread_function.plot.ax_square_format(ax=ax_cnt)
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_counts.jpg"))
     sebplt.close(fig)
 
@@ -335,14 +335,14 @@ for telescope_key in config["stars"]["telescopes"]:
     disto = snap["roi_zenith_rad"] / snap["source_zenith_rad"]
 
     h_disto = (
-        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+        iart.investigations.point_spread_function.utils.histogram_p50_s68(
             x=psf_off_deg, y=disto, edges=oa_bin["edges"]
         )
     )
 
     try:
         distortion_fit, distortion_fit_std = (
-            iaat.investigations.point_spread_function.utils.fit_poly1d(
+            iart.investigations.point_spread_function.utils.fit_poly1d(
                 x=oa_bin["centers"],
                 y=h_disto["p50"],
             )
@@ -355,7 +355,7 @@ for telescope_key in config["stars"]["telescopes"]:
             f.write("reco angle / true angle = ")
             f.write("(")
             f.write(
-                iaat.utils.scientific.uncertainty(
+                iart.utils.scientific.uncertainty(
                     distortion_fit[0], distortion_fit_std[0]
                 )
             )
@@ -363,7 +363,7 @@ for telescope_key in config["stars"]["telescopes"]:
             f.write(" true angle + ")
             f.write("(")
             f.write(
-                iaat.utils.scientific.uncertainty(
+                iart.utils.scientific.uncertainty(
                     distortion_fit[1], distortion_fit_std[1]
                 )
             )
@@ -374,7 +374,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
-    iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
+    iart.investigations.point_spread_function.plot.ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
         y=h_disto["p50"],
@@ -386,12 +386,12 @@ for telescope_key in config["stars"]["telescopes"]:
         _xxx = np.linspace(oa_bin["start"], oa_bin["stop"], 201)
         ax.plot(_xxx**2, distortion_fit_fn_deg(_xxx), "-r")
 
-    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+    iart.investigations.point_spread_function.plot.ax_add_fov_marker(
         ax, FOV_HA_DEG**2
     )
     ax.set_xlim([0.0, FOV_HA_DEG**2])
     ax.set_ylabel(r"distortion / 1")
-    iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
+    iart.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     fig.savefig(os.path.join(out_dir, f"{telescope_key:s}_distortion.jpg"))
     sebplt.close(fig)
 
@@ -405,7 +405,7 @@ for telescope_key in config["stars"]["telescopes"]:
     enecon_valid_radius_m = (
         telescope["sensor"]["camera"]["outer_radius_m"] - 2.0 * psf_size_m
     )
-    enecon_valid_off_axis_angle_rad = iaat.utils.sky_and_screen.screen_to_sky(
+    enecon_valid_off_axis_angle_rad = iart.utils.sky_and_screen.screen_to_sky(
         x_m=enecon_valid_radius_m,
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
@@ -415,7 +415,7 @@ for telescope_key in config["stars"]["telescopes"]:
     )
 
     h_enecon = (
-        iaat.investigations.point_spread_function.utils.histogram_p50_s68(
+        iart.investigations.point_spread_function.utils.histogram_p50_s68(
             x=psf_off_deg,
             y=snap["feed_horn_energy_conservation_ratio"],
             edges=oa_bin["edges"],
@@ -431,7 +431,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
     if len(ene_x) > 1:
         eneFit, eneFit_std = (
-            iaat.investigations.point_spread_function.utils.fit_poly1d(
+            iart.investigations.point_spread_function.utils.fit_poly1d(
                 x=ene_x,
                 y=ene_y,
             )
@@ -443,7 +443,7 @@ for telescope_key in config["stars"]["telescopes"]:
             ene_method = "linear-fit-y-axis-intersection"
         else:
             eneS = np.median(h_enecon["p50"][h_enecon_mask])
-            eneS_std = iaat.investigations.point_spread_function.utils.percentile_spread(
+            eneS_std = iart.investigations.point_spread_function.utils.percentile_spread(
                 h_enecon["p50"][h_enecon_mask], 68
             )
             ene_method = "median-in-field-of-view"
@@ -474,7 +474,7 @@ for telescope_key in config["stars"]["telescopes"]:
     enecon_lim = [0.0, 1.25]
     fig = sebplt.figure(style={"rows": 960, "cols": 1920, "fontsize": 2.0})
     ax = sebplt.add_axes(fig=fig, span=[0.2, 0.05, 0.75, 0.9])
-    iaat.investigations.point_spread_function.plot.ax_add_uncertain_bins(
+    iart.investigations.point_spread_function.plot.ax_add_uncertain_bins(
         ax=ax,
         x_bin_edges=oa_bin["edges"] ** 2,
         y=h_enecon["p50"] * eneF,
@@ -482,14 +482,14 @@ for telescope_key in config["stars"]["telescopes"]:
         weights=relative_cnt,
         color="black",
     )
-    iaat.investigations.point_spread_function.plot.ax_add_fov_marker(
+    iart.investigations.point_spread_function.plot.ax_add_fov_marker(
         ax, FOV_HA_DEG**2
     )
     ax.set_ylim(enecon_lim)
     ax.set_xlim([0.0, OFF_STOP_DEG**2])
     ax.set_xlabel(XLABEL_OFF_AXIS_DEG2)
     ax.set_ylabel("energy conservation\nby construction")
-    iaat.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
+    iart.investigations.point_spread_function.plot.ax_blank_format(ax=ax)
     fig.savefig(
         os.path.join(out_dir, f"{telescope_key:s}_energy_conservation.jpg")
     )

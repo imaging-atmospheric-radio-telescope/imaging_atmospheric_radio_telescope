@@ -4,8 +4,8 @@ import os
 import json
 from collections import defaultdict
 
-import imaging_atmospheric_askaryan_telescope as iaat
-import imaging_atmospheric_askaryan_telescope.investigations.airshower_response
+import imaging_atmospheric_radio_telescope as iart
+import imaging_atmospheric_radio_telescope.investigations.airshower_response
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,21 +20,21 @@ from matplotlib.cm import ScalarMappable
 # ==================================================
 
 work_dirs = [
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_5",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_6",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_7",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_8",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_9",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_10",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_11",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_12",
-    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_askaryan_telescope/imaging_atmospheric_askaryan_telescope/scripts/output_13",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_5",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_6",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_7",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_8",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_9",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_10",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_11",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_12",
+    "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/imaging_atmospheric_radio_telescope/imaging_atmospheric_radio_telescope/scripts/output_13",
 ]
 
 psf_investigation_dir = (
     "/home/anne/Documents/Papers/pet_project/Radio_telescopt_EAS/"
-    "imaging_atmospheric_askaryan_telescope/"
-    "imaging_atmospheric_askaryan_telescope/scripts/2025-06-03-psf"
+    "imaging_atmospheric_radio_telescope/"
+    "imaging_atmospheric_radio_telescope/scripts/2025-06-03-psf"
 )
 
 telescope_key = "large_size_telescope"
@@ -58,14 +58,14 @@ particle_cmaps = {
 # Telescope & geometry (EXACTLY like your working script)
 # ==================================================
 
-site = iaat.sites.init("karlsruhe")
+site = iart.sites.init("karlsruhe")
 
-config = iaat.investigations.point_spread_function.utils.read_config(
+config = iart.investigations.point_spread_function.utils.read_config(
     psf_investigation_dir
 )
 
 telescope, timing, _ = (
-    iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+    iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
         work_dir=psf_investigation_dir,
         config=config,
         telescope_key=telescope_key,
@@ -97,7 +97,7 @@ for work_dir in work_dirs:
     energy_GeV = source_config["primary_particle"]["energy_GeV"]
     energy_TeV = energy_GeV / 1e3
 
-    fh = iaat.time_series.read(
+    fh = iart.time_series.read(
         os.path.join(work_dir, "feed_horns/electric_fields.tar")
     )
 
@@ -107,7 +107,7 @@ for work_dir in work_dirs:
 
     E = fh._x  # (N_pix, N_samples, 3)
 
-    E_amp = iaat.investigations.airshower_response.compute_energy_freqband(
+    E_amp = iart.investigations.airshower_response.compute_energy_freqband(
         E=E,
         dt=dt,
         f_band=(3.0e9, 10.0e9),

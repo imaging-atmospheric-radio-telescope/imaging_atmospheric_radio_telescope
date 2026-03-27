@@ -1,4 +1,4 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 
 
@@ -9,7 +9,7 @@ def test_std_and_mean():
         for mean in [-1.0, 0.0, 1337.0]:
             for std in [0.0, 1e-6, 15.0]:
 
-                x = iaat.utils.normal_approximation(
+                x = iart.utils.normal_approximation(
                     prng=prng,
                     mean=mean,
                     std=std,
@@ -25,7 +25,7 @@ def test_order():
     prng = np.random.Generator(np.random.PCG64(101))
 
     for order in [3, 6, 12]:
-        x = iaat.utils.normal_approximation(
+        x = iart.utils.normal_approximation(
             prng=prng,
             mean=0.0,
             std=1.0,

@@ -2,8 +2,8 @@ import argparse
 import os
 import binning_utils
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import json_utils
 
@@ -33,7 +33,7 @@ time_slice_duration_s = 1 / (65e9)
 exposure_time_s = 7e-9
 N = int(exposure_time_s / time_slice_duration_s)
 
-config = iaat.calibration_source.plane_wave_in_far_field.make_config()
+config = iart.calibration_source.plane_wave_in_far_field.make_config()
 
 moon_to_earth_m = 385_000_000
 iss_altitude_m = 422_000
@@ -46,7 +46,7 @@ config["power"] = {
 config["sine_wave"]["emission_frequency_Hz"] = 10.32e9
 
 unit_area_m2 = 1.0
-areal_energy_density_J_per_m2 = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+areal_energy_density_J_per_m2 = iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
     config, area_m2=unit_area_m2
 )
 areal_power_density_at_main_part_W_per_m2 = config["power"][
@@ -71,12 +71,12 @@ with open(os.path.join(out_dir, "wave_package.json"), "wt") as f:
 
 ppp = [[0, 0, 0]]
 
-E_plane_wave = iaat.calibration_source.plane_wave_in_far_field.plane_wave_in_far_field(
-    geometry_setup=iaat.calibration_source.plane_wave_in_far_field.make_geometry_setup(
+E_plane_wave = iart.calibration_source.plane_wave_in_far_field.plane_wave_in_far_field(
+    geometry_setup=iart.calibration_source.plane_wave_in_far_field.make_geometry_setup(
         antenna_position_vectors_in_asl_frame_m=ppp,
         **config["geometry"],
     ),
-    power_setup=iaat.calibration_source.plane_wave_in_far_field.make_power_setup(
+    power_setup=iart.calibration_source.plane_wave_in_far_field.make_power_setup(
         **config["power"],
     ),
     sine_wave=config["sine_wave"],

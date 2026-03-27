@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import glob
 import binning_utils
@@ -30,7 +30,7 @@ psf_dir = args.psf_dir
 out_dir = os.path.join(psf_dir, "plots", scenario_key)
 os.makedirs(out_dir, exist_ok=True)
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 source_key = "1"
 prng = np.random.Generator(np.random.PCG64(5))
@@ -46,16 +46,16 @@ for telescope_key in config["defocus"]["telescopes"]:
     Q = []
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
-    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+    fov = iart.investigations.point_spread_function.utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
 
-    response_paths = iaat.utils.filter_integer_filenames(
+    response_paths = iart.utils.filter_integer_filenames(
         paths=glob.glob(os.path.join(psf_dir, "defocus", telescope_key, "*"))
     )
 
@@ -65,12 +65,12 @@ for telescope_key in config["defocus"]["telescopes"]:
     feed_horn_energies_J = []
 
     for response_path in response_paths:
-        response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+        response = iart.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
             response_path
         )
 
         plane_wave_config = response.source_config["plane_waves"][source_key]
-        energy_expected_from_source_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        energy_expected_from_source_J = iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
             config=plane_wave_config,
             area_m2=telescope["mirror"]["area_m2"],
         )
@@ -129,7 +129,7 @@ for telescope_key in config["defocus"]["telescopes"]:
     R_outer_m = telescope["mirror"]["outer_radius_m"]
     R_inner_m = telescope["mirror"]["inner_radius_m"]
 
-    feed_horn_energies_eV = feed_horn_energies_J / iaat.signal.ELECTRON_VOLT_J
+    feed_horn_energies_eV = feed_horn_energies_J / iart.signal.ELECTRON_VOLT_J
     vmax = np.max(feed_horn_energies_eV)
     norm = sebplt.matplotlib.colors.LogNorm(
         vmin=1e-3 * vmax,
@@ -160,7 +160,7 @@ for telescope_key in config["defocus"]["telescopes"]:
             style={"rows": 1920, "cols": 1920, "fontsize": 2.0}
         )
         ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.89, 0.89])
-        iaat.camera.ax_add_camera_feed_horn_values(
+        iart.camera.ax_add_camera_feed_horn_values(
             ax=ax,
             camera=telescope["sensor"],
             feed_horn_values=feed_horn_energies_eV[iq],
@@ -168,7 +168,7 @@ for telescope_key in config["defocus"]["telescopes"]:
             cmap="Blues",
             norm=norm,
         )
-        iaat.camera.ax_add_camera_feed_horn_edges(
+        iart.camera.ax_add_camera_feed_horn_edges(
             ax=ax,
             camera=telescope["sensor"],
             color="black",
@@ -176,7 +176,7 @@ for telescope_key in config["defocus"]["telescopes"]:
             linewidth=0.5,
         )
         source_x_m, source_y_m = (
-            iaat.utils.sky_and_screen.sky_az_zd_to_screen_x_y(
+            iart.utils.sky_and_screen.sky_az_zd_to_screen_x_y(
                 azimuth_rad=Q["azimuth_rad"][iq],
                 zenith_rad=Q["zenith_rad"][iq],
                 focal_length_m=telescope["mirror"]["focal_length_m"],

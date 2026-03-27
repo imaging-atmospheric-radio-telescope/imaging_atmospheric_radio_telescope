@@ -1,6 +1,6 @@
-######################################
-Imaging Atmospheric Askaryan Telescope
-######################################
+###################################
+Imaging Atmospheric Radio Telescope
+###################################
 |TestStatus| |PyPiStatus| |BlackStyle| |BlackPackStyle| |MITLicenseBadge|
 
 Exploring the detection of cosmic gamma rays from ground by imaging the radio
@@ -17,10 +17,10 @@ this time because it can observe during the bright day. Here we investigate an
 imaging radio telescope that senses the radio emission of air showers to record
 pictures. First simulations indicate that its images look similar to those of
 Cherenkov telescopes. We simulate the optics, not using ray tracing, but wave
-mechanics. Such an 'Askaryan telescope' can adopt electronics from Cherenkov
-telescopes. Its mirrors can be made out of wire mesh. The goal of this package
-is to estimate the response function of such an Askaryan telescope to cosmic
-rays and cosmic gamma rays.
+mechanics. Such an 'imaging atmospheric radio telescope' can adopt electronics
+from Cherenkov telescopes. Its mirrors can be made out of wire mesh. The goal
+of this package is to estimate the response function of such an imaging
+atmospheric radio telescope to cosmic rays and cosmic gamma rays.
 
 *******
 Install
@@ -30,40 +30,40 @@ Clone the python package from GitHub.
 
 .. code-block:: bash
 
-    git clone git@github.com:relleums/imaging_atmospheric_askaryan_telescope.git
+    git clone git@github.com:relleums/imaging_atmospheric_radio_telescope.git
 
 
 and install it using ``pip``.
 
 .. code-block:: bash
 
-    pip install --editable imaging_atmospheric_askaryan_telescope/
+    pip install --editable imaging_atmospheric_radio_telescope/
 
 
 Enter the python package directory.
 
 .. code-block:: bash
 
-    cd imaging_atmospheric_askaryan_telescope
+    cd imaging_atmospheric_radio_telescope
 
 Ask the developers of ``CORSIKA`` for the ``username`` and ``password``.
 Download ``corsika-77100.tar.gz`` from KIT and save it in:
 
 .. code-block:: bash
 
-    imaging_atmospheric_askaryan_telescope/corsika/__build__/corsika-77100.tar.gz
+    imaging_atmospheric_radio_telescope/corsika/__build__/corsika-77100.tar.gz
 
 
 To build ``CORSIKA``, it is required to have a ``C`` and ``FORTRAN77`` compiler
 installed. From experience, the Linux package ``build-essential`` is sufficient.
-Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_askaryan_telescope`` by
+Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_radio_telescope`` by
 calling:
 
 .. code-block:: python
 
-    import imaging_atmospheric_askaryan_telescope
+    import imaging_atmospheric_radio_telescope
 
-    imaging_atmospheric_askaryan_telescope.corsika.build.install()
+    imaging_atmospheric_radio_telescope.corsika.build.install()
 
 
 If all works out as expected, you should see:
@@ -81,16 +81,16 @@ First uninstall the ``CORSIKA`` build.
 
 .. code-block:: python
 
-    import imaging_atmospheric_askaryan_telescope
+    import imaging_atmospheric_radio_telescope
 
-    imaging_atmospheric_askaryan_telescope.corsika.build.uninstall()
+    imaging_atmospheric_radio_telescope.corsika.build.uninstall()
 
 
 Finally, uninstall the python package.
 
 .. code-block:: bash
 
-    pip uninstall imaging_atmospheric_askaryan_telescope
+    pip uninstall imaging_atmospheric_radio_telescope
 
 
 
@@ -102,9 +102,9 @@ Initialize a working directory for a specific telescope and a specific site.
 
 .. code-block:: python
 
-    import imaging_atmospheric_askaryan_telescope as iaat
+    import imaging_atmospheric_radio_telescope as iart
 
-    iaat.init(work_dir="/path/to/my/workdir")
+    iart.init(work_dir="/path/to/my/workdir")
 
 
 In the ``work_dir`` is a ``config`` directory which contains all the config
@@ -112,7 +112,7 @@ which is constant for all events. It's content can be loaded and compiled via:
 
 .. code-block:: python
 
-    resources = iaat.from_config(work_dir="/path/to/my/workdir")
+    resources = iart.from_config(work_dir="/path/to/my/workdir")
 
 
 One can simulate an air shower and the telescope's response via:
@@ -153,14 +153,14 @@ Test
 
 .. code-block:: bash
 
-    pytest imaging_atmospheric_askaryan_telescope/
+    pytest imaging_atmospheric_radio_telescope/
 
 
 An depricated example of a single event and some plots.
 
 .. code-block:: bash
 
-    python imaging_atmospheric_askaryan_telescope/scripts/test.py
+    python imaging_atmospheric_radio_telescope/scripts/test.py
 
 
 ************
@@ -171,7 +171,7 @@ Use black package linting with 79 columns:
 
 .. code-block:: bash
 
-    black -l79 imaging_atmospheric_askaryan_telescope/
+    black -l79 imaging_atmospheric_radio_telescope/
 
 
 **********
@@ -258,11 +258,11 @@ From Sebastian's library (``bib search radio, lnb, antenna``).
 .. |BlackStyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
-.. |TestStatus| image:: https://github.com/relleums/imaging_atmospheric_askaryan_telescope/actions/workflows/test.yml/badge.svg?branch=main
-    :target: https://github.com/relleums/imaging_atmospheric_askaryan_telescope/actions/workflows/test.yml
+.. |TestStatus| image:: https://github.com/relleums/imaging_atmospheric_radio_telescope/actions/workflows/test.yml/badge.svg?branch=main
+    :target: https://github.com/relleums/imaging_atmospheric_radio_telescope/actions/workflows/test.yml
 
-.. |PyPiStatus| image:: https://img.shields.io/pypi/v/imaging_atmospheric_askaryan_telescope
-    :target: https://pypi.org/project/imaging_atmospheric_askaryan_telescope
+.. |PyPiStatus| image:: https://img.shields.io/pypi/v/imaging_atmospheric_radio_telescope
+    :target: https://pypi.org/project/imaging_atmospheric_radio_telescope
 
 .. |BlackPackStyle| image:: https://img.shields.io/badge/pack%20style-black-000000.svg
     :target: https://github.com/cherenkov-plenoscope/black_pack
@@ -270,4 +270,4 @@ From Sebastian's library (``bib search radio, lnb, antenna``).
 .. |MITLicenseBadge| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 
-.. |example_event| image:: https://github.com/relleums/imaging_atmospheric_askaryan_telescope/blob/main/readme/example_event.gif
+.. |example_event| image:: https://github.com/relleums/imaging_atmospheric_radio_telescope/blob/main/readme/example_event.gif

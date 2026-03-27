@@ -1,8 +1,8 @@
 import argparse
 import os
 import sebastians_matplotlib_addons as sebplt
-import imaging_atmospheric_askaryan_telescope as iaat
-from imaging_atmospheric_askaryan_telescope import plot as iaat_plot
+import imaging_atmospheric_radio_telescope as iart
+from imaging_atmospheric_radio_telescope import plot as iaat_plot
 import numpy as np
 import spherical_coordinates
 import binning_utils
@@ -32,7 +32,7 @@ psf_dir = args.psf_dir
 out_dir = os.path.join(psf_dir, "plots", scenario_key)
 os.makedirs(out_dir, exist_ok=True)
 
-config = iaat.investigations.point_spread_function.utils.read_config(psf_dir)
+config = iart.investigations.point_spread_function.utils.read_config(psf_dir)
 
 power_ratio_threshold = 0.1
 
@@ -65,19 +65,19 @@ for telescope_key in config["stars"]["telescopes"]:
         continue
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
     response_paths = (
-        iaat.investigations.point_spread_function.stars.list_response_paths(
+        iart.investigations.point_spread_function.stars.list_response_paths(
             work_dir=psf_dir,
             telescope_key=telescope_key,
             scenario_key=scenario_key,
         )
     )
 
-    airy_radius_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+    airy_radius_m = iart.telescope.calculate_airy_disk_radius_in_focal_plane(
         telescope=telescope
     )
     airy_angle_rad = airy_radius_m / telescope["mirror"]["focal_length_m"]
@@ -85,13 +85,13 @@ for telescope_key in config["stars"]["telescopes"]:
     snap = dynamicsizerecarray.DynamicSizeRecarray(dtype=snapdtype)
 
     for response_path in response_paths:
-        response = iaat.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
+        response = iart.investigations.point_spread_function.plane_wave_response.PlaneWaveResponse(
             response_path
         )
 
         plane_wave_config = response.source_config["plane_waves"][source_key]
 
-        energy_expected_from_source_J = iaat.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
+        energy_expected_from_source_J = iart.calibration_source.plane_wave_in_far_field.calculate_total_energy_from_config(
             config=plane_wave_config,
             area_m2=telescope["mirror"]["area_m2"],
         )
@@ -136,8 +136,8 @@ for telescope_key in config["stars"]["telescopes"]:
             [Rmax, Rmax, 5 * airy_radius_m],
         )
         try:
-            predicted_params, uncert_cov = iaat.utils.curve_fit(
-                f=iaat.utils.gauss_pseudo_2d,
+            predicted_params, uncert_cov = iart.utils.curve_fit(
+                f=iart.utils.gauss_pseudo_2d,
                 xdata=xy,
                 ydata=_w,
                 p0=guess,
@@ -167,7 +167,7 @@ for telescope_key in config["stars"]["telescopes"]:
 
         print(rec_x_m, rec_y_m, rec_radius_m)
 
-        feed_horn_signal_mask = iaat.investigations.point_spread_function.plane_wave_response.mask_feed_horns(
+        feed_horn_signal_mask = iart.investigations.point_spread_function.plane_wave_response.mask_feed_horns(
             feed_horn_positions_m=telescope["sensor"]["feed_horn_positions_m"],
             containment_radius_m=1.5 * rec_radius_m,
             azimuth_rad=rec_az_rad,
@@ -194,7 +194,7 @@ for telescope_key in config["stars"]["telescopes"]:
         # plarization
         # -----------
         rec_factor, rec_pola_rad = (
-            iaat.investigations.point_spread_function.polarization_analysis.analyse_linear_polarization(
+            iart.investigations.point_spread_function.polarization_analysis.analyse_linear_polarization(
                 electric_fields=response.E_feed_horns,
                 channel_mask=feed_horn_signal_mask,
             )
@@ -230,15 +230,15 @@ for telescope_key in config["stars"]["telescopes"]:
 for telescope_key in config["stars"]["telescopes"]:
 
     telescope, site, timing = (
-        iaat.investigations.point_spread_function.utils.make_telescope_timing_and_site(
+        iart.investigations.point_spread_function.utils.make_telescope_timing_and_site(
             work_dir=psf_dir, config=config, telescope_key=telescope_key
         )
     )
-    fov = iaat.investigations.point_spread_function.utils.make_field_of_view_region_edges(
+    fov = iart.investigations.point_spread_function.utils.make_field_of_view_region_edges(
         sensor=telescope["sensor"],
         focal_length_m=telescope["mirror"]["focal_length_m"],
     )
-    airy_radius_m = iaat.telescope.calculate_airy_disk_radius_in_focal_plane(
+    airy_radius_m = iart.telescope.calculate_airy_disk_radius_in_focal_plane(
         telescope=telescope
     )
     airy_angle_rad = airy_radius_m / telescope["mirror"]["focal_length_m"]

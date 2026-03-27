@@ -1,4 +1,4 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 import json_utils
 import os
@@ -8,7 +8,7 @@ import pytest
 
 @pytest.mark.requires_corsika
 def test_simulate_mirror_electric_fields_manual():
-    SPEED_OF_LIGHT_M_PER_S = iaat.signal.SPEED_OF_LIGHT_M_PER_S
+    SPEED_OF_LIGHT_M_PER_S = iart.signal.SPEED_OF_LIGHT_M_PER_S
     event_id = 103
     primary_particle = {
         "key": "gamma",
@@ -19,7 +19,7 @@ def test_simulate_mirror_electric_fields_manual():
         "core_west_m": 20.0,
     }
     time_slice_duration_s = 1e-9
-    site = iaat.sites.init("karlsruhe")
+    site = iart.sites.init("karlsruhe")
     antenna_positions_obslvl_m = np.asarray([[0, 0, 0], [0, 1, 0]])
     coreas_time_boundaries = {
         "automatic_time_boundaries_s": 0,
@@ -28,7 +28,7 @@ def test_simulate_mirror_electric_fields_manual():
     }
 
     with tempfile.TemporaryDirectory(prefix="askaryan_") as tmp:
-        iaat.production.radio_from_airshower._simulate_mirror_electric_fields_manual(
+        iart.production.radio_from_airshower._simulate_mirror_electric_fields_manual(
             out_dir=tmp,
             event_id=event_id,
             primary_particle=primary_particle,
@@ -37,7 +37,7 @@ def test_simulate_mirror_electric_fields_manual():
             antenna_positions_obslvl_m=antenna_positions_obslvl_m,
             coreas_time_boundaries=coreas_time_boundaries,
         )
-        electric_fields = iaat.time_series.read(
+        electric_fields = iart.time_series.read(
             os.path.join(tmp, "electric_fields.tar")
         )
 

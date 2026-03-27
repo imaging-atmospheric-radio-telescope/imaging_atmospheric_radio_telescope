@@ -1,4 +1,4 @@
-import imaging_atmospheric_askaryan_telescope as iaat
+import imaging_atmospheric_radio_telescope as iart
 import numpy as np
 
 
@@ -9,13 +9,13 @@ def test_power_spectrum():
     num_time_slices = 1360
 
     for frequency_Hz in frequencies_Hz:
-        _, A = iaat.signal.make_sin(
+        _, A = iart.signal.make_sin(
             frequency=frequency_Hz,
             time_slice_duration=time_slice_duration,
             num_time_slices=num_time_slices,
         )
 
-        ffs_Hz, pds = iaat.signal.estimate_power_spectrum_density(
+        ffs_Hz, pds = iart.signal.estimate_power_spectrum_density(
             amplitudes=A,
             time_slice_duration_s=time_slice_duration,
             num_time_slices_to_average_over=num_time_slices // 5,
