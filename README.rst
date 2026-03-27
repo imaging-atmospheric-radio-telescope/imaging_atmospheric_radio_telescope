@@ -26,6 +26,7 @@ atmospheric radio telescope to cosmic rays and cosmic gamma rays.
 Install
 *******
 
+This package is meant for ``python >= 3.11.5``.
 Clone the python package from GitHub.
 
 .. code-block:: bash
