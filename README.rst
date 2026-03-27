@@ -254,6 +254,12 @@ From Sebastian's library (``bib search radio, lnb, antenna``).
         Smida, Radomir and Bluemer, H and Engel, R and Haungs, A and Huege, T and
         2011
 
+*******
+History
+*******
+
+Initially this package was named ``Imaing Atmospheric Askarya Telescope``.
+
 
 .. |BlackStyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
