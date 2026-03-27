@@ -57,8 +57,7 @@ to simulate air showers one needs ``CORSIKA``. Ask the developers of
     imaging_atmospheric_radio_telescope/corsika/__build__/corsika-77100.tar.gz
 
 
-To build ``CORSIKA``, it is required to have a ``C`` and ``FORTRAN77`` compiler
-installed. From experience, the Linux package ``build-essential`` is sufficient.
+Building ``CORSIKA``requires a ``C`` and ``FORTRAN77`` compiler. From experience, the Linux package ``build-essential`` is sufficient.
 Build ``CORSIKA-CoREAS`` for the ``imaging_atmospheric_radio_telescope`` by
 calling:
 
