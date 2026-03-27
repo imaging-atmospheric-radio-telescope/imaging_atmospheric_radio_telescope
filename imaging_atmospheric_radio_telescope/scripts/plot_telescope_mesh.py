@@ -15,7 +15,7 @@ import thin_lens
 
 parser = argparse.ArgumentParser(
     prog="plot_telescope_mesh.py",
-    description=("Plot a 3D mesh of the askaryan telescope."),
+    description=("Plot a 3D mesh of the telescope geometry."),
 )
 parser.add_argument(
     "--out_dir",
