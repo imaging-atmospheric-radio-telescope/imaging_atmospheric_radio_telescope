@@ -26,7 +26,7 @@ def get_corsika_build_path():
     python package.
     """
     return pkg_resources.resource_filename(
-        "imaging_atmospheric_askaryan_telescope",
+        "imaging_atmospheric_radio_telescope",
         os.path.join("corsika", "__build__"),
     )
 
@@ -38,7 +38,7 @@ def get_corsika_config_path():
     The header is used by CORSIKA's 'coconut' build script.
     """
     return pkg_resources.resource_filename(
-        "imaging_atmospheric_askaryan_telescope",
+        "imaging_atmospheric_radio_telescope",
         os.path.join("corsika", "build", "resources", "config.h"),
     )
 
